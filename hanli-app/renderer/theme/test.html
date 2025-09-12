@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>主题测试</title>
+    <link rel="stylesheet" href="../styles.css">
+    <script src="ThemeManager.js"></script>
+</head>
+<body>
+    <div style="padding: 20px;">
+        <h1>主题系统测试</h1>
+        <div style="margin: 20px 0;">
+            <button onclick="testTheme('light')">浅色主题</button>
+            <button onclick="testTheme('dark')">深色主题</button>
+            <button onclick="testTheme('system')">跟随系统</button>
+        </div>
+        <div style="padding: 20px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px;">
+            <h2>测试卡片</h2>
+            <p>这是一个测试卡片，用于验证主题颜色是否正确应用。</p>
+            <button style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; border-radius: 4px;">测试按钮</button>
+        </div>
+        <div style="margin-top: 20px;">
+            <p>当前主题: <span id="currentTheme">-</span></p>
+            <p>实际应用主题: <span id="appliedTheme">-</span></p>
+        </div>
+    </div>
+
+    <script>
+        function testTheme(theme) {
+            if (window.themeManager) {
+                window.themeManager.switchTheme(theme);
+                updateThemeInfo();
+            }
+        }
+
+        function updateThemeInfo() {
+            if (window.themeManager) {
+                document.getElementById('currentTheme').textContent = window.themeManager.getCurrentTheme();
+                document.getElementById('appliedTheme').textContent = window.themeManager.getAppliedTheme();
+            }
+        }
+
+        // 监听主题变化
+        document.addEventListener('themeChanged', (event) => {
+            console.log('主题已变化:', event.detail);
+            updateThemeInfo();
+        });
+
+        // 初始化
+        window.addEventListener('load', () => {
+            updateThemeInfo();
+        });
+    </script>
+</body>
+</html>

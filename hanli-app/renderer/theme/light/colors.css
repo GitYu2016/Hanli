@@ -1,0 +1,105 @@
+/* Light主题颜色变量 */
+:root {
+    --bg-primary: rgba(240, 242, 247, 0.8);
+    --bg-secondary: rgba(255, 255, 255, 0.95);
+    --bg-card: rgba(255, 255, 255, 0.8);
+    --bg-hover: rgba(102, 126, 234, 0.05);
+    --bg-active: rgba(102, 126, 234, 0.1);
+    --text-primary: rgba(44, 62, 80, 0.9);
+    --text-secondary: rgba(127, 140, 141, 0.8);
+    --text-muted: rgba(127, 140, 141, 0.6);
+    --border-color: rgba(102, 126, 234, 0.2);
+    --border-hover: rgba(102, 126, 234, 0.3);
+    --accent-color: rgba(102, 126, 234, 1);
+    --accent-hover: rgba(76, 99, 210, 1);
+    --shadow: rgba(0, 0, 0, 0.1);
+    --shadow-hover: rgba(0, 0, 0, 0.15);
+    --shadow-card: rgba(0, 0, 0, 0.05);
+    --selection-bg: rgba(102, 126, 234, 0.1);
+    --selection-border: rgba(102, 126, 234, 1);
+    
+    /* 加载页面颜色 */
+    --loading-bg: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
+    --loading-text: white;
+    --loading-spinner: rgba(255, 255, 255, 0.8);
+    
+    /* 状态颜色 */
+    --success-color: rgba(46, 204, 113, 1);
+    --warning-color: rgba(241, 196, 15, 1);
+    --error-color: rgba(231, 76, 60, 1);
+    --info-color: rgba(52, 152, 219, 1);
+    
+    /* 按钮颜色 */
+    --btn-primary-bg: var(--accent-color);
+    --btn-primary-hover: var(--accent-hover);
+    --btn-primary-text: white;
+    --btn-secondary-bg: transparent;
+    --btn-secondary-hover: var(--bg-hover);
+    --btn-secondary-text: var(--text-primary);
+    --btn-secondary-border: var(--border-color);
+    
+    /* 输入框颜色 */
+    --input-bg: var(--bg-secondary);
+    --input-border: var(--border-color);
+    --input-border-focus: var(--accent-color);
+    --input-text: var(--text-primary);
+    --input-placeholder: var(--text-muted);
+    
+    /* 侧边栏颜色 */
+    --sidebar-bg: var(--bg-secondary);
+    --sidebar-border: var(--border-color);
+    --sidebar-item-hover: var(--bg-hover);
+    --sidebar-item-active: var(--bg-active);
+    --sidebar-text: var(--text-primary);
+    --sidebar-text-muted: var(--text-muted);
+    
+    /* 卡片颜色 */
+    --card-bg: var(--bg-card);
+    --card-border: var(--border-color);
+    --card-shadow: var(--shadow-card);
+    --card-hover-shadow: var(--shadow-hover);
+    
+    /* Body背景色 */
+    --body-bg: linear-gradient(135deg, #F1F2F8 0%, #E8EAF6 100%);
+    
+    /* 滚动条颜色 */
+    --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+    --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
+    
+    /* 按钮渐变色 */
+    --btn-primary-gradient: linear-gradient(135deg, rgba(102, 126, 234, 1) 0%, rgba(118, 75, 162, 1) 100%);
+    --btn-primary-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    --btn-primary-shadow-hover: 0 8px 25px rgba(102, 126, 234, 0.6);
+    --btn-secondary-bg: rgba(255, 255, 255, 0.9);
+    --btn-secondary-border: rgba(102, 126, 234, 0.3);
+    --btn-secondary-hover-bg: rgba(102, 126, 234, 0.1);
+    --btn-icon-hover-bg: rgba(102, 126, 234, 0.1);
+    
+    /* 文件图标渐变色 */
+    --file-icon-image: linear-gradient(135deg, rgba(102, 126, 234, 1) 0%, rgba(118, 75, 162, 1) 100%);
+    --file-icon-json: linear-gradient(135deg, rgba(240, 147, 251, 1) 0%, rgba(245, 87, 108, 1) 100%);
+    --file-icon-pdf: linear-gradient(135deg, rgba(79, 172, 254, 1) 0%, rgba(0, 242, 254, 1) 100%);
+    --file-icon-video: linear-gradient(135deg, rgba(67, 233, 123, 1) 0%, rgba(56, 249, 215, 1) 100%);
+    --file-icon-default: linear-gradient(135deg, rgba(250, 112, 154, 1) 0%, rgba(254, 225, 64, 1) 100%);
+    
+    /* 拖拽预览颜色 */
+    --drag-preview-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+    --drag-preview-count-bg: rgba(255, 255, 255, 0.2);
+    
+    /* 其他颜色 */
+    --file-item-hover-bg: rgba(255, 255, 255, 0.1);
+    --tag-bg: rgba(102, 126, 234, 0.1);
+    --info-item-border: rgba(0, 0, 0, 0.05);
+    --input-focus-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+    --new-product-hover-bg: rgba(102, 126, 234, 0.1);
+    
+    /* 阴影和效果颜色 */
+    --drop-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --text-shadow-small: 0 1px 4px rgba(0, 0, 0, 0.3);
+    --error-bg: rgba(231, 76, 60, 0.1);
+    --error-color: rgba(231, 76, 60, 1);
+    --error-bg-hover: rgba(231, 76, 60, 0.2);
+    --selection-bg-light: rgba(102, 126, 234, 0.3);
+    --selection-bg-medium: rgba(102, 126, 234, 0.5);
+}

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>韩立插件弹窗测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            margin: 0;
+            padding: 40px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #ff6b35;
+            margin-bottom: 30px;
+        }
+        .test-button {
+            background: #4a9eff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: background 0.2s ease;
+        }
+        .test-button:hover {
+            background: #3a8eef;
+        }
+        .description {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>韩立插件弹窗测试页面</h1>
+        
+        <div class="description">
+            <h3>功能说明：</h3>
+            <p>这个页面用于测试韩立插件的提示弹窗功能。当 hanli-app 未启动时，插件会显示一个美观的提示弹窗。</p>
+            
+            <h3>测试方法：</h3>
+            <ol>
+                <li>确保 hanli-app 没有运行</li>
+                <li>点击下面的"测试弹窗"按钮</li>
+                <li>观察弹窗的样式和交互效果</li>
+            </ol>
+        </div>
+
+        <button class="test-button" onclick="testModal()">测试弹窗</button>
+        <button class="test-button" onclick="testCollection()">测试采集功能</button>
+    </div>
+
+    <script>
+        // 复制 content.js 中的弹窗创建函数
+        function createAppNotRunningModal() {
+            // 检查是否已存在弹窗
+            if (document.getElementById('hanli-app-modal')) {
+                return;
+            }
+
+            const modal = document.createElement('div');
+            modal.id = 'hanli-app-modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.6);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10001;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            `;
+
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: #2d2d2d;
+                border-radius: 12px;
+                padding: 32px;
+                max-width: 400px;
+                width: 90%;
+                text-align: center;
+                color: #ffffff;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+                position: relative;
+            `;
+
+            // 图标区域
+            const iconContainer = document.createElement('div');
+            iconContainer.style.cssText = `
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin-bottom: 24px;
+                position: relative;
+            `;
+
+            const mainIcon = document.createElement('div');
+            mainIcon.style.cssText = `
+                width: 64px;
+                height: 64px;
+                border: 2px dashed #666;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                position: relative;
+            `;
+
+            // 创建应用图标（简化的韩立图标）
+            const appIcon = document.createElement('div');
+            appIcon.style.cssText = `
+                width: 40px;
+                height: 40px;
+                background: linear-gradient(135deg, #ff6b35, #f7931e);
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+                font-size: 18px;
+            `;
+            appIcon.textContent = '韩';
+
+            // 警告图标
+            const warningIcon = document.createElement('div');
+            warningIcon.style.cssText = `
+                position: absolute;
+                bottom: -2px;
+                right: -2px;
+                width: 20px;
+                height: 20px;
+                background: #ffa500;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 12px;
+                font-weight: bold;
+            `;
+            warningIcon.textContent = '!';
+
+            mainIcon.appendChild(appIcon);
+            mainIcon.appendChild(warningIcon);
+            iconContainer.appendChild(mainIcon);
+
+            // 标题
+            const title = document.createElement('h2');
+            title.style.cssText = `
+                margin: 0 0 16px 0;
+                font-size: 20px;
+                font-weight: bold;
+                color: #ffffff;
+            `;
+            title.textContent = '韩立客户端尚未启动';
+
+            // 内容
+            const content = document.createElement('div');
+            content.style.cssText = `
+                margin-bottom: 24px;
+                line-height: 1.5;
+                color: #cccccc;
+            `;
+
+            const line1 = document.createElement('div');
+            line1.style.cssText = 'margin-bottom: 8px;';
+            line1.textContent = '您需要启动韩立客户端才能保存商品数据。';
+
+            const line2 = document.createElement('div');
+            line2.style.cssText = 'margin-bottom: 8px;';
+            line2.textContent = '如果客户端已经打开但仍然无法连接，';
+
+            const line3 = document.createElement('div');
+            const helpLink = document.createElement('span');
+            helpLink.style.cssText = `
+                color: #4a9eff;
+                text-decoration: underline;
+                cursor: pointer;
+            `;
+            helpLink.textContent = '点击这里';
+            helpLink.addEventListener('click', () => {
+                alert('请检查：\n1. 韩立客户端是否正在运行\n2. 端口3001是否被占用\n3. 防火墙是否阻止了连接');
+            });
+
+            const line3Text = document.createElement('span');
+            line3Text.textContent = ' 查看解决方案。';
+
+            line3.appendChild(helpLink);
+            line3.appendChild(line3Text);
+
+            content.appendChild(line1);
+            content.appendChild(line2);
+            content.appendChild(line3);
+
+            // 按钮区域
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.cssText = `
+                display: flex;
+                gap: 12px;
+                justify-content: center;
+            `;
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.style.cssText = `
+                padding: 12px 24px;
+                background: transparent;
+                border: 1px solid #555;
+                border-radius: 6px;
+                color: #ffffff;
+                cursor: pointer;
+                font-size: 14px;
+                transition: all 0.2s ease;
+            `;
+            cancelBtn.textContent = '取消';
+            cancelBtn.addEventListener('mouseenter', () => {
+                cancelBtn.style.background = '#444';
+            });
+            cancelBtn.addEventListener('mouseleave', () => {
+                cancelBtn.style.background = 'transparent';
+            });
+            cancelBtn.addEventListener('click', () => {
+                modal.remove();
+            });
+
+            const openAppBtn = document.createElement('button');
+            openAppBtn.style.cssText = `
+                padding: 12px 24px;
+                background: #4a9eff;
+                border: none;
+                border-radius: 6px;
+                color: #ffffff;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 500;
+                transition: all 0.2s ease;
+            `;
+            openAppBtn.textContent = '启动韩立客户端';
+            openAppBtn.addEventListener('mouseenter', () => {
+                openAppBtn.style.background = '#3a8eef';
+            });
+            openAppBtn.addEventListener('mouseleave', () => {
+                openAppBtn.style.background = '#4a9eff';
+            });
+            openAppBtn.addEventListener('click', () => {
+                // 尝试打开韩立客户端
+                window.open('hanli://open', '_blank');
+                modal.remove();
+            });
+
+            buttonContainer.appendChild(cancelBtn);
+            buttonContainer.appendChild(openAppBtn);
+
+            modalContent.appendChild(iconContainer);
+            modalContent.appendChild(title);
+            modalContent.appendChild(content);
+            modalContent.appendChild(buttonContainer);
+
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+
+            // 点击背景关闭弹窗
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+
+            // ESC键关闭弹窗
+            const handleKeyDown = (e) => {
+                if (e.key === 'Escape') {
+                    modal.remove();
+                    document.removeEventListener('keydown', handleKeyDown);
+                }
+            };
+            document.addEventListener('keydown', handleKeyDown);
+        }
+
+        function testModal() {
+            createAppNotRunningModal();
+        }
+
+        function testCollection() {
+            // 模拟采集功能，会触发弹窗
+            alert('模拟采集功能：hanli-app 未启动，将显示提示弹窗');
+            createAppNotRunningModal();
+        }
+    </script>
+</body>
+</html>

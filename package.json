@@ -1,0 +1,49 @@
+{
+  "name": "hanli-master",
+  "version": "1.0.0",
+  "description": "韩立商品数据管理系统 - 包含桌面应用和Chrome插件",
+  "main": "hanli-app/main.js",
+  "scripts": {
+    "start": "cd hanli-app && npm start",
+    "dev": "cd hanli-app && npm run dev",
+    "build": "cd hanli-app && npm run build",
+    "build:mac": "cd hanli-app && npm run build:mac",
+    "build:win": "cd hanli-app && npm run build:win",
+    "build:linux": "cd hanli-app && npm run build:linux",
+    "install:app": "cd hanli-app && npm install",
+    "install:plugin": "cd hanli-plugin && npm install",
+    "install:all": "npm run install:app && npm run install:plugin",
+    "clean": "rm -rf hanli-app/node_modules hanli-plugin/node_modules hanli-app/dist",
+    "test": "echo 'No tests specified'",
+    "lint": "echo 'No linting configured'"
+  },
+  "keywords": [
+    "electron",
+    "chrome-extension",
+    "商品管理",
+    "数据采集",
+    "temu",
+    "电商",
+    "数据监控"
+  ],
+  "author": "Hanli Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/hanli-master.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/hanli-master/issues"
+  },
+  "homepage": "https://github.com/your-username/hanli-master#readme",
+  "workspaces": [
+    "hanli-app",
+    "hanli-plugin"
+  ],
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "devDependencies": {},
+  "dependencies": {}
+}
