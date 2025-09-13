@@ -560,7 +560,85 @@
         console.log('采集按钮元素:', collectButton);
         console.log('==================');
     };
+
+    // 调试函数：测试销量数值提取
+    window.testSoldExtraction = function() {
+        console.log('=== 销量数值提取测试 ===');
+        const testCases = [
+            '37',
+            '3.7k',
+            '37k',
+            '3.7万',
+            '37万',
+            '3.7w',
+            '37W',
+            '已售37件',
+            '销量3.7k+',
+            'Sold 37',
+            '3.7K sold',
+            '37万+',
+            '3.7万+',
+            'invalid',
+            '',
+            null,
+            undefined
+        ];
+        
+        testCases.forEach(testCase => {
+            const result = extractSoldNumeric(testCase);
+            console.log(`"${testCase}" -> ${result}`);
+        });
+        console.log('==================');
+    };
     
+    // 生成JSON文件
+    async function generateJsonFiles(goodsInfoData, monitoringData, mediaData) {
+        try {
+            console.log('开始生成JSON文件...');
+            
+            const goodsId = goodsInfoData.goodsId;
+            const collectTime = goodsInfoData.collectTime;
+            
+            // 生成JSON数据
+            const goodsInfoJson = JSON.stringify(goodsInfoData, null, 2);
+            const monitoringJson = JSON.stringify(monitoringData, null, 2);
+            const mediaDataJson = JSON.stringify(mediaData, null, 2);
+            
+            // 通过API发送JSON数据到App，让App保存到数据目录
+            const jsonData = {
+                goodsId: goodsId,
+                collectTime: collectTime,
+                goodsInfo: goodsInfoJson,
+                monitoring: monitoringJson,
+                mediaData: mediaDataJson
+            };
+            
+            const response = await fetch('http://localhost:3001/api/save-json-files', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(jsonData)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`保存JSON文件失败: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(`保存JSON文件失败: ${result.error}`);
+            }
+            
+            console.log('JSON文件保存完成:', result.files);
+            return result.files;
+            
+        } catch (error) {
+            console.error('生成JSON文件失败:', error);
+            throw error;
+        }
+    }
+
     // 发送数据到hanli-app
     async function sendToHanliApp(data) {
         try {
@@ -617,6 +695,170 @@
             .map(item => item?.[key]) // 取字段
             .filter(v => v)           // 过滤掉 undefined / null / 空字符串
             .join(separator);
+    }
+
+    // 提取销量数值的函数
+    function extractSoldNumeric(soldText) {
+        if (!soldText || typeof soldText !== 'string') {
+            return 0;
+        }
+        
+        // 移除所有非数字、小数点、k、K、万、w、W 的字符
+        const cleaned = soldText.replace(/[^\d.kKw万]/g, '');
+        
+        if (!cleaned) {
+            return 0;
+        }
+        
+        // 处理各种格式
+        if (cleaned.includes('万') || cleaned.includes('w') || cleaned.includes('W')) {
+            // 处理万为单位的情况，如 "3.7万"、"37万"
+            const match = cleaned.match(/(\d+(?:\.\d+)?)[万wW]/);
+            if (match) {
+                return Math.round(parseFloat(match[1]) * 10000);
+            }
+        } else if (cleaned.includes('k') || cleaned.includes('K')) {
+            // 处理k为单位的情况，如 "3.7k"、"37k"
+            const match = cleaned.match(/(\d+(?:\.\d+)?)[kK]/);
+            if (match) {
+                return Math.round(parseFloat(match[1]) * 1000);
+            }
+        } else {
+            // 处理纯数字情况，如 "37"、"3700"
+            const match = cleaned.match(/(\d+(?:\.\d+)?)/);
+            if (match) {
+                return Math.round(parseFloat(match[1]));
+            }
+        }
+        
+        return 0;
+    }
+
+    // 提取店铺销量数值的函数
+    function extractStoreSoldNumeric(storeSoldText) {
+        if (!storeSoldText || typeof storeSoldText !== 'string') {
+            return 0;
+        }
+        
+        // 移除所有非数字、小数点、k、K、万、w、W 的字符
+        const cleaned = storeSoldText.replace(/[^\d.kKw万]/g, '');
+        
+        if (!cleaned) {
+            return 0;
+        }
+        
+        // 处理各种格式
+        if (cleaned.includes('万') || cleaned.includes('w') || cleaned.includes('W')) {
+            // 处理万为单位的情况，如 "7.8万"、"78万"
+            const match = cleaned.match(/(\d+(?:\.\d+)?)[万wW]/);
+            if (match) {
+                return Math.round(parseFloat(match[1]) * 10000);
+            }
+        } else if (cleaned.includes('k') || cleaned.includes('K')) {
+            // 处理k为单位的情况，如 "7.8k"、"78k"
+            const match = cleaned.match(/(\d+(?:\.\d+)?)[kK]/);
+            if (match) {
+                return Math.round(parseFloat(match[1]) * 1000);
+            }
+        } else {
+            // 处理纯数字情况，如 "78"、"7800"
+            const match = cleaned.match(/(\d+(?:\.\d+)?)/);
+            if (match) {
+                return Math.round(parseFloat(match[1]));
+            }
+        }
+        
+        return 0;
+    }
+
+    // 提取店铺粉丝数数值的函数
+    function extractStoreFollowersNumeric(followersText) {
+        if (!followersText || typeof followersText !== 'string') {
+            return 0;
+        }
+        
+        // 移除所有非数字、小数点、k、K、万、w、W 的字符
+        const cleaned = followersText.replace(/[^\d.kKw万]/g, '');
+        
+        if (!cleaned) {
+            return 0;
+        }
+        
+        // 处理各种格式
+        if (cleaned.includes('万') || cleaned.includes('w') || cleaned.includes('W')) {
+            // 处理万为单位的情况，如 "4.8万"、"48万"
+            const match = cleaned.match(/(\d+(?:\.\d+)?)[万wW]/);
+            if (match) {
+                return Math.round(parseFloat(match[1]) * 10000);
+            }
+        } else if (cleaned.includes('k') || cleaned.includes('K')) {
+            // 处理k为单位的情况，如 "4.8k"、"48k"
+            const match = cleaned.match(/(\d+(?:\.\d+)?)[kK]/);
+            if (match) {
+                return Math.round(parseFloat(match[1]) * 1000);
+            }
+        } else {
+            // 处理纯数字情况，如 "483"、"4830"
+            const match = cleaned.match(/(\d+(?:\.\d+)?)/);
+            if (match) {
+                return Math.round(parseFloat(match[1]));
+            }
+        }
+        
+        return 0;
+    }
+
+    // 提取店铺商品数数值的函数
+    function extractStoreItemsNumeric(itemsText) {
+        if (!itemsText || typeof itemsText !== 'string') {
+            return 0;
+        }
+        
+        // 移除所有非数字、小数点、k、K、万、w、W 的字符
+        const cleaned = itemsText.replace(/[^\d.kKw万]/g, '');
+        
+        if (!cleaned) {
+            return 0;
+        }
+        
+        // 处理各种格式
+        if (cleaned.includes('万') || cleaned.includes('w') || cleaned.includes('W')) {
+            // 处理万为单位的情况，如 "1.2万"、"12万"
+            const match = cleaned.match(/(\d+(?:\.\d+)?)[万wW]/);
+            if (match) {
+                return Math.round(parseFloat(match[1]) * 10000);
+            }
+        } else if (cleaned.includes('k') || cleaned.includes('K')) {
+            // 处理k为单位的情况，如 "1.2k"、"12k"
+            const match = cleaned.match(/(\d+(?:\.\d+)?)[kK]/);
+            if (match) {
+                return Math.round(parseFloat(match[1]) * 1000);
+            }
+        } else {
+            // 处理纯数字情况，如 "5"、"50"
+            const match = cleaned.match(/(\d+(?:\.\d+)?)/);
+            if (match) {
+                return Math.round(parseFloat(match[1]));
+            }
+        }
+        
+        return 0;
+    }
+
+    // 提取店铺开始年份数值的函数
+    function extractStoreStartYearNumeric(startYearText) {
+        if (!startYearText || typeof startYearText !== 'string') {
+            return 0;
+        }
+        
+        // 提取年份数字，如 "店铺于 1 年前加入 Temu" -> 1
+        const yearMatch = startYearText.match(/(\d+)\s*年/);
+        if (yearMatch) {
+            return parseInt(yearMatch[1]);
+        }
+        
+        // 如果没有找到年份信息，返回0
+        return 0;
     }
 
 
@@ -864,7 +1106,8 @@
         let goodsTitleEn = rawData?.store?.goods?.goodsName || "";
         let itemId = rawData?.store?.goods?.itemId || "";
         let goodsCat3 = goodsTitleEn
-        let goodsSold = rawData?.store?.goods?.sideSalesTip || "";
+        let goodsSoldRaw = rawData?.store?.goods?.sideSalesTip || "";
+        let goodsSold = extractSoldNumeric(goodsSoldRaw);
         let goodsPropertys = rawData?.store?.goods?.goodsProperty || [];
         let skuInfoList = rawData?.store?.sku || [];
         let skuList = [];
@@ -930,77 +1173,80 @@
         console.log('去重后总图片数量:', allImages.length);
         console.log('所有图片URLs:', allImages);
 
-        // 检测所有图片的尺寸（简化版，只做基础收集）
-        let imageInfoList = await detectAndFilterImages(allImages, {
-            minWidth: 50,   // 最小尺寸要求很低，确保获取所有图片
-            minHeight: 50,
-            maxWidth: 10000, // 最大尺寸要求很高
-            maxHeight: 10000,
+        // 在插件端进行图片筛选
+        console.log('开始进行图片筛选...');
+        const allImageInfo = await detectAndFilterImages(allImages, {
+            minWidth: 0,         // 不设置最小尺寸限制
+            minHeight: 0,        // 不设置最小尺寸限制
+            maxWidth: 10000,     // 增加最大尺寸限制
+            maxHeight: 10000,    // 增加最大尺寸限制
             targetWidth: 800,
             targetHeight: 800,
-            tolerance: 100
+            tolerance: 50,
+            maxCount: 100        // 增加最大数量限制
         });
-        
-        console.log('所有图片检测结果:', imageInfoList);
-        
-        // 按图片大小排序（面积从大到小）
-        imageInfoList.sort((a, b) => {
-            const areaA = a.width * a.height;
-            const areaB = b.width * b.height;
-            return areaB - areaA; // 降序排列
-        });
-        
-        console.log('按大小排序后的图片:', imageInfoList.map(img => ({
-            url: img.url,
-            size: `${img.width}×${img.height}`,
-            area: img.width * img.height
-        })));
-        
-        // 简化筛选：只选择较大的图片，具体过滤留给hanli-app处理
-        let filteredImages = imageInfoList
-            .filter(img => img.width >= 200 && img.height >= 200) // 基础尺寸过滤
-            .slice(0, 20) // 最多选择20张图片
-            .map(img => img.url);
-        
-        console.log(`插件端筛选后图片数量: ${filteredImages.length}`);
-        console.log('插件端筛选条件: 最小200x200px, 最多20张');
-        
-            
-        console.log('筛选后图片数量:', filteredImages.length);
-        console.log('筛选后图片URLs:', filteredImages);
+        console.log(`检测到图片数量: ${allImageInfo.length}`);
         
         // 处理视频数据
         console.log('=== 视频采集调试信息 ===');
         console.log('页面收集到的视频数量:', pageVideos.length);
         console.log('所有视频URLs:', pageVideos);
         
-        // 检测视频信息并筛选
-        let videoInfoList = [];
-        if (pageVideos.length > 0) {
-            videoInfoList = await detectAndFilterVideos(pageVideos, {
-                minDuration: 1,      // 最小时长1秒
-                maxDuration: 300,    // 最大时长5分钟
-                minSize: 1024 * 1024, // 最小1MB
-                maxSize: 500 * 1024 * 1024, // 最大500MB
-                supportedFormats: ['mp4', 'webm', 'ogg', 'avi', 'mov']
+        // 检测视频（不进行筛选，保留所有视频）
+        const allVideoInfo = await detectAndFilterVideos(pageVideos, {
+            minDuration: 0,      // 不设置最小时长限制
+            maxDuration: 3600,   // 最大时长1小时
+            minSize: 0,          // 不设置最小文件大小限制
+            maxSize: 1024 * 1024 * 1024, // 最大1GB
+            supportedFormats: ['mp4', 'webm', 'ogg', 'avi', 'mov', 'mkv', 'flv', 'wmv', 'm4v', '3gp'],
+            maxCount: 50         // 增加最大数量限制
+        });
+        console.log(`检测到视频数量: ${allVideoInfo.length}`);
+        
+        // 生成媒体数据（包含所有图片和视频）
+        const mediaData = {
+            goodsId: goodsId,
+            media: []
+        };
+
+        // 添加所有图片
+        allImageInfo.forEach(img => {
+            mediaData.media.push({
+                url: img.url,
+                width: img.width,
+                height: img.height,
+                isTargetSize: img.isTargetSize || false,
+                type: 'image',
+                path: null // 初始为null，缓存后更新
             });
-        }
-        
-        // 筛选符合要求的视频
-        let filteredVideos = videoInfoList
-            .filter(video => video.isDurationValid && video.isSizeValid)
-            .map(video => video.url);
-        
-        console.log('筛选后视频数量:', filteredVideos.length);
-        console.log('筛选后视频URLs:', filteredVideos);
+        });
+
+        // 添加所有视频
+        allVideoInfo.forEach(video => {
+            mediaData.media.push({
+                url: video.url,
+                width: video.width || 0,
+                height: video.height || 0,
+                isTargetSize: true, // 视频不进行尺寸过滤
+                type: 'video',
+                path: null // 初始为null，缓存后更新
+            });
+        });
+
+        console.log('插件生成的媒体数据:', mediaData);
         let mallData = rawData?.store?.moduleMap?.mallModule?.data?.mallData || {};
         let storeId = mallData?.mallId || '';
         let storeName = mallData?.mallName || '';
         let storeRating = mallData?.mallStar || '';
-        let storeSold = (mallData?.goodsSalesNumUnit || []).join(' ');
-        let storeFollowers = (mallData?.followerNumUnit || []).join(' ');
-        let storeltemsNum = (mallData?.goodsNumUnit || []).join(' ');
-        let storeStartYear = joinObjectField((mallData?.mallTags || []), 'text', '|');
+        let storeSoldRaw = (mallData?.goodsSalesNumUnit || []).join(' ');
+        let storeFollowersRaw = (mallData?.followerNumUnit || []).join(' ');
+        let storeltemsNumRaw = (mallData?.goodsNumUnit || []).join(' ');
+        let storeStartYearRaw = joinObjectField((mallData?.mallTags || []), 'text', '|');
+        
+        let storeSold = extractStoreSoldNumeric(storeSoldRaw);
+        let storeFollowers = extractStoreFollowersNumeric(storeFollowersRaw);
+        let storeltemsNum = extractStoreItemsNumeric(storeltemsNumRaw);
+        let storeStartYear = extractStoreStartYearNumeric(storeStartYearRaw);
         let goodsPropertyInfo = {};
         for (let goodsProperty of goodsPropertys) {
             let goodsDescKey = goodsProperty?.["key"] || '';
@@ -1026,10 +1272,7 @@
             skuList,
             goodsPropertyInfo,
             collectTime,
-            filteredImages, // 筛选后的图片URL列表
-            imageInfoList, // 包含详细尺寸信息的图片列表
-            filteredVideos, // 筛选后的视频URL列表
-            videoInfoList // 包含详细信息的视频列表
+            collectUrl: window.location.href // 添加采集链接
         };
 
         // 商品监控数据
@@ -1058,10 +1301,13 @@
             }
         };
 
-        // 发送数据到hanli-app
+        // 生成JSON文件
+        const jsonFiles = await generateJsonFiles(goodsInfoData, monitoringData, mediaData);
+        
+        // 发送数据到hanli-app，包含JSON文件路径
         sendToHanliApp({
-            goodsInfoData,
-            monitoringData
+            goodsId: goodsId,
+            jsonFiles: jsonFiles
         });
     }
 

@@ -328,6 +328,7 @@ class DetailColumn {
         this.goodsBasicInfo = new GoodsBasicInfo(app);
         this.imageGallery = new ImageGallery(app);
         this.monitoringCharts = new MonitoringChartsModal(app);
+        this.imageCardManager = new ImageCardManager(app);
         this.init();
     }
 
@@ -361,6 +362,11 @@ class DetailColumn {
             // 监控数据图表区域
             if (isMonitoringGoods || isMonitoringStores) {
                 html += this.monitoringCharts.render(itemData, itemType);
+            }
+            
+            // 商品信息卡片区域（仅对监控商品显示）
+            if (isMonitoringGoods && itemData['goods_data.json']) {
+                html += this.renderMonitoringGoodsInfoCard(itemData['goods_data.json']);
             }
             
             console.log('渲染图片区域...');
@@ -444,9 +450,9 @@ class DetailColumn {
             this.bindComponentEvents(detailContent);
             
             
-            console.log('更新框选状态...');
-            // 更新框选状态
-            this.updateSelectionState();
+            console.log('初始化图片卡片管理器...');
+            // 初始化图片卡片管理器
+            this.imageCardManager.init(detailContent);
             
             console.log('详情内容渲染完成');
             
@@ -589,50 +595,13 @@ class DetailColumn {
     }
 
     // 显示图片预览
-    showImagePreview(imageData, fileName) {
-        const detailContent = document.getElementById('detailContent');
-        if (!detailContent) return;
-        
-        const existingPreview = detailContent.querySelector('.image-preview-modal');
-        
-        if (existingPreview) {
-            existingPreview.remove();
+    showImagePreview(imageData, fileName, goodsId = null, previewData = null) {
+        // 直接使用GoodsPreviewModal进行预览
+        if (this.goodsPreviewModal && previewData) {
+            this.goodsPreviewModal.show(previewData);
+        } else {
+            console.error('商品预览组件未初始化或缺少预览数据');
         }
-        
-        const modal = document.createElement('div');
-        modal.className = 'image-preview-modal';
-        modal.innerHTML = `
-            <div class="image-preview-overlay">
-                <div class="image-preview-container">
-                    <div class="image-preview-header">
-                        <h4>${fileName}</h4>
-                        <button class="btn-icon" id="closeImagePreview">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="image-preview-content">
-                        <img src="${imageData}" alt="${fileName}" />
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        detailContent.appendChild(modal);
-        
-        // 绑定关闭事件
-        modal.querySelector('#closeImagePreview').addEventListener('click', () => {
-            modal.remove();
-        });
-        
-        // 点击遮罩层关闭
-        modal.querySelector('.image-preview-overlay').addEventListener('click', (e) => {
-            if (e.target === e.currentTarget) {
-                modal.remove();
-            }
-        });
     }
 
     // 清空详情内容
@@ -679,300 +648,148 @@ class DetailColumn {
         }
     }
 
-    // 处理图片框选
-    handleImageSelection(e, item) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const isCtrlSelect = e.ctrlKey || e.metaKey;
-        const isShiftSelect = e.shiftKey;
-        
-        if (isShiftSelect) {
-            // Shift 键范围选择
-            this.handleRangeSelection(item);
-        } else if (isCtrlSelect) {
-            // Ctrl/Cmd 键多选：切换当前项选中状态
-            item.classList.toggle('selected');
-        } else {
-            // 单选模式：清除所有选中状态，选中当前项
-            document.querySelectorAll('.file-preview-item.selected').forEach(selectedItem => {
-                selectedItem.classList.remove('selected');
-            });
-            item.classList.add('selected');
-        }
-        
-        // 更新框选状态
-        this.updateSelectionState();
-    }
 
 
-    // 绑定添加图片事件
-    bindAddImageEvents(addImageBtn) {
-        // 点击添加图片
-        addImageBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            this.app.addImage();
-        });
 
-        // 拖拽文件到添加按钮
-        addImageBtn.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            addImageBtn.classList.add('drag-over');
-        });
-
-        addImageBtn.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            addImageBtn.classList.remove('drag-over');
-        });
-
-        addImageBtn.addEventListener('drop', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            addImageBtn.classList.remove('drag-over');
-            
-            const files = Array.from(e.dataTransfer.files);
-            if (files.length > 0) {
-                this.app.handleImageUpload(files);
-            }
-        });
-    }
-
-    // 处理删除文件
-    async handleDeleteFile(fileName) {
-        if (!this.app.selectedItem) {
-            console.error('没有选中的项目');
-            return;
-        }
-
-        // 显示确认对话框
-        const confirmed = confirm(`确定要删除文件 "${fileName}" 吗？\n\n此操作不可撤销。`);
-        if (!confirmed) {
-            return;
-        }
-
-        try {
-            const filePath = `${this.app.selectedItem.path}/${fileName}`;
-            const result = await window.electronAPI.deleteFile(filePath);
-            
-            if (result.success) {
-                this.app.updateStatus(`文件 "${fileName}" 已删除`);
-                // 重新加载详情内容
-                await this.app.loadItemDetail(this.app.selectedItem.path, this.app.selectedItem.name);
-            } else {
-                throw new Error(result.error);
-            }
-        } catch (error) {
-            console.error('删除文件失败:', error);
-            this.app.updateStatus('删除文件失败: ' + error.message);
-        }
-    }
     
-    // 处理范围选择（Shift 键）
-    handleRangeSelection(targetItem) {
-        const allItems = Array.from(document.querySelectorAll('.file-preview-item'));
-        const selectedItems = document.querySelectorAll('.file-preview-item.selected');
-        
-        if (selectedItems.length === 0) {
-            // 如果没有已选中的项，只选中当前项
-            targetItem.classList.add('selected');
-            return;
-        }
-        
-        // 找到最后选中的项作为起始点
-        const lastSelected = Array.from(selectedItems).pop();
-        const startIndex = allItems.indexOf(lastSelected);
-        const endIndex = allItems.indexOf(targetItem);
-        
-        if (startIndex === -1 || endIndex === -1) return;
-        
-        // 选择范围内的所有项
-        const start = Math.min(startIndex, endIndex);
-        const end = Math.max(startIndex, endIndex);
-        
-        for (let i = start; i <= end; i++) {
-            allItems[i].classList.add('selected');
-        }
-    }
-    
-    // 更新框选状态
-    updateSelectionState() {
-        const selectedItems = document.querySelectorAll('.file-preview-item.selected');
-        const allImageItems = document.querySelectorAll('.file-preview-item');
-        
-        // 为所有图片项添加可框选状态
-        allImageItems.forEach(item => {
-            item.classList.add('selectable');
-        });
-        
-        // 如果有选中的项，显示选中数量
-        if (selectedItems.length > 0) {
-            console.log(`已选中 ${selectedItems.length} 张图片`);
-        }
-    }
-    
-    // 清除所有选中状态
+    // 清除所有选中状态（委托给ImageCardManager）
     clearSelection() {
-        document.querySelectorAll('.file-preview-item.selected').forEach(item => {
-            item.classList.remove('selected');
-        });
-        this.updateSelectionState();
+        this.imageCardManager.clearSelection();
     }
     
-    // 添加框选拖拽功能
-    addSelectionBoxFeature(container) {
-        const filePreviewGrid = container.querySelector('.file-preview-grid');
-        if (!filePreviewGrid) return;
-        
-        // 找到包含图片的详情卡片区域
-        const detailSectionCard = filePreviewGrid.closest('.detail-section-card');
-        if (!detailSectionCard) return;
-        
-        let isSelecting = false;
-        let startX, startY, endX, endY;
-        let selectionBox = null;
-        
-        // 创建选择框元素
-        const createSelectionBox = () => {
-            const box = document.createElement('div');
-            box.className = 'selection-box';
-            detailSectionCard.appendChild(box);
-            return box;
-        };
-        
-        // 更新选择框位置
-        const updateSelectionBox = (box, startX, startY, endX, endY) => {
-            const left = Math.min(startX, endX);
-            const top = Math.min(startY, endY);
-            const width = Math.abs(endX - startX);
-            const height = Math.abs(endY - startY);
-            
-            box.style.left = left + 'px';
-            box.style.top = top + 'px';
-            box.style.width = width + 'px';
-            box.style.height = height + 'px';
-            box.style.display = 'block';
-        };
-        
-        // 获取选择框内的图片项
-        const getItemsInSelection = (startX, startY, endX, endY) => {
-            const left = Math.min(startX, endX);
-            const top = Math.min(startY, endY);
-            const right = Math.max(startX, endX);
-            const bottom = Math.max(startY, endY);
-            
-            const items = filePreviewGrid.querySelectorAll('.file-preview-item');
-            const selectedItems = [];
-            
-            items.forEach(item => {
-                const rect = item.getBoundingClientRect();
-                const cardRect = detailSectionCard.getBoundingClientRect();
-                
-                const itemLeft = rect.left - cardRect.left;
-                const itemTop = rect.top - cardRect.top;
-                const itemRight = itemLeft + rect.width;
-                const itemBottom = itemTop + rect.height;
-                
-                // 检查是否有重叠
-                if (itemLeft < right && itemRight > left && itemTop < bottom && itemBottom > top) {
-                    selectedItems.push(item);
-                }
-            });
-            
-            return selectedItems;
-        };
-        
-        // 鼠标按下事件 - 在整个详情卡片区域监听
-        detailSectionCard.addEventListener('mousedown', (e) => {
-            // 排除图片和视频元素，以及它们的子元素
-            if (e.target.closest('.file-preview-image, .file-preview-video')) {
-                return;
-            }
-            
-            e.preventDefault();
-            isSelecting = true;
-            
-            const rect = detailSectionCard.getBoundingClientRect();
-            startX = e.clientX - rect.left;
-            startY = e.clientY - rect.top;
-            
-            // 检查是否按住Shift键
-            const isShiftSelect = e.shiftKey;
-            
-            // 如果不是Shift框选，清除之前的选择
-            if (!isShiftSelect) {
-                document.querySelectorAll('.file-preview-item.selected').forEach(item => {
-                    item.classList.remove('selected');
+
+    // 渲染监控商品信息卡片
+    renderMonitoringGoodsInfoCard(monitoringData) {
+        if (!monitoringData) {
+            return '';
+        }
+
+        // 格式化采集时间
+        const formatCollectTime = (collectTime) => {
+            if (!collectTime) return '未知时间';
+            try {
+                const date = new Date(collectTime);
+                return date.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
                 });
+            } catch (error) {
+                return collectTime;
             }
+        };
+
+        // 生成产品来源信息
+        const generateProductSource = (data) => {
+            const collectTime = formatCollectTime(data.collectTime);
+            const collectUrl = data.collectUrl;
             
-            detailSectionCard.classList.add('selecting');
-            filePreviewGrid.classList.add('selecting');
-            selectionBox = createSelectionBox();
-        });
-        
-        // 鼠标移动事件
-        document.addEventListener('mousemove', (e) => {
-            if (!isSelecting || !selectionBox) return;
-            
-            const rect = detailSectionCard.getBoundingClientRect();
-            endX = e.clientX - rect.left;
-            endY = e.clientY - rect.top;
-            
-            updateSelectionBox(selectionBox, startX, startY, endX, endY);
-        });
-        
-        // 鼠标释放事件
-        document.addEventListener('mouseup', (e) => {
-            if (!isSelecting || !selectionBox) return;
-            
-            isSelecting = false;
-            detailSectionCard.classList.remove('selecting');
-            filePreviewGrid.classList.remove('selecting');
-            
-            // 获取选择框内的图片
-            const selectedItems = getItemsInSelection(startX, startY, endX, endY);
-            
-            // 检查是否按住Shift键
-            const isShiftSelect = e.shiftKey;
-            
-            if (isShiftSelect) {
-                // Shift框选：反向选择（已选中的取消选择，未选中的添加选择）
-                selectedItems.forEach(item => {
-                    item.classList.toggle('selected');
-                });
+            if (collectTime && collectUrl) {
+                return `由 系统 于 ${collectTime} 从 <a href="${collectUrl}" target="_blank" class="collect-link" rel="noopener noreferrer">采集链接</a> 采集`;
+            } else if (collectTime) {
+                return `由 系统 于 ${collectTime} 采集`;
             } else {
-                // 普通框选：直接选择框内的所有图片
-                selectedItems.forEach(item => {
-                    item.classList.add('selected');
-                });
+                return '由 系统 采集';
             }
-            
-            // 移除选择框
-            if (selectionBox && selectionBox.parentNode) {
-                selectionBox.parentNode.removeChild(selectionBox);
-            }
-            selectionBox = null;
-            
-            // 更新选择状态
-            this.updateSelectionState();
-        });
-        
-        // 鼠标离开事件
-        filePreviewGrid.addEventListener('mouseleave', () => {
-            if (isSelecting && selectionBox) {
-                isSelecting = false;
-                detailSectionCard.classList.remove('selecting');
-                filePreviewGrid.classList.remove('selecting');
-                
-                if (selectionBox && selectionBox.parentNode) {
-                    selectionBox.parentNode.removeChild(selectionBox);
-                }
-                selectionBox = null;
-            }
-        });
+        };
+
+        return `
+            <div class="detail-section">
+                <h3 class="detail-section-title">商品信息</h3>
+                <div class="detail-section-card">
+                    <div class="goods-basic-info">
+                        <div class="basic-info-grid">
+                            <!-- 基本信息 -->
+                            <div class="info-item readonly">
+                                <span class="info-label">商品ID:</span>
+                                <span class="info-value">${monitoringData.goodsId || '未设置'}</span>
+                            </div>
+                            <div class="info-item readonly">
+                                <span class="info-label">上架时间:</span>
+                                <span class="info-value">${monitoringData.listingDate || '未设置'}</span>
+                            </div>
+                            <div class="info-item readonly">
+                                <span class="info-label">采集时间:</span>
+                                <span class="info-value">${formatCollectTime(monitoringData.collectTime)}</span>
+                            </div>
+                            <div class="info-item readonly">
+                                <span class="info-label">商品分类1:</span>
+                                <span class="info-value">${monitoringData.goodsCat1 || '未设置'}</span>
+                            </div>
+                            <div class="info-item readonly">
+                                <span class="info-label">商品分类2:</span>
+                                <span class="info-value">${monitoringData.goodsCat2 || '未设置'}</span>
+                            </div>
+                            <div class="info-item readonly">
+                                <span class="info-label">商品分类3:</span>
+                                <span class="info-value">${monitoringData.goodsCat3 || '未设置'}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- SKU信息 -->
+                        ${monitoringData.skuList && monitoringData.skuList.length > 0 ? `
+                            <div class="info-section">
+                                <h4 class="info-section-title">SKU信息 (${monitoringData.skuList.length}个规格)</h4>
+                                <div class="sku-list">
+                                    ${monitoringData.skuList.map(sku => `
+                                        <div class="sku-item">
+                                            <div class="sku-info">
+                                                <div class="sku-name">${sku.skuName || '未设置'}</div>
+                                                <div class="sku-price">${sku.goodsPromoPrice || '未设置'}</div>
+                                            </div>
+                                            <div class="sku-id">ID: ${sku.skuId || '未设置'}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <!-- 店铺信息 -->
+                        ${monitoringData.storeData ? `
+                            <div class="info-section">
+                                <h4 class="info-section-title">店铺信息</h4>
+                                <div class="basic-info-grid">
+                                    <div class="info-item readonly">
+                                        <span class="info-label">店铺ID:</span>
+                                        <span class="info-value">${monitoringData.storeId || '未设置'}</span>
+                                    </div>
+                                    <div class="info-item readonly">
+                                        <span class="info-label">店铺名称:</span>
+                                        <span class="info-value">${monitoringData.storeData.storeName || '未设置'}</span>
+                                    </div>
+                                    <div class="info-item readonly">
+                                        <span class="info-label">店铺评分:</span>
+                                        <span class="info-value">${monitoringData.storeData.storeRating || '未设置'}</span>
+                                    </div>
+                                    <div class="info-item readonly">
+                                        <span class="info-label">店铺销量:</span>
+                                        <span class="info-value">${monitoringData.storeData.storeSold || '未设置'}</span>
+                                    </div>
+                                    <div class="info-item readonly">
+                                        <span class="info-label">店铺关注者:</span>
+                                        <span class="info-value">${monitoringData.storeData.storeFollowers || '未设置'}</span>
+                                    </div>
+                                    <div class="info-item readonly">
+                                        <span class="info-label">店铺商品数:</span>
+                                        <span class="info-value">${monitoringData.storeData.storeltemsNum || '未设置'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <!-- 产品来源 -->
+                        <div class="info-section">
+                            <h4 class="info-section-title">产品来源</h4>
+                            <div class="product-source">
+                                ${generateProductSource(monitoringData)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
     // 工具方法：格式化文件大小
@@ -982,6 +799,15 @@ class DetailColumn {
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // 显示图片预览
+    showImagePreview(imageData, fileName, goodsId = null, previewData = null) {
+        if (this.app && this.app.showImagePreview) {
+            this.app.showImagePreview(imageData, fileName, goodsId, previewData);
+        } else {
+            console.error('无法显示图片预览：app或showImagePreview方法不可用');
+        }
     }
 }
 
@@ -1939,12 +1765,12 @@ class HanliApp {
     }
 
     // 预览图片
-    async previewImage(filePath) {
+    async previewImage(filePath, goodsId = null, previewData = null) {
         try {
             this.updateStatus('正在加载图片...');
             const result = await window.electronAPI.readImage(filePath);
             if (result.success) {
-                this.detailColumn.showImagePreview(result.data, filePath.split('/').pop());
+                this.detailColumn.showImagePreview(result.data, filePath.split('/').pop(), goodsId, previewData);
                 this.updateStatus('图片预览已显示');
             } else {
                 throw new Error(result.error);
@@ -2655,6 +2481,9 @@ class HanliApp {
 
     // 商品数据导入和预览功能
     initGoodsImport() {
+        console.log('初始化商品数据导入功能');
+        console.log('goodsPreviewModal 实例:', this.goodsPreviewModal);
+        
         // 监听来自主进程的商品数据导入事件
         window.electronAPI.onImportGoodsData((goodsData) => {
             console.log('收到商品数据导入事件:', goodsData);
@@ -2667,40 +2496,57 @@ class HanliApp {
         // 绑定预览标签页切换事件
         this.bindPreviewTabEvents();
         
+        // 测试弹窗是否可用
+        setTimeout(() => {
+            console.log('测试弹窗元素是否存在:', document.getElementById('goodsPreviewModal'));
+            console.log('弹窗实例方法:', typeof this.goodsPreviewModal?.show);
+            
+            // 添加测试按钮（仅用于调试）
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                this.addTestButton();
+            }
+        }, 1000);
     }
     
+    // 添加测试按钮（仅用于调试）
+    addTestButton() {
+        const testBtn = document.createElement('button');
+        testBtn.textContent = '测试弹窗';
+        testBtn.style.position = 'fixed';
+        testBtn.style.top = '10px';
+        testBtn.style.right = '10px';
+        testBtn.style.zIndex = '9999';
+        testBtn.style.padding = '10px';
+        testBtn.style.background = '#007bff';
+        testBtn.style.color = 'white';
+        testBtn.style.border = 'none';
+        testBtn.style.borderRadius = '4px';
+        testBtn.style.cursor = 'pointer';
+        
+        testBtn.addEventListener('click', () => {
+            console.log('测试按钮被点击');
+            const testData = {
+                goodsId: 'test-123',
+                jsonFiles: {
+                    goodsInfo: 'test-goods.json',
+                    monitoring: 'test-monitoring.json',
+                    mediaData: 'test-media.json'
+                },
+                goodsInfoData: { name: '测试商品', price: '100' },
+                monitoringData: [{ timestamp: '2024-01-01', data: { price: '100' } }],
+                mediaData: { media: [{ url: 'https://via.placeholder.com/150', type: 'image' }] }
+            };
+            this.showGoodsPreview(testData);
+        });
+        
+        document.body.appendChild(testBtn);
+    }
 
     // 绑定预览标签页切换事件
     bindPreviewTabEvents() {
-        const tabs = document.querySelectorAll('.preview-tab');
-        const sections = document.querySelectorAll('.preview-section');
-
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                const targetTab = tab.getAttribute('data-tab');
-                
-                // 移除所有活动状态
-                tabs.forEach(t => t.classList.remove('active'));
-                sections.forEach(s => s.classList.remove('active'));
-                
-                // 激活当前标签页
-                tab.classList.add('active');
-                
-                // 根据data-tab属性找到对应的section
-                let targetSection;
-                if (targetTab === 'images') {
-                    targetSection = document.getElementById('previewImages');
-                } else if (targetTab === 'goodsInfo') {
-                    targetSection = document.getElementById('previewGoodsInfo');
-                } else if (targetTab === 'monitoring') {
-                    targetSection = document.getElementById('previewMonitoring');
-                }
-                
-                if (targetSection) {
-                    targetSection.classList.add('active');
-                }
-            });
-        });
+        // 注意：Tab切换事件现在由GoodsPreviewModal组件自己处理
+        // 这里不再绑定事件，避免覆盖弹窗的Tab切换逻辑
+        console.log('预览标签页切换事件由GoodsPreviewModal组件处理');
     }
 
     // 显示所有图片（用于预览弹窗，不进行筛选和排序）
@@ -2946,54 +2792,120 @@ class HanliApp {
         }
     }
 
+    // 显示媒体数据列表
+    displayMediaDataList(mediaData) {
+        console.log('displayMediaDataList 被调用，mediaData:', mediaData);
+        const mediaDataList = document.getElementById('mediaDataList');
+        if (!mediaDataList) {
+            console.log('mediaDataList 元素未找到');
+            return;
+        }
+
+        mediaDataList.innerHTML = '';
+
+        if (!mediaData) {
+            console.log('媒体数据为空，显示空状态');
+            mediaDataList.innerHTML = '<div class="empty-state"><p>暂无媒体数据</p></div>';
+            return;
+        }
+
+        // 基本信息
+        const basicInfoSection = document.createElement('div');
+        basicInfoSection.className = 'data-list-section';
+        basicInfoSection.innerHTML = '<div class="data-list-section-title">媒体基本信息</div>';
+        
+        const basicFields = [
+            { label: '商品ID', value: mediaData.goodsId },
+            { label: '媒体数量', value: mediaData.media ? mediaData.media.length : 0 }
+        ];
+
+        basicFields.forEach(field => {
+            const item = document.createElement('div');
+            item.className = 'data-list-item';
+            item.innerHTML = `
+                <div class="data-list-label">${field.label}</div>
+                <div class="data-list-value ${!field.value ? 'empty' : ''}">${field.value || '未设置'}</div>
+            `;
+            basicInfoSection.appendChild(item);
+        });
+
+        mediaDataList.appendChild(basicInfoSection);
+
+        // 媒体数组信息
+        if (mediaData.media && mediaData.media.length > 0) {
+            const mediaArraySection = document.createElement('div');
+            mediaArraySection.className = 'data-list-section';
+            mediaArraySection.innerHTML = '<div class="data-list-section-title">媒体数组 (media)</div>';
+
+            mediaData.media.forEach((mediaItem, index) => {
+                const item = document.createElement('div');
+                item.className = 'data-list-item media-item';
+                
+                const mediaType = mediaItem.width > 0 && mediaItem.height > 0 ? '图片' : '视频';
+                const sizeText = mediaItem.width > 0 && mediaItem.height > 0 ? 
+                    `${mediaItem.width}×${mediaItem.height}px` : '未知尺寸';
+                const statusText = mediaItem.isTargetSize ? '符合要求' : '尺寸较小';
+                const pathText = mediaItem.path ? '已缓存' : '未缓存';
+                
+                item.innerHTML = `
+                    <div class="data-list-label">${mediaType} ${index + 1}</div>
+                    <div class="data-list-value">
+                        <div class="media-item-info">
+                            <div class="media-url">${mediaItem.url}</div>
+                            <div class="media-details">
+                                <span class="media-size">${sizeText}</span>
+                                <span class="media-status ${mediaItem.isTargetSize ? 'valid' : 'invalid'}">${statusText}</span>
+                                <span class="media-cache ${mediaItem.path ? 'cached' : 'uncached'}">${pathText}</span>
+                            </div>
+                            ${mediaItem.path ? `<div class="media-path">${mediaItem.path}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+                mediaArraySection.appendChild(item);
+            });
+
+            mediaDataList.appendChild(mediaArraySection);
+        }
+
+        // 显示完整JSON结构
+        const jsonSection = document.createElement('div');
+        jsonSection.className = 'data-list-section';
+        jsonSection.innerHTML = '<div class="data-list-section-title">完整JSON数据</div>';
+        
+        const jsonItem = document.createElement('div');
+        jsonItem.className = 'data-list-item json-item';
+        jsonItem.innerHTML = `
+            <div class="data-list-label">JSON内容</div>
+            <div class="data-list-value">
+                <pre class="json-content">${JSON.stringify(mediaData, null, 2)}</pre>
+            </div>
+        `;
+        jsonSection.appendChild(jsonItem);
+        mediaDataList.appendChild(jsonSection);
+    }
+
     // 图片过滤方法
     filterImages(imageInfoList) {
         if (!imageInfoList || imageInfoList.length === 0) {
             return [];
         }
 
-        console.log('开始过滤图片，总数:', imageInfoList.length);
+        console.log('返回所有图片，总数:', imageInfoList.length);
         
-        // 过滤条件
-        const filteredImages = imageInfoList.filter(imageInfo => {
-            const width = imageInfo.width;
-            const height = imageInfo.height;
-            const aspectRatio = width / height;
-            
-            // 基本尺寸要求：至少有一边达到800px
-            const hasMinSize = width >= 800 || height >= 800;
-            
-            // 宽高比要求：在0.5到2.0之间（避免过于细长或过于扁平的图片）
-            const hasGoodAspectRatio = aspectRatio >= 0.5 && aspectRatio <= 2.0;
-            
-            // 最小尺寸要求：避免过小的图片
-            const hasMinDimensions = width >= 400 && height >= 400;
-            
-            const isValid = hasMinSize && hasGoodAspectRatio && hasMinDimensions;
-            
-            if (isValid) {
-                console.log(`图片通过筛选: ${width}×${height}px, 比例: ${aspectRatio.toFixed(2)}`);
-            } else {
-                console.log(`图片被过滤: ${width}×${height}px, 比例: ${aspectRatio.toFixed(2)}`);
-            }
-            
-            return isValid;
-        });
-        
-        console.log(`图片过滤完成: ${filteredImages.length}/${imageInfoList.length} 张图片通过筛选`);
-        
-        // 如果没有符合要求的图片，选择最大的几张
-        if (filteredImages.length === 0 && imageInfoList.length > 0) {
-            console.log('没有符合筛选条件的图片，选择最大的5张');
-            const sortedImages = [...imageInfoList].sort((a, b) => {
-                const areaA = a.width * a.height;
-                const areaB = b.width * b.height;
-                return areaB - areaA;
-            });
-            return sortedImages.slice(0, Math.min(5, sortedImages.length));
+        // 不过滤，返回所有图片
+        return imageInfoList;
+    }
+
+    // 过滤视频
+    filterVideos(videoInfoList) {
+        if (!videoInfoList || videoInfoList.length === 0) {
+            return [];
         }
+
+        console.log('返回所有视频，总数:', videoInfoList.length);
         
-        return filteredImages;
+        // 不过滤，返回所有视频
+        return videoInfoList;
     }
 
     // 显示筛选的图片
@@ -3014,95 +2926,1208 @@ class HanliApp {
                             <polyline points="21,15 16,10 5,21" stroke="currentColor" stroke-width="2"/>
                         </svg>
                     </div>
-                    <p>暂无采集图片</p>
+                    <p>暂无符合要求的图片（需要宽高都≥800px）</p>
                 </div>
             `;
             return;
         }
 
         // 按图片大小排序（面积从大到小）
-        const sortedImageInfoList = [...imageInfoList].sort((a, b) => {
+        const sortedImageInfoList = [...images].sort((a, b) => {
             const areaA = a.width * a.height;
             const areaB = b.width * b.height;
             return areaB - areaA;
         });
 
+        // 初始化选中状态（所有筛选出来的图片默认选中）
+        this.selectedImages = new Set(sortedImageInfoList.map(img => img.url));
+
         // 显示排序后的图片
         sortedImageInfoList.forEach((imageInfo, index) => {
             const imageItem = document.createElement('div');
-            imageItem.className = 'image-item';
+            imageItem.className = 'image-item selectable';
+            imageItem.dataset.imageUrl = imageInfo.url;
             
             const sizeText = `${imageInfo.width}×${imageInfo.height}px`;
             const aspectRatio = `比例 ${imageInfo.aspectRatio}`;
             const area = imageInfo.width * imageInfo.height;
-            const isLargeImage = imageInfo.width > 800 && imageInfo.height > 800;
-            
-            // 根据图片大小添加标识
-            let statusBadge = '';
-            if (isLargeImage) {
-                statusBadge = '<span class="status-badge large-image">大尺寸</span>';
-            } else if (imageInfo.width > 400 && imageInfo.height > 400) {
-                statusBadge = '<span class="status-badge medium-image">中等尺寸</span>';
-            } else {
-                statusBadge = '<span class="status-badge small-image">小尺寸</span>';
-            }
             
             // 添加面积信息
             const areaText = `面积: ${(area / 1000).toFixed(0)}K像素`;
             
+            // 直接使用网络URL
+            const imageSrc = imageInfo.url;
+            
             imageItem.innerHTML = `
-                <img src="${imageInfo.url}" alt="采集图片 ${index + 1}" loading="lazy" 
+                <div class="image-checkbox">
+                    <input type="checkbox" id="img-${index}" checked>
+                    <label for="img-${index}"></label>
+                </div>
+                <img src="${imageSrc}" alt="采集图片 ${index + 1}" loading="lazy" 
                      onerror="this.parentElement.querySelector('.image-info').innerHTML='<span style=color:var(--error-color)>加载失败</span>'">
                 <div class="image-info">
                     <div class="image-size">${sizeText}</div>
                     <div class="image-aspect">${aspectRatio}</div>
                     <div class="image-area">${areaText}</div>
                     <div class="image-index">排名 ${index + 1}</div>
-                    ${statusBadge}
+                    <span class="status-badge large-image">符合要求</span>
                 </div>
             `;
             
-            // 如果是大尺寸图片，添加特殊样式
-            if (isLargeImage) {
-                imageItem.classList.add('large-image-item');
-            }
+            // 添加点击事件
+            imageItem.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.toggleImageSelection(imageItem, imageInfo.url);
+            });
             
             imagesGrid.appendChild(imageItem);
         });
     }
 
-    // 显示商品数据预览弹窗
-    showGoodsPreview(data) {
-        console.log('showGoodsPreview 被调用，数据:', data);
-        const modal = document.getElementById('goodsPreviewModal');
-        if (!modal) {
-            console.error('找不到 goodsPreviewModal 元素');
+    // 切换图片选择状态
+    toggleImageSelection(imageItem, imageUrl) {
+        const checkbox = imageItem.querySelector('input[type="checkbox"]');
+        const isSelected = checkbox.checked;
+        
+        if (isSelected) {
+            // 取消选中
+            checkbox.checked = false;
+            imageItem.classList.remove('selected');
+            this.selectedImages.delete(imageUrl);
+        } else {
+            // 选中
+            checkbox.checked = true;
+            imageItem.classList.add('selected');
+            this.selectedImages.add(imageUrl);
+        }
+        
+        console.log(`图片选择状态变更: ${imageUrl} - ${checkbox.checked ? '选中' : '取消选中'}`);
+        console.log(`当前选中图片数量: ${this.selectedImages.size}`);
+    }
+
+    // 显示合并的媒体内容（视频在前，图片在后）
+    displayMediaContent(videos, allImages, allMedia) {
+        const mediaGrid = document.getElementById('mediaGrid');
+        if (!mediaGrid) return;
+
+        console.log('displayMediaContent 被调用');
+        console.log('videos 参数:', videos);
+        console.log('allImages 参数:', allImages);
+        console.log('allMedia 参数:', allMedia);
+
+        // 清空现有内容
+        mediaGrid.innerHTML = '';
+
+        // 如果没有媒体内容，显示空状态
+        if ((!videos || videos.length === 0) && (!allImages || allImages.length === 0)) {
+            console.log('没有媒体数据，显示空状态');
+            mediaGrid.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" stroke-width="2"/>
+                            <polyline points="21,15 16,10 5,21" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <p>暂无采集媒体</p>
+                </div>
+            `;
             return;
         }
 
-        const { goodsInfoData, monitoringData } = data;
-        console.log('商品信息数据:', goodsInfoData);
-        console.log('监控数据:', monitoringData);
+        // 初始化选中状态
+        this.selectedVideos = new Set();
+        this.selectedImages = new Set();
 
-        // 这些元素在HTML中已被移除，不再需要填充
-        
-    // 显示采集的图片 - 在hanli-app中进行最终筛选
-    const filteredImages = this.filterImages(goodsInfoData.imageInfoList || []);
-    this.displayFilteredImages(filteredImages, goodsInfoData.imageInfoList || []);
-        
-        // 显示商品信息列表
-        this.displayGoodsInfoList(goodsInfoData);
-        
-        // 显示监控数据列表
-        this.displayMonitoringDataList(monitoringData);
+        let itemIndex = 0;
 
-        // 存储当前商品数据
-        this.currentImportData = data;
+        // 1. 先显示视频（按面积排序）
+        if (videos && videos.length > 0) {
+            const sortedVideos = [...videos].sort((a, b) => {
+                const areaA = (a.width || 0) * (a.height || 0);
+                const areaB = (b.width || 0) * (b.height || 0);
+                return areaB - areaA;
+            });
 
-        // 显示弹窗
-        console.log('准备显示弹窗');
-        modal.style.display = 'flex';
-        console.log('弹窗显示状态:', modal.style.display);
+            sortedVideos.forEach((videoInfo, index) => {
+                const videoItem = document.createElement('div');
+                videoItem.className = 'media-item video-item selectable';
+                videoItem.dataset.videoUrl = videoInfo.url;
+                
+                // 直接使用原始URL
+                const finalSrc = videoInfo.url;
+                console.log(`视频 ${index + 1}: ${videoInfo.url}`);
+                
+                const sizeText = videoInfo.width && videoInfo.height ? 
+                    `${videoInfo.width}×${videoInfo.height}px` : '未知尺寸';
+                const aspectRatio = videoInfo.aspectRatio ? 
+                    `比例 ${videoInfo.aspectRatio}` : '未知比例';
+                const area = (videoInfo.width || 0) * (videoInfo.height || 0);
+                const areaText = area > 0 ? `面积: ${(area / 1000).toFixed(0)}K像素` : '';
+                
+                videoItem.innerHTML = `
+                    <div class="video-checkbox">
+                        <input type="checkbox" id="video-${itemIndex}" checked>
+                        <label for="video-${itemIndex}"></label>
+                    </div>
+                    <div class="video-container">
+                        <video src="${finalSrc}" 
+                               poster="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDIwMCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjZjNmNGY2Ii8+CjxjaXJjbGUgY3g9IjEwMCIgY3k9Ijc1IiByPSIyMCIgZmlsbD0iIzk5YTNhZiIvPgo8cG9seWdvbiBwb2ludHM9IjkwLDY1IDEwMCw3NSAxMTAsNjUiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo="
+                               onloadstart="console.log('开始加载视频:', '${finalSrc}')"
+                               oncanplay="console.log('视频可以播放:', '${finalSrc}')"
+                               onerror="console.error('视频加载失败:', '${finalSrc}', event); this.parentElement.querySelector('.video-info').innerHTML='<span style=color:var(--error-color)>加载失败: ' + event.type + '</span>'"
+                               onload="console.log('视频加载完成:', '${finalSrc}')"
+                               controls preload="metadata" muted>
+                            您的浏览器不支持视频播放
+                        </video>
+                        <div class="video-play-overlay">
+                            <div class="play-icon">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="12" cy="12" r="10" fill="rgba(0,0,0,0.7)" stroke="white" stroke-width="2"/>
+                                    <polygon points="10,8 16,12 10,16" fill="white"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="video-info">
+                        <div class="video-size">${sizeText}</div>
+                        <div class="video-aspect">${aspectRatio}</div>
+                        ${areaText ? `<div class="video-area">${areaText}</div>` : ''}
+                        <div class="video-index">视频 ${index + 1}</div>
+                        <span class="status-badge large-video">加载中</span>
+                    </div>
+                `;
+                
+                // 添加点击事件
+                videoItem.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.toggleVideoSelection(videoInfo.url, itemIndex);
+                });
+
+                // 添加视频事件监听
+                const video = videoItem.querySelector('video');
+                const playOverlay = videoItem.querySelector('.video-play-overlay');
+                if (video && playOverlay) {
+                    video.addEventListener('play', () => { playOverlay.style.opacity = '0'; });
+                    video.addEventListener('pause', () => { playOverlay.style.opacity = '1'; });
+                    video.addEventListener('ended', () => { playOverlay.style.opacity = '1'; });
+                    playOverlay.addEventListener('click', (e) => { e.stopPropagation(); video.play(); });
+                }
+
+                this.selectedVideos.add(videoInfo.url);
+                mediaGrid.appendChild(videoItem);
+                itemIndex++;
+            });
+        }
+
+        // 2. 再显示图片（按面积排序）
+        if (allImages && allImages.length > 0) {
+            const sortedImages = [...allImages].sort((a, b) => {
+                const areaA = (a.width || 0) * (a.height || 0);
+                const areaB = (b.width || 0) * (b.height || 0);
+                return areaB - areaA;
+            });
+
+            sortedImages.forEach((imageInfo, index) => {
+                const imageItem = document.createElement('div');
+                imageItem.className = 'media-item image-item selectable';
+                imageItem.dataset.imageUrl = imageInfo.url;
+                imageItem.dataset.index = itemIndex;
+
+                const sizeText = imageInfo.width && imageInfo.height ? 
+                    `${imageInfo.width}×${imageInfo.height}px` : '未知尺寸';
+                const aspectRatio = imageInfo.aspectRatio ? 
+                    `比例 ${imageInfo.aspectRatio}` : '未知比例';
+                const area = (imageInfo.width || 0) * (imageInfo.height || 0);
+                const areaText = area > 0 ? `面积: ${(area / 1000).toFixed(0)}K像素` : '';
+
+                // 直接使用原始URL
+                const imageSrc = imageInfo.url;
+                
+                console.log(`图片显示: ${imageInfo.url}`);
+
+                imageItem.innerHTML = `
+                    <div class="image-checkbox">
+                        <input type="checkbox" id="image-${itemIndex}" checked>
+                        <label for="image-${itemIndex}"></label>
+                    </div>
+                    <div class="image-container">
+                        <img src="${imageSrc}" alt="采集图片 ${index + 1}" 
+                             onerror="this.parentElement.querySelector('.image-info').innerHTML='<span style=color:var(--error-color)>加载失败</span>'"
+                             onload="console.log('图片加载完成:', '${imageSrc}')">
+                    </div>
+                    <div class="image-info">
+                        <div class="image-size">${sizeText}</div>
+                        <div class="image-aspect">${aspectRatio}</div>
+                        ${areaText ? `<div class="image-area">${areaText}</div>` : ''}
+                        <div class="image-index">图片 ${index + 1}</div>
+                        <span class="status-badge large-image">已采集</span>
+                    </div>
+                `;
+
+                // 添加点击事件
+                imageItem.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.toggleImageSelection(imageInfo.url, itemIndex);
+                });
+
+                this.selectedImages.add(imageInfo.url);
+                mediaGrid.appendChild(imageItem);
+                itemIndex++;
+            });
+        }
+    }
+
+    // 更新图片显示（缓存完成后调用）
+    updateImageDisplay(allImages) {
+        const mediaGrid = document.getElementById('mediaGrid');
+        if (!mediaGrid) return;
+
+        // 检查缓存是否可用
+        if (!this.cachedImages || this.cachedImages.length === 0) {
+            console.log('图片缓存不可用，跳过更新');
+            return;
+        }
+
+        // 图片直接使用URL，无需更新缓存路径
+        console.log('图片直接使用URL，无需更新缓存路径');
+    }
+
+    // 更新视频显示
+    updateVideoDisplay(videos) {
+        // 视频直接使用URL，无需更新缓存路径
+        console.log('视频直接使用URL，无需更新缓存路径');
+    }
+
+    // 显示所有视频（不进行过滤）
+    displayAllVideos(videos) {
+        const videosGrid = document.getElementById('videosGrid');
+        if (!videosGrid) return;
+
+        console.log('displayAllVideos 被调用');
+        console.log('videos 参数:', videos);
+
+        // 清空现有内容
+        videosGrid.innerHTML = '';
+
+        if (!videos || videos.length === 0) {
+            console.log('没有视频数据，显示空状态');
+            videosGrid.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                            <polygon points="22,8 12,13 2,8" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <p>暂无采集视频</p>
+                </div>
+            `;
+            return;
+        }
+
+        // 按视频大小排序（面积从大到小）
+        const sortedVideos = [...videos].sort((a, b) => {
+            const areaA = (a.width || 0) * (a.height || 0);
+            const areaB = (b.width || 0) * (b.height || 0);
+            return areaB - areaA;
+        });
+
+        // 初始化选中状态（所有视频默认选中）
+        this.selectedVideos = new Set(sortedVideos.map(video => video.url));
+
+        // 显示所有视频
+        sortedVideos.forEach((videoInfo, index) => {
+            const videoItem = document.createElement('div');
+            videoItem.className = 'video-item selectable';
+            videoItem.dataset.videoUrl = videoInfo.url;
+            
+            // 直接使用原始URL
+            const finalSrc = videoInfo.url;
+            console.log(`视频 ${index + 1}: ${videoInfo.url}`);
+            
+            const sizeText = videoInfo.width && videoInfo.height ? 
+                `${videoInfo.width}×${videoInfo.height}px` : '未知尺寸';
+            const aspectRatio = videoInfo.aspectRatio ? 
+                `比例 ${videoInfo.aspectRatio}` : '未知比例';
+            const area = (videoInfo.width || 0) * (videoInfo.height || 0);
+            const areaText = area > 0 ? `面积: ${(area / 1000).toFixed(0)}K像素` : '';
+            
+            videoItem.innerHTML = `
+                <div class="video-checkbox">
+                    <input type="checkbox" id="video-${index}" checked>
+                    <label for="video-${index}"></label>
+                </div>
+                <div class="video-container">
+                    <video src="${videoInfo.url}" 
+                           poster="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDIwMCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjZjNmNGY2Ii8+CjxjaXJjbGUgY3g9IjEwMCIgY3k9Ijc1IiByPSIyMCIgZmlsbD0iIzk5YTNhZiIvPgo8cG9seWdvbiBwb2ludHM9IjkwLDY1IDEwMCw3NSAxMTAsNjUiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo="
+                           onloadstart="console.log('开始加载视频:', '${finalSrc}')"
+                           oncanplay="console.log('视频可以播放:', '${finalSrc}')"
+                           onerror="console.error('视频加载失败:', '${finalSrc}', event); this.parentElement.querySelector('.video-info').innerHTML='<span style=color:var(--error-color)>加载失败: ' + event.type + '</span>'"
+                           onload="console.log('视频加载完成:', '${finalSrc}')"
+                           controls preload="metadata" muted>
+                        您的浏览器不支持视频播放
+                    </video>
+                    <div class="video-play-overlay">
+                        <div class="play-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" fill="rgba(0,0,0,0.7)" stroke="white" stroke-width="2"/>
+                                <polygon points="10,8 16,12 10,16" fill="white"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="video-info">
+                    <div class="video-size">${sizeText}</div>
+                    <div class="video-aspect">${aspectRatio}</div>
+                    ${areaText ? `<div class="video-area">${areaText}</div>` : ''}
+                    <div class="video-index">视频 ${index + 1}</div>
+                    <span class="status-badge large-video">已采集</span>
+                </div>
+            `;
+            
+            // 添加点击事件
+            videoItem.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.toggleVideoSelection(videoItem, videoInfo.url);
+            });
+            
+            // 添加视频播放事件处理
+            const video = videoItem.querySelector('video');
+            const playOverlay = videoItem.querySelector('.video-play-overlay');
+            
+            if (video && playOverlay) {
+                // 视频开始播放时隐藏播放图标
+                video.addEventListener('play', () => {
+                    playOverlay.style.opacity = '0';
+                });
+                
+                // 视频暂停时显示播放图标
+                video.addEventListener('pause', () => {
+                    playOverlay.style.opacity = '1';
+                });
+                
+                // 视频结束播放时显示播放图标
+                video.addEventListener('ended', () => {
+                    playOverlay.style.opacity = '1';
+                });
+                
+                // 点击播放图标时播放视频
+                playOverlay.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    video.play();
+                });
+            }
+            
+            videosGrid.appendChild(videoItem);
+        });
+    }
+
+    // 显示筛选的视频（保留原方法，但不再使用）
+    displayFilteredVideos(videos, videoInfoList = []) {
+        const videosGrid = document.getElementById('videosGrid');
+        if (!videosGrid) return;
+
+        console.log('displayFilteredVideos 被调用');
+        console.log('videos 参数:', videos);
+        console.log('videoInfoList 参数:', videoInfoList);
+
+        // 清空现有内容
+        videosGrid.innerHTML = '';
+
+        if (!videos || videos.length === 0) {
+            console.log('没有视频数据，显示空状态');
+            videosGrid.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                            <polygon points="22,8 12,13 2,8" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <p>暂无符合要求的视频（需要宽高都≥800px）</p>
+                </div>
+            `;
+            return;
+        }
+
+        // 按视频大小排序（面积从大到小）
+        const sortedVideoInfoList = [...videos].sort((a, b) => {
+            const areaA = a.width * a.height;
+            const areaB = b.width * b.height;
+            return areaB - areaA;
+        });
+
+        // 初始化选中状态（所有筛选出来的视频默认选中）
+        this.selectedVideos = new Set(sortedVideoInfoList.map(video => video.url));
+
+        // 显示排序后的视频
+        sortedVideoInfoList.forEach((videoInfo, index) => {
+            const videoItem = document.createElement('div');
+            videoItem.className = 'video-item selectable';
+            videoItem.dataset.videoUrl = videoInfo.url;
+            
+            const sizeText = `${videoInfo.width}×${videoInfo.height}px`;
+            const aspectRatio = `比例 ${videoInfo.aspectRatio}`;
+            const area = videoInfo.width * videoInfo.height;
+            
+            // 添加面积信息
+            const areaText = `面积: ${(area / 1000).toFixed(0)}K像素`;
+            
+            videoItem.innerHTML = `
+                <div class="video-checkbox">
+                    <input type="checkbox" id="video-${index}" checked>
+                    <label for="video-${index}"></label>
+                </div>
+                <video src="${videoInfo.url}" alt="采集视频 ${index + 1}" 
+                       onerror="this.parentElement.querySelector('.video-info').innerHTML='<span style=color:var(--error-color)>加载失败</span>'"
+                       onloadstart="console.log('开始加载视频:', '${videoInfo.url}')"
+                       oncanplay="console.log('视频可以播放:', '${videoInfo.url}')"
+                       onerror="console.error('视频加载失败:', '${videoInfo.url}', event)"
+                       controls preload="metadata">
+                    您的浏览器不支持视频播放
+                </video>
+                <div class="video-info">
+                    <div class="video-size">${sizeText}</div>
+                    <div class="video-aspect">${aspectRatio}</div>
+                    <div class="video-area">${areaText}</div>
+                    <div class="video-index">排名 ${index + 1}</div>
+                    <span class="status-badge large-video">符合要求</span>
+                </div>
+            `;
+            
+            // 添加点击事件
+            videoItem.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.toggleVideoSelection(videoItem, videoInfo.url);
+            });
+            
+            videosGrid.appendChild(videoItem);
+        });
+    }
+
+    // 切换视频选择状态
+    toggleVideoSelection(videoItem, videoUrl) {
+        const checkbox = videoItem.querySelector('input[type="checkbox"]');
+        const isSelected = checkbox.checked;
+        
+        if (isSelected) {
+            // 取消选中
+            checkbox.checked = false;
+            videoItem.classList.remove('selected');
+            this.selectedVideos.delete(videoUrl);
+        } else {
+            // 选中
+            checkbox.checked = true;
+            videoItem.classList.add('selected');
+            this.selectedVideos.add(videoUrl);
+        }
+        
+        console.log(`视频选择状态变更: ${videoUrl} - ${checkbox.checked ? '选中' : '取消选中'}`);
+        console.log(`当前选中视频数量: ${this.selectedVideos.size}`);
+    }
+
+    // 获取选中的图片信息
+    getSelectedImages() {
+        if (!this.selectedImages || this.selectedImages.size === 0) {
+            return [];
+        }
+        
+        // 从当前导入数据中获取图片信息
+        const mediaInfo = this.currentImportData.mediaInfo || { images: [] };
+        const allImages = this.filterImages(mediaInfo.images || []);
+        
+        // 返回选中的图片信息
+        return allImages.filter(img => this.selectedImages.has(img.url));
+    }
+
+    // 获取选中的视频信息
+    getSelectedVideos() {
+        if (!this.selectedVideos || this.selectedVideos.size === 0) {
+            return [];
+        }
+        
+        // 从当前导入数据中获取视频信息（不进行过滤）
+        const mediaInfo = this.currentImportData.mediaInfo || { videos: [] };
+        const allVideos = mediaInfo.videos || [];
+        
+        // 返回选中的视频信息
+        return allVideos.filter(video => this.selectedVideos.has(video.url));
+    }
+
+    // 缓存图片到临时文件夹（仅在保存时调用）
+    async cacheImages(goodsId, images) {
+        try {
+            console.log('开始缓存图片:', images.length, '张');
+            const result = await window.electronAPI.cacheImages(goodsId, images);
+            if (result.success) {
+                console.log('图片缓存成功:', result.cachedImages.length, '张');
+                this.cachedImages = result.cachedImages;
+                return result.cachedImages;
+            } else {
+                console.error('图片缓存失败:', result.error);
+                return null;
+            }
+        } catch (error) {
+            console.error('缓存图片时出错:', error);
+            return null;
+        }
+    }
+
+    // 缓存视频到临时文件夹（仅在保存时调用）
+    async cacheVideos(goodsId, videos) {
+        try {
+            console.log('开始缓存视频:', videos.length, '个');
+            const result = await window.electronAPI.cacheVideos(goodsId, videos);
+            if (result.success) {
+                console.log('视频缓存成功:', result.cachedVideos.length, '个');
+                this.cachedVideos = result.cachedVideos;
+                return result.cachedVideos;
+            } else {
+                console.error('视频缓存失败:', result.error);
+                return null;
+            }
+        } catch (error) {
+            console.error('缓存视频时出错:', error);
+            return null;
+        }
+    }
+
+    // 获取缓存的图片路径
+    getCachedImageSrc(originalUrl) {
+        if (!this.cachedImages || this.cachedImages.length === 0) {
+            console.log('getCachedImageSrc: 没有缓存的图片');
+            return null;
+        }
+        
+        console.log('getCachedImageSrc: 查找缓存图片', {
+            originalUrl: originalUrl,
+            cachedImagesCount: this.cachedImages.length,
+            cachedUrls: this.cachedImages.map(img => img.originalUrl)
+        });
+        
+        // 尝试多种匹配方式
+        let cachedImage = this.cachedImages.find(img => img.originalUrl === originalUrl);
+        
+        if (!cachedImage) {
+            // 尝试URL解码后匹配
+            try {
+                const decodedUrl = decodeURIComponent(originalUrl);
+                cachedImage = this.cachedImages.find(img => img.originalUrl === decodedUrl);
+            } catch (e) {
+                console.log('URL解码失败:', e);
+            }
+        }
+        
+        if (!cachedImage) {
+            // 尝试移除查询参数后匹配
+            try {
+                const urlWithoutQuery = originalUrl.split('?')[0];
+                cachedImage = this.cachedImages.find(img => {
+                    const imgUrlWithoutQuery = img.originalUrl.split('?')[0];
+                    return imgUrlWithoutQuery === urlWithoutQuery;
+                });
+            } catch (e) {
+                console.log('URL处理失败:', e);
+            }
+        }
+        if (cachedImage && cachedImage.tempPath) {
+            console.log('getCachedImageSrc: 找到缓存图片', {
+                originalUrl: originalUrl,
+                tempPath: cachedImage.tempPath
+            });
+            // 在 Electron 中直接使用本地文件路径
+            return cachedImage.tempPath;
+        }
+        
+        console.log('getCachedImageSrc: 未找到缓存图片', {
+            originalUrl: originalUrl,
+            cachedImagesCount: this.cachedImages.length
+        });
+        return null;
+    }
+
+    // 获取缓存的视频路径
+    getCachedVideoSrc(originalUrl) {
+        if (!this.cachedVideos || this.cachedVideos.length === 0) {
+            console.log('getCachedVideoSrc: 没有缓存的视频');
+            return null;
+        }
+        
+        // 尝试多种匹配方式
+        let cachedVideo = this.cachedVideos.find(video => video.originalUrl === originalUrl);
+        
+        if (!cachedVideo) {
+            // 尝试URL解码后匹配
+            try {
+                const decodedUrl = decodeURIComponent(originalUrl);
+                cachedVideo = this.cachedVideos.find(video => video.originalUrl === decodedUrl);
+            } catch (e) {
+                console.log('URL解码失败:', e);
+            }
+        }
+        
+        if (!cachedVideo) {
+            // 尝试移除查询参数后匹配
+            try {
+                const urlWithoutQuery = originalUrl.split('?')[0];
+                cachedVideo = this.cachedVideos.find(video => {
+                    const videoUrlWithoutQuery = video.originalUrl.split('?')[0];
+                    return videoUrlWithoutQuery === urlWithoutQuery;
+                });
+            } catch (e) {
+                console.log('URL处理失败:', e);
+            }
+        }
+        if (cachedVideo && cachedVideo.tempPath) {
+            console.log('getCachedVideoSrc: 找到缓存视频', {
+                originalUrl: originalUrl,
+                tempPath: cachedVideo.tempPath
+            });
+            // 在 Electron 中直接使用本地文件路径
+            return cachedVideo.tempPath;
+        }
+        
+        console.log('getCachedVideoSrc: 未找到缓存视频', {
+            originalUrl: originalUrl,
+            cachedVideosCount: this.cachedVideos.length
+        });
+        return null;
+    }
+
+    // 根据媒体数据显示内容
+    displayMediaFromData(mediaArray) {
+        const mediaGrid = document.getElementById('mediaGrid');
+        if (!mediaGrid) {
+            console.error('找不到 mediaGrid 元素');
+            return;
+        }
+
+        if (!mediaArray || mediaArray.length === 0) {
+            this.displayEmptyMediaState();
+            return;
+        }
+
+        // 清空现有内容
+        mediaGrid.innerHTML = '';
+
+        // 分离图片和视频
+        // 根据文件扩展名判断类型
+        const images = mediaArray.filter(item => {
+            const url = item.url || '';
+            return url.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i);
+        });
+        const videos = mediaArray.filter(item => {
+            const url = item.url || '';
+            return url.match(/\.(mp4|webm|ogg|avi|mov)$/i);
+        });
+
+        // 按尺寸排序图片（从大到小）
+        const sortedImages = images.sort((a, b) => (b.width * b.height) - (a.width * a.height));
+
+        // 显示视频（在前面）
+        videos.forEach((videoItem, index) => {
+            this.createVideoElement(videoItem, index);
+        });
+
+        // 显示图片
+        sortedImages.forEach((imageItem, index) => {
+            this.createImageElement(imageItem, index);
+        });
+
+        console.log('媒体内容显示完成:', {
+            images: sortedImages.length,
+            videos: videos.length
+        });
+    }
+
+    // 创建视频元素
+    createVideoElement(videoItem, index) {
+        const mediaGrid = document.getElementById('mediaGrid');
+        const videoContainer = document.createElement('div');
+        videoContainer.className = 'video-item selectable';
+        videoContainer.dataset.videoUrl = videoItem.url;
+
+        const src = videoItem.path || videoItem.url;
+        const sizeText = videoItem.width > 0 && videoItem.height > 0 ? `${videoItem.width}×${videoItem.height}px` : '视频';
+        
+        videoContainer.innerHTML = `
+            <div class="video-checkbox">
+                <input type="checkbox" id="video-${index}" checked>
+                <label for="video-${index}"></label>
+            </div>
+            <video src="${src}" alt="采集视频 ${index + 1}" 
+                   onerror="this.parentElement.querySelector('.video-info').innerHTML='<span style=color:var(--error-color)>加载失败</span>'"
+                   onloadstart="console.log('开始加载视频:', '${src}')"
+                   oncanplay="console.log('视频可以播放:', '${src}')"
+                   controls preload="metadata">
+                您的浏览器不支持视频播放
+            </video>
+            <div class="video-info">
+                <div class="video-size">${sizeText}</div>
+                <div class="video-index">视频 ${index + 1}</div>
+                <span class="status-badge large-video">符合要求</span>
+            </div>
+        `;
+
+        // 添加点击事件
+        videoContainer.addEventListener('click', (e) => {
+            if (e.target.type !== 'checkbox' && e.target.tagName !== 'VIDEO') {
+                this.toggleVideoSelection(videoItem.url);
+            }
+        });
+
+        mediaGrid.appendChild(videoContainer);
+    }
+
+    // 创建图片元素
+    createImageElement(imageItem, index) {
+        const mediaGrid = document.getElementById('mediaGrid');
+        const imageContainer = document.createElement('div');
+        imageContainer.className = 'image-item selectable';
+        imageContainer.dataset.imageUrl = imageItem.url;
+
+        const src = imageItem.url; // 直接使用URL
+        const sizeText = `${imageItem.width}×${imageItem.height}px`;
+        const isTargetSize = imageItem.isTargetSize;
+        
+        imageContainer.innerHTML = `
+            <div class="image-checkbox">
+                <input type="checkbox" id="image-${index}" ${isTargetSize ? 'checked' : ''}>
+                <label for="image-${index}"></label>
+            </div>
+            <img src="${src}" alt="采集图片 ${index + 1}" 
+                 onerror="this.parentElement.querySelector('.image-info').innerHTML='<span style=color:var(--error-color)>加载失败</span>'"
+                 loading="lazy">
+            <div class="image-info">
+                <div class="image-size">${sizeText}</div>
+                <div class="image-index">排名 ${index + 1}</div>
+                <span class="status-badge ${isTargetSize ? 'large-image' : 'small-image'}">
+                    ${isTargetSize ? '符合要求' : '尺寸较小'}
+                </span>
+            </div>
+        `;
+
+        // 添加点击事件
+        imageContainer.addEventListener('click', (e) => {
+            if (e.target.type !== 'checkbox' && e.target.tagName !== 'IMG') {
+                this.toggleImageSelection(imageItem.url);
+            }
+        });
+
+        mediaGrid.appendChild(imageContainer);
+    }
+
+    // 更新媒体显示
+    updateMediaDisplay(mediaArray) {
+        if (!mediaArray || mediaArray.length === 0) return;
+
+        const mediaGrid = document.getElementById('mediaGrid');
+        if (!mediaGrid) return;
+
+        // 清空现有内容
+        mediaGrid.innerHTML = '';
+
+        // 分离视频和图片
+        const videos = mediaArray.filter(item => item.type && item.type.startsWith('video/'));
+        const images = mediaArray.filter(item => !item.type || item.type.startsWith('image/'));
+
+        console.log(`更新媒体显示: ${videos.length} 个视频, ${images.length} 张图片`);
+
+        // 显示视频
+        videos.forEach((video, index) => {
+            this.createVideoElement(video, index);
+        });
+
+        // 显示图片
+        images.forEach((image, index) => {
+            this.createImageElement(image, index);
+        });
+    }
+
+    // 显示空状态
+    displayEmptyMediaState() {
+        const mediaGrid = document.getElementById('mediaGrid');
+        if (!mediaGrid) return;
+
+        mediaGrid.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" stroke-width="2"/>
+                        <polyline points="21,15 16,10 5,21" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </div>
+                <p>暂无媒体内容</p>
+            </div>
+        `;
+    }
+
+    // 缓存媒体文件
+    async cacheMediaFiles(goodsId, mediaData) {
+        try {
+            console.log('开始缓存媒体文件:', mediaData.media.length, '个');
+            const result = await window.electronAPI.cacheMediaFiles(goodsId, mediaData);
+            if (result.success) {
+                console.log('媒体文件缓存成功:', result.mediaData.media.length, '个');
+                return result;
+            } else {
+                console.error('媒体文件缓存失败:', result.error);
+                return null;
+            }
+        } catch (error) {
+            console.error('缓存媒体文件时出错:', error);
+            return null;
+        }
+    }
+
+    // 缓存媒体文件到临时文件夹
+    async cacheMediaFilesToTemp(goodsId, mediaData) {
+        try {
+            console.log('开始缓存媒体文件到临时文件夹:', mediaData.media.length, '个');
+            const result = await window.electronAPI.cacheMediaFilesToTemp(goodsId, mediaData);
+            if (result.success) {
+                console.log('媒体文件缓存到临时文件夹成功:', result.mediaData.media.length, '个');
+                return result;
+            } else {
+                console.error('媒体文件缓存到临时文件夹失败:', result.error);
+                return null;
+            }
+        } catch (error) {
+            console.error('缓存媒体文件到临时文件夹时出错:', error);
+            return null;
+        }
+    }
+
+    // 更新确认按钮文本
+    updateConfirmButtonText() {
+        const confirmBtn = document.getElementById('previewConfirmBtn');
+        if (confirmBtn) {
+            confirmBtn.textContent = '保存到目标文件夹';
+            confirmBtn.classList.remove('saved');
+        }
+    }
+
+    // 刷新媒体内容显示（用于Tab切换时）
+    refreshMediaContent() {
+        const mediaGrid = document.getElementById('mediaGrid');
+        if (!mediaGrid) return;
+
+        // 检查是否有媒体内容
+        const imageItems = mediaGrid.querySelectorAll('.image-item');
+        const videoItems = mediaGrid.querySelectorAll('.video-item');
+        
+        console.log('刷新媒体内容:', {
+            imageItemsCount: imageItems.length,
+            videoItemsCount: videoItems.length,
+            currentMediaData: this.currentMediaData ? this.currentMediaData.media.length : 0
+        });
+
+        // 如果媒体内容为空，但媒体数据存在，重新显示
+        if ((imageItems.length === 0 && videoItems.length === 0) && 
+            this.currentMediaData && this.currentMediaData.media.length > 0) {
+            console.log('媒体内容为空但媒体数据存在，重新显示');
+            this.displayMediaFromData(this.currentMediaData.media);
+        }
+    }
+
+
+    // 显示商品数据预览弹窗
+    async showGoodsPreview(data) {
+        console.log('showGoodsPreview 被调用，数据:', data);
+        console.log('goodsPreviewModal 实例:', this.goodsPreviewModal);
+        
+        const modal = document.getElementById('goodsPreviewModal');
+        console.log('通过getElementById找到的modal:', modal);
+        
+        if (!modal) {
+            console.error('找不到 goodsPreviewModal 元素');
+            console.log('当前页面所有元素:', document.querySelectorAll('[id*="goods"]'));
+            return;
+        }
+
+        const { goodsId, jsonFiles } = data;
+        console.log('商品ID:', goodsId);
+        console.log('JSON文件:', jsonFiles);
+
+        try {
+            // 读取JSON文件
+            console.log('开始读取JSON文件...');
+            
+            const [goodsInfoResult, monitoringResult, mediaDataResult] = await Promise.all([
+                window.electronAPI.readJsonFile(jsonFiles.goodsInfo, goodsId),
+                window.electronAPI.readJsonFile(jsonFiles.monitoring, goodsId),
+                window.electronAPI.readJsonFile(jsonFiles.mediaData, goodsId)
+            ]);
+
+            if (!goodsInfoResult.success) {
+                throw new Error(`读取商品信息JSON失败: ${goodsInfoResult.error}`);
+            }
+            if (!monitoringResult.success) {
+                throw new Error(`读取监控数据JSON失败: ${monitoringResult.error}`);
+            }
+            if (!mediaDataResult.success) {
+                throw new Error(`读取媒体数据JSON失败: ${mediaDataResult.error}`);
+            }
+
+            const goodsInfoData = goodsInfoResult.data;
+            const monitoringData = monitoringResult.data;
+            const mediaData = mediaDataResult.data;
+
+            console.log('JSON文件读取成功');
+            console.log('商品信息数据:', goodsInfoData);
+            console.log('监控数据:', monitoringData);
+            console.log('媒体数据:', mediaData);
+
+            // 显示商品信息列表
+            this.displayGoodsInfoList(goodsInfoData);
+            
+            // 显示监控数据列表
+            this.displayMonitoringDataList(monitoringData);
+            
+            // 显示媒体数据列表
+            this.displayMediaDataList(mediaData);
+
+            // 显示预览弹窗
+            this.goodsPreviewModal.show({
+                goodsInfoData: goodsInfoData,
+                monitoringData: monitoringData,
+                mediaData: mediaData
+            });
+
+            // 保存当前导入数据供后续使用
+            this.currentImportData = {
+                goodsInfoData: goodsInfoData,
+                monitoringData: monitoringData,
+                mediaData: mediaData
+            };
+
+            console.log('商品数据预览弹窗已显示');
+
+        } catch (error) {
+            console.error('读取JSON文件失败:', error);
+            this.updateStatus(`读取数据失败: ${error.message}`);
+        }
+    }
+
+    // 处理预览弹窗确认操作
+    async handlePreviewConfirm(previewData, goodsId = null) {
+        console.log('预览弹窗确认操作，数据:', previewData, '商品ID:', goodsId);
+        
+        try {
+            // 获取商品ID
+            const targetGoodsId = goodsId || (previewData && previewData.goodsInfoData && previewData.goodsInfoData.goodsId);
+            
+            if (!targetGoodsId) {
+                console.error('无法获取商品ID');
+                this.updateStatus('无法获取商品ID，操作失败');
+                return;
+            }
+            
+            console.log('开始处理商品数据保存和媒体文件下载:', targetGoodsId);
+            
+            // 下载媒体文件到产品库
+            let downloadedMedia = [];
+            if (previewData.mediaData && previewData.mediaData.media && previewData.mediaData.media.length > 0) {
+                console.log('开始下载媒体文件到产品库...');
+                const downloadResult = await this.downloadMediaToProductLibrary(targetGoodsId, previewData.mediaData.media);
+                if (downloadResult && downloadResult.success) {
+                    console.log('媒体文件下载成功');
+                    downloadedMedia = downloadResult.mediaData;
+                    this.updateStatus(`已下载 ${downloadedMedia.length} 个媒体文件到产品库`);
+                } else {
+                    console.error('媒体文件下载失败:', downloadResult?.error);
+                    this.updateStatus(`媒体文件下载失败: ${downloadResult?.error || '未知错误'}`);
+                    return;
+                }
+            }
+            
+            // 保存商品数据到目标文件夹
+            const saveData = {
+                goodsInfoData: previewData.goodsInfoData,
+                monitoringData: previewData.monitoringData || [],
+                mediaData: previewData.mediaData ? { ...previewData.mediaData, media: downloadedMedia } : null
+            };
+            
+            const saveResult = await window.electronAPI.saveGoodsData(saveData);
+            if (saveResult.success) {
+                console.log('数据保存到目标文件夹成功:', saveResult);
+                this.updateStatus(`数据已保存到目标文件夹: 商品信息 -> ${saveResult.paths.goodsInfo}, 监控数据 -> ${saveResult.paths.monitoring}`);
+                
+                // 清理临时文件
+                await this.cleanupTempFiles(targetGoodsId);
+                
+                // 刷新数据列表
+                if (typeof this.loadData === 'function') {
+                    await this.loadData();
+                }
+                
+                // 跳转到产品库的该商品详情页
+                await this.navigateToProductDetail(targetGoodsId);
+                
+            } else {
+                console.error('数据保存到目标文件夹失败:', saveResult.error);
+                this.updateStatus(`数据保存失败: ${saveResult.error}`);
+            }
+        } catch (error) {
+            console.error('处理预览确认操作时出错:', error);
+            this.updateStatus(`处理失败: ${error.message}`);
+        }
+    }
+
+    // 下载媒体文件到产品库
+    async downloadMediaToProductLibrary(goodsId, mediaList) {
+        try {
+            console.log('开始下载媒体文件到产品库:', { goodsId, mediaCount: mediaList.length });
+            
+            // 分离图片和视频
+            const images = mediaList.filter(media => {
+                const mediaUrl = media.url || media.src;
+                const isVideo = (media.type === 'video') || 
+                               (media.type && media.type.startsWith('video/')) || 
+                               (mediaUrl && mediaUrl.match(/\.(mp4|webm|ogg|avi|mov|mkv|flv|wmv|m4v|3gp)$/i));
+                return !isVideo;
+            });
+
+            const videos = mediaList.filter(media => {
+                const mediaUrl = media.url || media.src;
+                const isVideo = (media.type === 'video') || 
+                               (media.type && media.type.startsWith('video/')) || 
+                               (mediaUrl && mediaUrl.match(/\.(mp4|webm|ogg|avi|mov|mkv|flv|wmv|m4v|3gp)$/i));
+                return isVideo;
+            });
+
+            console.log('分离结果 - 图片:', images.length, '视频:', videos.length);
+
+            const downloadedMedia = [];
+
+            // 下载图片到产品库
+            for (const image of images) {
+                const imageUrl = image.url || image.src;
+                if (imageUrl && imageUrl.startsWith('http')) {
+                    try {
+                        const result = await window.electronAPI.downloadImageToProductLibrary(goodsId, imageUrl, image.name || '图片');
+                        if (result.success) {
+                            downloadedMedia.push({
+                                ...image,
+                                localPath: result.localPath,
+                                cached: true
+                            });
+                        }
+                    } catch (error) {
+                        console.error('下载图片失败:', imageUrl, error);
+                    }
+                }
+            }
+
+            // 下载视频到产品库
+            for (const video of videos) {
+                const videoUrl = video.url || video.src;
+                if (videoUrl && videoUrl.startsWith('http')) {
+                    try {
+                        const result = await window.electronAPI.downloadVideoToProductLibrary(goodsId, videoUrl, video.name || '视频');
+                        if (result.success) {
+                            downloadedMedia.push({
+                                ...video,
+                                localPath: result.localPath,
+                                cached: true
+                            });
+                        }
+                    } catch (error) {
+                        console.error('下载视频失败:', videoUrl, error);
+                    }
+                }
+            }
+
+            console.log('媒体文件下载完成，成功下载:', downloadedMedia.length);
+            return {
+                success: true,
+                mediaData: downloadedMedia
+            };
+
+        } catch (error) {
+            console.error('下载媒体文件时出错:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    // 跳转到产品库商品详情页
+    async navigateToProductDetail(goodsId) {
+        try {
+            console.log('开始跳转到商品详情页:', goodsId);
+            
+            // 确保产品库数据已加载
+            if (typeof this.loadProductLibraryData === 'function') {
+                console.log('正在加载产品库数据...');
+                await this.loadProductLibraryData();
+                console.log('产品库数据加载完成');
+            } else {
+                console.error('loadProductLibraryData 方法不可用');
+                return;
+            }
+            
+            // 查找对应的商品元素
+            const selector = `[data-name="${goodsId}"][data-type="goods"]`;
+            console.log('查找商品元素，选择器:', selector);
+            const productElement = document.querySelector(selector);
+            
+            if (productElement) {
+                console.log('找到商品元素:', productElement);
+                // 选择该商品
+                if (typeof this.selectDataItem === 'function') {
+                    await this.selectDataItem(productElement);
+                    console.log(`已跳转到商品详情页: ${goodsId}`);
+                    this.updateStatus(`已跳转到商品详情页: ${goodsId}`);
+                } else {
+                    console.error('selectDataItem 方法不可用');
+                }
+            } else {
+                console.error(`未找到商品: ${goodsId}`);
+                console.log('当前页面所有商品元素:', document.querySelectorAll('[data-type="goods"]'));
+                this.updateStatus(`未找到商品: ${goodsId}`);
+            }
+        } catch (error) {
+            console.error('跳转到商品详情页失败:', error);
+            this.updateStatus(`跳转失败: ${error.message}`);
+        }
+    }
+
+    // 将媒体文件从临时文件夹移动到目标文件夹
+    async moveMediaFilesFromTemp(goodsId, mediaData) {
+        try {
+            console.log('开始移动媒体文件从临时文件夹到目标文件夹:', goodsId);
+            const result = await window.electronAPI.moveMediaFilesFromTemp(goodsId, mediaData);
+            if (result.success) {
+                console.log('媒体文件移动成功:', result.mediaData.media.length, '个');
+                return result;
+            } else {
+                console.error('媒体文件移动失败:', result.error);
+                return null;
+            }
+        } catch (error) {
+            console.error('移动媒体文件时出错:', error);
+            return null;
+        }
+    }
+
+    // 清理临时文件
+    async cleanupTempFiles(goodsId) {
+        try {
+            console.log('开始清理临时文件:', goodsId);
+            const result = await window.electronAPI.cleanupTempFiles(goodsId);
+            if (result.success) {
+                console.log('临时文件清理成功');
+            } else {
+                console.error('临时文件清理失败:', result.error);
+            }
+        } catch (error) {
+            console.error('清理临时文件时出错:', error);
+        }
     }
 
     // 绑定商品预览弹窗事件
@@ -3142,46 +4167,28 @@ class HanliApp {
         });
     }
 
-    // 保存商品数据
+    // 保存商品数据（数据已保存，只关闭弹窗）
     async saveGoodsData() {
         if (!this.currentImportData) {
             this.updateStatus('没有可保存的商品数据');
             return;
         }
 
-        try {
-            this.updateStatus('正在保存商品数据...');
-            
-            const result = await window.electronAPI.saveGoodsData(this.currentImportData);
-            
-            if (result.success) {
-                let statusMessage = `商品数据已保存到: 商品信息 -> ${result.paths.goodsInfo}, 监控数据 -> ${result.paths.monitoring}`;
-                if (result.savedImages && result.savedImages.length > 0) {
-                    statusMessage += `, 商品库已保存 ${result.savedImages.length} 张筛选图片`;
-                }
-                if (result.monitoringSavedImages && result.monitoringSavedImages.length > 0) {
-                    statusMessage += `, 监控文件夹已保存 ${result.monitoringSavedImages.length} 张筛选图片`;
-                }
-                this.updateStatus(statusMessage);
-                
-                // 关闭预览弹窗
-                const modal = document.getElementById('goodsPreviewModal');
-                if (modal) {
-                    modal.style.display = 'none';
-                }
-                
-                // 清空当前数据
-                this.currentImportData = null;
-                
-                // 刷新数据列表
-                this.loadData();
-            } else {
-                this.updateStatus(`保存失败: ${result.error}`);
-            }
-        } catch (error) {
-            console.error('保存商品数据失败:', error);
-            this.updateStatus(`保存失败: ${error.message}`);
+        // 数据已在采集时自动保存，直接关闭弹窗
+        this.updateStatus('数据已保存');
+        
+        // 关闭预览弹窗
+        const modal = document.getElementById('goodsPreviewModal');
+        if (modal) {
+            modal.style.display = 'none';
         }
+        
+        // 清空当前数据
+        this.currentImportData = null;
+        this.currentMediaData = null;
+        
+        // 刷新数据列表
+        this.loadData();
     }
 
     // 查找最新的goods-goodsId-time.json文件

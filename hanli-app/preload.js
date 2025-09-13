@@ -39,11 +39,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 商品数据相关
   saveGoodsData: (goodsData) => ipcRenderer.invoke('save-goods-data', goodsData),
   getMonitoringFiles: (goodsId) => ipcRenderer.invoke('get-monitoring-files', goodsId),
+  readJsonFile: (fileName, goodsId) => ipcRenderer.invoke('read-json-file', fileName, goodsId),
   onImportGoodsData: (callback) => {
     ipcRenderer.on('import-goods-data', (event, goodsData) => {
       callback(goodsData);
     });
   },
+  
+  // 媒体文件缓存相关
+  cacheImageToTemp: (goodsId, imageUrl, imageData) => ipcRenderer.invoke('cache-image-to-temp', goodsId, imageUrl, imageData),
+  cacheVideoToTemp: (goodsId, videoUrl, videoData) => ipcRenderer.invoke('cache-video-to-temp', goodsId, videoUrl, videoData),
+  
+  // 下载媒体文件到产品库
+  downloadImageToProductLibrary: (goodsId, imageUrl, fileName) => ipcRenderer.invoke('download-image-to-product-library', goodsId, imageUrl, fileName),
+  downloadVideoToProductLibrary: (goodsId, videoUrl, fileName) => ipcRenderer.invoke('download-video-to-product-library', goodsId, videoUrl, fileName),
+  cacheMediaFilesToTemp: (goodsId, mediaData) => ipcRenderer.invoke('cache-media-files-to-temp', goodsId, mediaData),
   
   // 平台信息
   platform: process.platform,
