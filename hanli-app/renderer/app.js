@@ -1,5 +1,5 @@
-// TopBar组件已移至 components/TopBar.js
-// SidebarResizer组件已移至 components/SidebarResizer.js
+// TopBar组件已移至 components/Common/TopBar.js
+// SidebarResizer组件已移至 components/Common/SidebarResizer.js
 
 // 第一列菜单和列表组件
 class MenuListColumn {
