@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>调试Fetch功能</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .debug-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .debug-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .debug-button:hover {
+            background: #0056b3;
+        }
+        .debug-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .console-container {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-connected {
+            background: #28a745;
+        }
+        .status-disconnected {
+            background: #dc3545;
+        }
+        .status-checking {
+            background: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h1>调试Fetch功能</h1>
+        <p>这个页面用于调试插件与App端的网络连接问题。</p>
+        
+        <div>
+            <span class="status-indicator" id="statusIndicator"></span>
+            <span id="statusText">准备开始调试...</span>
+        </div>
+        
+        <div>
+            <button class="debug-button" onclick="runDebugTest()">运行调试测试</button>
+            <button class="debug-button" onclick="checkNetworkConnection()">检查网络连接</button>
+            <button class="debug-button" onclick="checkBrowserEnvironment()">检查浏览器环境</button>
+            <button class="debug-button" onclick="clearConsole()">清空控制台</button>
+        </div>
+        
+        <div class="console-container" id="console-container">
+            等待调试开始...
+        </div>
+    </div>
+
+    <script>
+        // 重写console.log以显示在页面上
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        const originalConsoleWarn = console.warn;
+        
+        function logToPage(message, type = 'log') {
+            const consoleContainer = document.getElementById('console-container');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            
+            let color = '#d4d4d4';
+            if (type === 'error') color = '#f48771';
+            if (type === 'warn') color = '#dcdcaa';
+            if (type === 'success') color = '#4ec9b0';
+            
+            logEntry.style.color = color;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            consoleContainer.appendChild(logEntry);
+            consoleContainer.scrollTop = consoleContainer.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            logToPage(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalConsoleError.apply(console, args);
+            logToPage(args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalConsoleWarn.apply(console, args);
+            logToPage(args.join(' '), 'warn');
+        };
+        
+        function clearConsole() {
+            document.getElementById('console-container').innerHTML = '控制台已清空...';
+        }
+        
+        function updateStatus(connected, message) {
+            const indicator = document.getElementById('statusIndicator');
+            const text = document.getElementById('statusText');
+            
+            if (connected === true) {
+                indicator.className = 'status-indicator status-connected';
+                text.textContent = message;
+            } else if (connected === false) {
+                indicator.className = 'status-indicator status-disconnected';
+                text.textContent = message;
+            } else {
+                indicator.className = 'status-indicator status-checking';
+                text.textContent = message;
+            }
+        }
+        
+        // 调试Fetch功能的脚本
+        class FetchDebugger {
+            constructor() {
+                this.baseUrl = 'http://localhost:3001';
+                this.testResults = [];
+            }
+
+            async testAllEndpoints() {
+                console.log('开始测试所有API端点...');
+                
+                // 测试健康检查
+                await this.testHealthCheck();
+                
+                // 测试JSON保存
+                await this.testJsonSave();
+                
+                // 测试媒体下载
+                await this.testMediaDownload();
+                
+                // 输出测试结果
+                this.printResults();
+            }
+
+            async testHealthCheck() {
+                console.log('测试健康检查端点...');
+                
+                try {
+                    const response = await fetch(`${this.baseUrl}/api/health`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    
+                    const result = {
+                        endpoint: '/api/health',
+                        status: response.status,
+                        ok: response.ok,
+                        statusText: response.statusText,
+                        headers: Object.fromEntries(response.headers.entries())
+                    };
+                    
+                    if (response.ok) {
+                        result.data = await response.json();
+                        console.log('健康检查成功:', result);
+                    } else {
+                        result.error = await response.text();
+                        console.error('健康检查失败:', result);
+                    }
+                    
+                    this.testResults.push(result);
+                    
+                } catch (error) {
+                    const result = {
+                        endpoint: '/api/health',
+                        error: error.message,
+                        type: error.name
+                    };
+                    console.error('健康检查异常:', result);
+                    this.testResults.push(result);
+                }
+            }
+
+            async testJsonSave() {
+                console.log('测试JSON保存端点...');
+                
+                const testData = {
+                    goodsId: '123456789012',
+                    collectTime: new Date().toISOString(),
+                    goodsInfo: JSON.stringify({
+                        goodsId: '123456789012',
+                        goodsTitleCn: '测试商品',
+                        goodsTitleEn: 'Test Product',
+                        collectTime: new Date().toISOString(),
+                        collectUrl: window.location.href
+                    }, null, 2),
+                    monitoring: JSON.stringify({
+                        goodsId: '123456789012',
+                        collectTime: new Date().toISOString(),
+                        goodsSold: 100
+                    }, null, 2),
+                    mediaData: JSON.stringify({
+                        goodsId: '123456789012',
+                        media: []
+                    }, null, 2)
+                };
+                
+                try {
+                    const response = await fetch(`${this.baseUrl}/api/save-json-files`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(testData)
+                    });
+                    
+                    const result = {
+                        endpoint: '/api/save-json-files',
+                        status: response.status,
+                        ok: response.ok,
+                        statusText: response.statusText,
+                        headers: Object.fromEntries(response.headers.entries())
+                    };
+                    
+                    if (response.ok) {
+                        result.data = await response.json();
+                        console.log('JSON保存成功:', result);
+                    } else {
+                        result.error = await response.text();
+                        console.error('JSON保存失败:', result);
+                    }
+                    
+                    this.testResults.push(result);
+                    
+                } catch (error) {
+                    const result = {
+                        endpoint: '/api/save-json-files',
+                        error: error.message,
+                        type: error.name
+                    };
+                    console.error('JSON保存异常:', result);
+                    this.testResults.push(result);
+                }
+            }
+
+            async testMediaDownload() {
+                console.log('测试媒体下载端点...');
+                
+                const mediaData = {
+                    goodsId: '123456789012',
+                    mediaList: [
+                        {
+                            url: 'https://via.placeholder.com/800x800.jpg',
+                            type: 'image',
+                            width: 800,
+                            height: 800
+                        }
+                    ]
+                };
+                
+                try {
+                    const response = await fetch(`${this.baseUrl}/api/download-media`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(mediaData)
+                    });
+                    
+                    const result = {
+                        endpoint: '/api/download-media',
+                        status: response.status,
+                        ok: response.ok,
+                        statusText: response.statusText,
+                        headers: Object.fromEntries(response.headers.entries())
+                    };
+                    
+                    if (response.ok) {
+                        result.data = await response.json();
+                        console.log('媒体下载成功:', result);
+                    } else {
+                        result.error = await response.text();
+                        console.error('媒体下载失败:', result);
+                    }
+                    
+                    this.testResults.push(result);
+                    
+                } catch (error) {
+                    const result = {
+                        endpoint: '/api/download-media',
+                        error: error.message,
+                        type: error.name
+                    };
+                    console.error('媒体下载异常:', result);
+                    this.testResults.push(result);
+                }
+            }
+
+            printResults() {
+                console.log('\n=== 测试结果汇总 ===');
+                this.testResults.forEach((result, index) => {
+                    console.log(`\n测试 ${index + 1}: ${result.endpoint}`);
+                    if (result.ok) {
+                        console.log('✅ 成功');
+                        console.log('状态码:', result.status);
+                        console.log('响应数据:', result.data);
+                    } else if (result.error) {
+                        console.log('❌ 异常');
+                        console.log('错误类型:', result.type);
+                        console.log('错误信息:', result.error);
+                    } else {
+                        console.log('❌ 失败');
+                        console.log('状态码:', result.status);
+                        console.log('状态文本:', result.statusText);
+                        console.log('错误信息:', result.error);
+                    }
+                });
+                console.log('\n==================');
+            }
+
+            // 检查网络连接
+            async checkNetworkConnection() {
+                console.log('检查网络连接...');
+                updateStatus(null, '检查网络连接中...');
+                
+                try {
+                    // 尝试访问一个简单的HTTP端点
+                    const response = await fetch(`${this.baseUrl}/api/health`, {
+                        method: 'GET',
+                        mode: 'cors',
+                        cache: 'no-cache'
+                    });
+                    
+                    console.log('网络连接状态:', response.status);
+                    if (response.ok) {
+                        updateStatus(true, '网络连接正常');
+                        return true;
+                    } else {
+                        updateStatus(false, '网络连接失败');
+                        return false;
+                    }
+                } catch (error) {
+                    console.error('网络连接失败:', error);
+                    updateStatus(false, '网络连接失败: ' + error.message);
+                    return false;
+                }
+            }
+
+            // 检查浏览器环境
+            checkBrowserEnvironment() {
+                console.log('检查浏览器环境...');
+                
+                const info = {
+                    userAgent: navigator.userAgent,
+                    protocol: window.location.protocol,
+                    host: window.location.host,
+                    origin: window.location.origin,
+                    fetchAvailable: typeof fetch !== 'undefined',
+                    corsSupported: 'cors' in Request.prototype
+                };
+                
+                console.log('浏览器环境信息:', info);
+                return info;
+            }
+        }
+
+        // 创建全局调试器实例
+        const debugger = new FetchDebugger();
+        
+        // 全局函数
+        function runDebugTest() {
+            console.log('开始运行调试测试...');
+            updateStatus(null, '运行调试测试中...');
+            debugger.testAllEndpoints();
+        }
+        
+        function checkNetworkConnection() {
+            debugger.checkNetworkConnection();
+        }
+        
+        function checkBrowserEnvironment() {
+            debugger.checkBrowserEnvironment();
+        }
+
+        // 页面加载完成后的初始化
+        window.addEventListener('load', () => {
+            console.log('调试页面已加载');
+            console.log('请确保App正在运行 (npm start)');
+            
+            // 自动检查浏览器环境
+            checkBrowserEnvironment();
+            
+            // 自动检查网络连接
+            checkNetworkConnection();
+        });
+    </script>
+</body>
+</html>

@@ -4,9 +4,10 @@
   "version": "1.0",
   "description": "采集Temu商品详情信息并导出JSON",
   "permissions": ["contextMenus", "scripting", "activeTab"],
+  "host_permissions": ["http://localhost:3001/*"],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "韩立商品采集插件"
+    "default_title": "Hanli商品采集插件"
   },
   "icons": {
     "16": "icons/icon16.png",
@@ -20,7 +21,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "js": ["mediaManager.js", "collectionManager.js", "content.js"],
       "run_at": "document_end"
     }
   ]

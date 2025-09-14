@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试App唤起功能</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .test-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>测试App唤起功能</h1>
+        <p>测试不同的App唤起方式</p>
+        
+        <button class="test-button" onclick="testDirectProtocol()">直接测试协议</button>
+        <button class="test-button" onclick="testIframeProtocol()">iframe方式测试</button>
+        <button class="test-button" onclick="testWindowOpen()">window.open方式测试</button>
+        <button class="test-button" onclick="testCollectionManager()">测试CollectionManager</button>
+        
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        function showResult(message, type = 'info') {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = message;
+        }
+
+        function testDirectProtocol() {
+            try {
+                console.log('测试直接协议调用...');
+                showResult('正在测试直接协议调用...', 'info');
+                
+                // 直接设置location.href
+                window.location.href = 'hanliapp://open';
+                
+                showResult('直接协议调用已执行', 'success');
+            } catch (error) {
+                console.error('直接协议调用失败:', error);
+                showResult(`直接协议调用失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testIframeProtocol() {
+            try {
+                console.log('测试iframe协议调用...');
+                showResult('正在测试iframe协议调用...', 'info');
+                
+                // 创建隐藏iframe
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = 'hanliapp://open';
+                document.body.appendChild(iframe);
+                
+                // 立即移除iframe
+                setTimeout(() => {
+                    if (iframe.parentNode) {
+                        iframe.parentNode.removeChild(iframe);
+                    }
+                }, 100);
+                
+                showResult('iframe协议调用已执行', 'success');
+            } catch (error) {
+                console.error('iframe协议调用失败:', error);
+                showResult(`iframe协议调用失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testWindowOpen() {
+            try {
+                console.log('测试window.open协议调用...');
+                showResult('正在测试window.open协议调用...', 'info');
+                
+                // 使用window.open
+                window.open('hanliapp://open', '_blank');
+                
+                showResult('window.open协议调用已执行', 'success');
+            } catch (error) {
+                console.error('window.open协议调用失败:', error);
+                showResult(`window.open协议调用失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testCollectionManager() {
+            try {
+                console.log('测试CollectionManager...');
+                showResult('正在测试CollectionManager...', 'info');
+                
+                // 模拟CollectionManager的openApp方法
+                if (typeof window.collectionManager !== 'undefined') {
+                    window.collectionManager.openApp();
+                    showResult('CollectionManager.openApp()已调用', 'success');
+                } else {
+                    // 如果CollectionManager不存在，直接测试openApp逻辑
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.src = 'hanliapp://open';
+                    document.body.appendChild(iframe);
+                    
+                    setTimeout(() => {
+                        if (iframe.parentNode) {
+                            iframe.parentNode.removeChild(iframe);
+                        }
+                    }, 100);
+                    
+                    showResult('模拟CollectionManager.openApp()已执行', 'success');
+                }
+            } catch (error) {
+                console.error('CollectionManager测试失败:', error);
+                showResult(`CollectionManager测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 页面加载完成后的初始化
+        window.addEventListener('load', () => {
+            console.log('App唤起测试页面已加载');
+            showResult('App唤起测试页面已加载\n请点击按钮测试不同的唤起方式', 'info');
+        });
+    </script>
+</body>
+</html>

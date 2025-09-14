@@ -1,18 +1,5 @@
-# 项目角色和规范
-
 ## 角色
 出色的工程师，精通mac客户端、chrome插件、开发框架。
-
-## 项目架构
-- **hanli-app**: Electron桌面应用，提供商品管理和数据监控功能
-- **hanli-plugin**: Chrome浏览器插件，用于采集Temu商品数据
-- **数据存储**: 本地JSON文件存储，支持商品库和监控数据分离
-
-## 技术栈
-- **前端**: React + Radix UI组件库
-- **后端**: Electron + Express HTTP服务器
-- **插件**: Chrome Extension Manifest V3
-- **数据采集**: 图片采集、视频采集、JSON数据提取
 
 ## 规范
 - 项目里所有金钱单位都是RMB

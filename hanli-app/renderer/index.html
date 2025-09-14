@@ -3,234 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>韩立客户端</title>
+    <title>Hanli - 产品管理系统</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
-    <script src="theme/ThemeManager.js"></script>
+    <link rel="stylesheet" href="theme/light/colors.css" id="theme-colors">
 </head>
 <body>
-    <div id="app">
-        <!-- 标题栏 -->
-        <header class="titlebar" id="titlebar" style="display: none;">
+    <div id="home-page" class="home-page">
+        <!-- TopBar 区域 -->
+        <div id="top-bar" class="top-bar">
             <div class="top-bar-left">
-                <button class="btn-icon" id="toggleSidebarBtn" title="展开/收起侧边栏">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M3 6H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M3 12H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M3 18H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </button>
+                <div class="logo">Hanli</div>
             </div>
             <div class="top-bar-center">
-                <div class="search-container">
-                    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
-                        <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    <input type="text" class="search-input" id="searchInput" placeholder="搜索商品或店铺...">
+                <div id="top-bar-tabs" class="top-bar-tabs">
+                    <div class="tab active" data-page="home">
+                        <div class="tab-icon">🏠</div>
+                        <div class="tab-text">首页</div>
+                        <div class="tab-close">×</div>
+                    </div>
                 </div>
             </div>
             <div class="top-bar-right">
-                <button class="btn-icon" id="logBtn" title="查看日志">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M16 13H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M16 17H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M10 9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </button>
-                
-                <button class="btn-icon" id="requirementsBtn" title="需求文档">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M16 13H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M16 17H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M10 9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </button>
-                
-                <button class="btn-icon" id="debugBtn" title="调试工具">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2"/>
-                        <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </button>
-                
-                <button class="btn-icon" id="settingsBtn" title="设置">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-                        <path d="M19.4 15A1.65 1.65 0 0 0 21 12A1.65 1.65 0 0 0 19.4 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M4.6 9A1.65 1.65 0 0 1 3 12A1.65 1.65 0 0 1 4.6 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M12 1V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M12 21V23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M4.22 4.22L5.64 5.64" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M18.36 18.36L19.78 19.78" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M1 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M21 12H23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M4.22 19.78L5.64 18.36" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M18.36 5.64L19.78 4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </button>
+                <div class="settings-icon" id="settings-btn">⚙️</div>
             </div>
-        </header>
-
+        </div>
 
         <!-- 主内容区域 -->
-        <main class="main-content">
-            <!-- 数据加载错误页面 -->
-            <div class="folder-selection-page" id="folderSelectionPage" style="display: none;">
-                <div class="folder-selection-container">
-                    <!-- 第一列：图标和文字 -->
-                    <div class="folder-selection-left">
-                        <div class="folder-selection-icon">
-                            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 9V13M12 17H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        <h2 class="folder-selection-title" id="folderSelectionTitle">数据加载失败</h2>
-                        <p class="folder-selection-description" id="folderSelectionDescription">
-                            无法加载项目数据，请检查data文件夹是否存在
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 主应用页面 -->
-            <div class="main-app-page" id="mainAppPage" style="display: none;">
-                <!-- 两列布局容器 -->
-                <div class="two-column-layout">
-                    <!-- 第一列：菜单和列表列 -->
-                    <div class="column menu-list-column" id="menuListColumn">
-                        <!-- 拖拽分隔条 -->
-                        <div class="resize-handle" id="resizeHandle"></div>
-                        
-                        <!-- 选品区域 -->
-                        <div class="sidebar-section">
-                            <div class="sidebar-section-header">
-                                <h3 class="sidebar-section-title">选品</h3>
-                            </div>
-                            
-                            <!-- 产品库区域 -->
-                            <div class="data-section" id="productLibrarySection">
-                                <div class="data-section-header">
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <div class="data-section-toggle">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                            </svg>
-                                        </div>
-                                        <h4 class="data-section-title">产品库</h4>
-                                    </div>
-                                    <span class="count" id="productLibraryCount">0</span>
-                                </div>
-                                <div class="data-list" id="productLibraryList">
-                                    <div class="empty-state">
-                                        <div class="empty-icon">
-                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M3 7V5C3 3.89543 3.89543 3 5 3H19C20.1046 3 21 3.89543 21 5V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                <path d="M3 7L5 21H19L21 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                <path d="M8 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                <path d="M16 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                            </svg>
-                                        </div>
-                                        <p>暂无商品数据</p>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- 数据监控区域 -->
-                            <div class="data-section" id="monitoringSection">
-                                <div class="data-section-header">
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <div class="data-section-toggle">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                            </svg>
-                                        </div>
-                                        <h4 class="data-section-title">数据监控</h4>
-                                    </div>
-                                    <span class="count" id="monitoringCount">0</span>
-                                </div>
-                                <div class="data-list" id="monitoringList">
-                                    <div class="empty-state">
-                                        <div class="empty-icon">
-                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M3 3V21H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                <path d="M9 9L12 6L16 10L20 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                            </svg>
-                                        </div>
-                                        <p>暂无监控数据</p>
-                                    </div>
-                                </div>
-                            </div>
+        <div class="main-layout">
+            <!-- SideBar 区域 -->
+            <div id="sidebar" class="sidebar">
+                <div class="sidebar-content">
+                    <div class="sidebar-item active" data-page="home">
+                        <div class="sidebar-item-content">
+                            <div class="sidebar-item-text">首页</div>
                         </div>
                     </div>
-
-                    <!-- 第二列：详情列 -->
-                    <div class="column detail-column" id="detailColumn">
-                        <div class="detail-header">
-                            <h3 id="detailTitle">详情</h3>
-                            <div class="detail-controls">
-                                <button class="btn-icon" id="backToListBtn" title="返回列表" style="display: none;">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M19 12H5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        <path d="M12 19L5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="detail-content" id="detailContent">
-                            <div class="empty-state">
-                                <div class="empty-icon">
-                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                    </svg>
-                                </div>
-                                <p>请选择一个项目查看详情</p>
+                    
+                    <div class="sidebar-group">
+                        <div class="sidebar-group-title">选品</div>
+                        <div class="sidebar-item" data-page="product-library">
+                            <div class="sidebar-item-content">
+                                <div class="sidebar-item-text">产品库</div>
                             </div>
                         </div>
                     </div>
                 </div>
+                <div class="sidebar-resizer" id="sidebar-resizer"></div>
             </div>
-        </main>
+
+            <!-- PageContainer 区域 -->
+            <div id="page-container" class="page-container">
+                <div class="page-content">
+                    <div class="welcome-section">
+                        <h1 class="welcome-title">欢迎使用Hanli</h1>
+                        <p class="welcome-desc">高效管理您的产品信息、图片资源和数据分析</p>
+                    </div>
+                    
+                    <div class="dashboard-grid">
+                        <div class="dashboard-card">
+                            <div class="card-icon">📦</div>
+                            <div class="card-title">产品总数</div>
+                            <div class="card-value" id="product-count">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    
 
+    <!-- 设置弹窗 -->
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">系统设置</h3>
+                <button class="modal-close" id="settings-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <label class="setting-label">主题设置</label>
+                    <select id="theme-select" class="setting-select">
+                        <option value="system">跟随系统</option>
+                        <option value="light">浅色主题</option>
+                        <option value="dark">深色主题</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="settings-save">保存设置</button>
+                <button class="btn btn-secondary" id="settings-cancel">取消</button>
+            </div>
+        </div>
+    </div>
 
-
-
-
-    <!-- Common组件 -->
-    <script src="components/Common/FileTypeUtils.js"></script>
-    <script src="components/Common/TopBar.js"></script>
-    <script src="components/Common/SidebarResizer.js"></script>
-    
-    <!-- Image组件 -->
-    <script src="components/Image/ImageManager.js"></script>
-    <script src="components/Image/ImageSelectionManager.js"></script>
-    <script src="components/Image/ImageSortManager.js"></script>
-    <script src="components/Image/ImageUploadManager.js"></script>
-    <script src="components/Image/ImageDeleteManager.js"></script>
-    <script src="components/Image/ImageController.js"></script>
-    <script src="components/Image/ImageGallery.js"></script>
-    <script src="components/Image/ImageCardManager.js"></script>
-    
-    <!-- Detail组件 -->
-    <script src="components/Detail/GoodsBasicInfo.js"></script>
-    
-    <!-- Modal组件 -->
-    <script src="components/Modal/MonitoringChartsModal.js"></script>
-    <script src="components/Modal/DebugPopupModal.js"></script>
-    <script src="components/Modal/SettingsModal.js"></script>
-    <script src="components/Modal/GoodsPreviewModal.js"></script>
-    <script src="components/Modal/LogModal.js"></script>
-    <script src="components/Modal/RequirementsModal.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
-
-

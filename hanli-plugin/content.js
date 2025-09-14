@@ -1,12 +1,25 @@
 (() => {
-    // 全局图片收集器
-    let collectedImages = new Set();
-    let imageObserver = null;
+    // 引入CollectionManager
+    if (typeof CollectionManager === 'undefined') {
+        console.warn('CollectionManager未加载，使用备用方案');
+        // 如果CollectionManager未加载，创建简单的实现
+        window.collectionManager = {
+            async executeCollection(goodsInfoData, monitoringData, mediaData) {
+                console.warn('CollectionManager未加载，使用备用方案');
+                alert('CollectionManager未加载，请刷新页面重试');
+            }
+        };
+    } else {
+        // 正确实例化CollectionManager
+        window.collectionManager = new CollectionManager();
+        console.log('CollectionManager已加载并实例化');
+    }
+
+    // 媒体管理器
+    let mediaManager = null;
     let collectButton = null;
-    
-    // 全局视频收集器
-    let collectedVideos = new Set();
-    let videoObserver = null;
+    // 将采集状态设为全局变量，供popup.js访问
+    window.isCollecting = false;
     
     // 检测是否为Temu商品详情页
     function isTemuProductPage() {
@@ -62,7 +75,12 @@
 
         // 点击事件
         collectButton.addEventListener('click', () => {
+            if (window.isCollecting) {
+                console.log('采集正在进行中，请等待完成');
+                return;
+            }
             console.log('采集按钮被点击');
+            updateCollectButtonStatus('collecting');
             scrapeRawData();
         });
 
@@ -79,86 +97,52 @@
         }
     }
 
-    // 初始化图片监听
-    function initImageCollection() {
-        console.log('开始初始化图片收集...');
+    // 初始化媒体管理器
+    function initMediaManager() {
+        if (typeof MediaManager === 'undefined') {
+            console.warn('MediaManager未加载，使用备用方案');
+            return;
+        }
         
-        // 立即收集当前页面的图片
-        collectCurrentImages();
+        mediaManager = new MediaManager();
+        mediaManager.initImageCollection();
+        mediaManager.initVideoCollection();
+        window.mediaManager = mediaManager; // 设置为全局变量供CollectionManager使用
+        console.log('MediaManager已初始化');
+    }
+
+    // 更新采集按钮状态
+    function updateCollectButtonStatus(status) {
+        if (!collectButton) return;
         
-        // 设置MutationObserver监听动态加载的图片
-        setupImageObserver();
-        
-        // 监听页面滚动，触发懒加载图片
-        setupScrollListener();
-        
-        // 监听图片加载事件
-        setupImageLoadListener();
+        switch (status) {
+            case 'collecting':
+                collectButton.innerHTML = '采集中...';
+                collectButton.style.background = '#ffa726';
+                collectButton.style.cursor = 'not-allowed';
+                collectButton.disabled = true;
+                window.isCollecting = true;
+                break;
+            case 'completed':
+                collectButton.innerHTML = '已采集';
+                collectButton.style.background = '#4caf50';
+                collectButton.style.cursor = 'default';
+                collectButton.disabled = true;
+                window.isCollecting = false;
+                break;
+            case 'ready':
+            default:
+                collectButton.innerHTML = '采集';
+                collectButton.style.background = '#ff6b35';
+                collectButton.style.cursor = 'pointer';
+                collectButton.disabled = false;
+                window.isCollecting = false;
+                break;
+        }
     }
     
-    // 初始化视频监听
-    function initVideoCollection() {
-        console.log('开始初始化视频收集...');
-        
-        // 立即收集当前页面的视频
-        collectCurrentVideos();
-        
-        // 设置MutationObserver监听动态加载的视频
-        setupVideoObserver();
-        
-        // 监听页面滚动，触发懒加载视频
-        setupScrollListener();
-        
-        // 监听视频加载事件
-        setupVideoLoadListener();
-    }
+    // 这些函数已移动到MediaManager中
     
-    // 收集当前页面的图片
-    function collectCurrentImages() {
-        const allImages = document.querySelectorAll('img');
-        allImages.forEach(img => {
-            if (img.src && img.src.startsWith('http')) {
-                collectedImages.add(img.src);
-            }
-        });
-        console.log('当前页面图片数量:', collectedImages.size);
-    }
-    
-    // 设置MutationObserver
-    function setupImageObserver() {
-        imageObserver = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'childList') {
-                    mutation.addedNodes.forEach((node) => {
-                        if (node.nodeType === Node.ELEMENT_NODE) {
-                            // 检查新添加的节点是否是图片
-                            if (node.tagName === 'IMG' && node.src && node.src.startsWith('http')) {
-                                collectedImages.add(node.src);
-                                console.log('发现新图片:', node.src);
-                            }
-                            
-                            // 检查新添加的节点内部是否有图片
-                            const imgs = node.querySelectorAll ? node.querySelectorAll('img') : [];
-                            imgs.forEach(img => {
-                                if (img.src && img.src.startsWith('http')) {
-                                    collectedImages.add(img.src);
-                                    console.log('发现新图片:', img.src);
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-        });
-        
-        // 开始观察
-        imageObserver.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-        
-        console.log('MutationObserver 已启动');
-    }
     
     // 设置滚动监听器
     function setupScrollListener() {
@@ -371,7 +355,7 @@
             position: relative;
         `;
 
-        // 创建应用图标（简化的韩立图标）
+        // 创建应用图标（简化的Hanli图标）
         const appIcon = document.createElement('div');
         appIcon.style.cssText = `
             width: 40px;
@@ -418,7 +402,7 @@
             font-weight: bold;
             color: #ffffff;
         `;
-        title.textContent = '韩立客户端尚未启动';
+        title.textContent = 'Hanli客户端尚未启动';
 
         // 内容
         const content = document.createElement('div');
@@ -430,7 +414,7 @@
 
         const line1 = document.createElement('div');
         line1.style.cssText = 'margin-bottom: 8px;';
-        line1.textContent = '您需要启动韩立客户端才能保存商品数据。';
+        line1.textContent = '您需要启动Hanli客户端才能保存商品数据。';
 
         const line2 = document.createElement('div');
         line2.style.cssText = 'margin-bottom: 8px;';
@@ -445,7 +429,7 @@
         `;
         helpLink.textContent = '点击这里';
         helpLink.addEventListener('click', () => {
-            alert('请检查：\n1. 韩立客户端是否正在运行\n2. 端口3001是否被占用\n3. 防火墙是否阻止了连接');
+            alert('请检查：\n1. Hanli客户端是否正在运行\n2. 端口3001是否被占用\n3. 防火墙是否阻止了连接');
         });
 
         const line3Text = document.createElement('span');
@@ -500,7 +484,7 @@
             font-weight: 500;
             transition: all 0.2s ease;
         `;
-        openAppBtn.textContent = '启动韩立客户端';
+        openAppBtn.textContent = '启动Hanli客户端';
         openAppBtn.addEventListener('mouseenter', () => {
             openAppBtn.style.background = '#3a8eef';
         });
@@ -508,8 +492,16 @@
             openAppBtn.style.background = '#4a9eff';
         });
         openAppBtn.addEventListener('click', () => {
-            // 尝试打开韩立客户端
-            window.open('hanli://open', '_blank');
+            // 尝试打开Hanli客户端
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = 'hanliapp://open';
+            document.body.appendChild(iframe);
+            setTimeout(() => {
+                if (iframe.parentNode) {
+                    iframe.parentNode.removeChild(iframe);
+                }
+            }, 100);
             modal.remove();
         });
 
@@ -591,100 +583,6 @@
         console.log('==================');
     };
     
-    // 生成JSON文件
-    async function generateJsonFiles(goodsInfoData, monitoringData, mediaData) {
-        try {
-            console.log('开始生成JSON文件...');
-            
-            const goodsId = goodsInfoData.goodsId;
-            const collectTime = goodsInfoData.collectTime;
-            
-            // 生成JSON数据
-            const goodsInfoJson = JSON.stringify(goodsInfoData, null, 2);
-            const monitoringJson = JSON.stringify(monitoringData, null, 2);
-            const mediaDataJson = JSON.stringify(mediaData, null, 2);
-            
-            // 通过API发送JSON数据到App，让App保存到数据目录
-            const jsonData = {
-                goodsId: goodsId,
-                collectTime: collectTime,
-                goodsInfo: goodsInfoJson,
-                monitoring: monitoringJson,
-                mediaData: mediaDataJson
-            };
-            
-            const response = await fetch('http://localhost:3001/api/save-json-files', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(jsonData)
-            });
-            
-            if (!response.ok) {
-                throw new Error(`保存JSON文件失败: ${response.statusText}`);
-            }
-            
-            const result = await response.json();
-            if (!result.success) {
-                throw new Error(`保存JSON文件失败: ${result.error}`);
-            }
-            
-            console.log('JSON文件保存完成:', result.files);
-            return result.files;
-            
-        } catch (error) {
-            console.error('生成JSON文件失败:', error);
-            throw error;
-        }
-    }
-
-    // 发送数据到hanli-app
-    async function sendToHanliApp(data) {
-        try {
-            const response = await fetch('http://localhost:3001/api/import-goods', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data)
-            });
-            
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success) {
-                    // 不显示提示，直接唤起App
-                    console.log('数据已成功发送到hanli-app');
-                } else {
-                    // 显示错误提示
-                    createAppNotRunningModal();
-                }
-            } else {
-                // 显示连接失败提示
-                createAppNotRunningModal();
-            }
-        } catch (error) {
-            console.error('发送数据到hanli-app失败:', error);
-            // 显示连接失败提示
-            createAppNotRunningModal();
-        }
-    }
-
-    function exportJSON(data) {
-        let jsonStr = JSON.stringify(data, null, 2);
-        let blob = new Blob([jsonStr], {type: "application/json"});
-
-        // 文件名用商品名，去掉非法字符
-        let safeTitle = (data.goodsTitleEn || "temu_product").replace(/[\\/:*?"<>|]/g, "_");
-        let fileName = safeTitle + ".json";
-
-        let url = URL.createObjectURL(blob);
-        let a = document.createElement("a");
-        a.href = url;
-        a.download = fileName;
-        a.click();
-        URL.revokeObjectURL(url);
-    }
 
     function joinObjectField(list, key = "specValue", separator = "") {
         if (!Array.isArray(list)) {
@@ -1070,14 +968,14 @@
         let scripts = Array.from(document.querySelectorAll("script"));
         let rawScript = scripts.find(s => s.textContent.includes("window.rawData"));
         if (!rawScript) {
-            alert("未找到 window.rawData");
+            console.error("未找到 window.rawData");
             return;
         }
 
         // 正则提取 JSON 字符串
         let match = rawScript.textContent.match(/window\.rawData\s*=\s*(\{.*?\});/s);
         if (!match) {
-            alert("无法解析 window.rawData");
+            console.error("无法解析 window.rawData");
             return;
         }
 
@@ -1086,7 +984,7 @@
         try {
             rawData = JSON.parse(jsonStr);
         } catch (e) {
-            alert("JSON解析失败: " + e.message);
+            console.error("JSON解析失败: " + e.message);
             return;
         }
 
@@ -1152,11 +1050,15 @@
             });
         }
 
-        // 在采集前再次收集图片和视频，确保获取到最新的媒体文件
-        triggerImageCollection();
-        triggerVideoCollection();
-        const pageImages = getAllCollectedImages();
-        const pageVideos = getAllCollectedVideos();
+        // 使用MediaManager处理媒体文件
+        if (!mediaManager) {
+            console.error('MediaManager未初始化');
+            return;
+        }
+        
+        // 获取收集到的图片和视频
+        const pageImages = mediaManager.getAllCollectedImages();
+        const pageVideos = mediaManager.getAllCollectedVideos();
         console.log('页面收集到的图片数量:', pageImages.length);
         console.log('页面收集到的视频数量:', pageVideos.length);
         
@@ -1173,11 +1075,11 @@
         console.log('去重后总图片数量:', allImages.length);
         console.log('所有图片URLs:', allImages);
 
-        // 在插件端进行图片筛选
+        // 使用MediaManager进行图片筛选
         console.log('开始进行图片筛选...');
-        const allImageInfo = await detectAndFilterImages(allImages, {
-            minWidth: 0,         // 不设置最小尺寸限制
-            minHeight: 0,        // 不设置最小尺寸限制
+        const allImageInfo = await mediaManager.detectAndFilterImages(allImages, {
+            minWidth: 800,       // 最小宽度800px
+            minHeight: 800,      // 最小高度800px
             maxWidth: 10000,     // 增加最大尺寸限制
             maxHeight: 10000,    // 增加最大尺寸限制
             targetWidth: 800,
@@ -1185,54 +1087,31 @@
             tolerance: 50,
             maxCount: 100        // 增加最大数量限制
         });
-        console.log(`检测到图片数量: ${allImageInfo.length}`);
+        
+        // 筛选出符合尺寸要求的图片
+        const filteredImageInfo = allImageInfo.filter(img => {
+            const isLargeEnough = img.width >= 800 && img.height >= 800;
+            console.log(`图片筛选结果: ${img.url} - ${img.width}x${img.height} - 符合要求: ${isLargeEnough}`);
+            return isLargeEnough;
+        });
+        
+        console.log(`图片筛选完成: 原始${allImageInfo.length}张, 筛选后${filteredImageInfo.length}张`);
         
         // 处理视频数据
         console.log('=== 视频采集调试信息 ===');
         console.log('页面收集到的视频数量:', pageVideos.length);
         console.log('所有视频URLs:', pageVideos);
         
-        // 检测视频（不进行筛选，保留所有视频）
-        const allVideoInfo = await detectAndFilterVideos(pageVideos, {
-            minDuration: 0,      // 不设置最小时长限制
-            maxDuration: 3600,   // 最大时长1小时
+        // 使用MediaManager检测视频
+        const allVideoInfo = await mediaManager.detectAndFilterVideos(pageVideos, {
             minSize: 0,          // 不设置最小文件大小限制
             maxSize: 1024 * 1024 * 1024, // 最大1GB
-            supportedFormats: ['mp4', 'webm', 'ogg', 'avi', 'mov', 'mkv', 'flv', 'wmv', 'm4v', '3gp'],
             maxCount: 50         // 增加最大数量限制
         });
         console.log(`检测到视频数量: ${allVideoInfo.length}`);
         
-        // 生成媒体数据（包含所有图片和视频）
-        const mediaData = {
-            goodsId: goodsId,
-            media: []
-        };
-
-        // 添加所有图片
-        allImageInfo.forEach(img => {
-            mediaData.media.push({
-                url: img.url,
-                width: img.width,
-                height: img.height,
-                isTargetSize: img.isTargetSize || false,
-                type: 'image',
-                path: null // 初始为null，缓存后更新
-            });
-        });
-
-        // 添加所有视频
-        allVideoInfo.forEach(video => {
-            mediaData.media.push({
-                url: video.url,
-                width: video.width || 0,
-                height: video.height || 0,
-                isTargetSize: true, // 视频不进行尺寸过滤
-                type: 'video',
-                path: null // 初始为null，缓存后更新
-            });
-        });
-
+        // 使用MediaManager生成媒体数据
+        const mediaData = mediaManager.generateMediaData(goodsId, filteredImageInfo, allVideoInfo);
         console.log('插件生成的媒体数据:', mediaData);
         let mallData = rawData?.store?.moduleMap?.mallModule?.data?.mallData || {};
         let storeId = mallData?.mallId || '';
@@ -1301,14 +1180,14 @@
             }
         };
 
-        // 生成JSON文件
-        const jsonFiles = await generateJsonFiles(goodsInfoData, monitoringData, mediaData);
-        
-        // 发送数据到hanli-app，包含JSON文件路径
-        sendToHanliApp({
-            goodsId: goodsId,
-            jsonFiles: jsonFiles
-        });
+        // 使用CollectionManager执行完整采集流程（默认打开App）
+        try {
+            await window.collectionManager.executeCollection(goodsInfoData, monitoringData, mediaData, true);
+        } catch (error) {
+            console.error('采集流程失败:', error);
+            alert('采集失败: ' + error.message);
+            updateCollectButtonStatus('ready'); // 采集失败时重置按钮状态
+        }
     }
 
     // 延迟创建按钮的函数
@@ -1326,15 +1205,13 @@
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             console.log('DOMContentLoaded 事件触发');
-            initImageCollection();
-            initVideoCollection();
+            initMediaManager();
             delayedCreateButton();
         });
     } else {
         // 页面已经加载完成
         console.log('页面已加载完成');
-        initImageCollection();
-        initVideoCollection();
+        initMediaManager();
         delayedCreateButton();
     }
 
@@ -1360,4 +1237,21 @@
 
     // 开始观察URL变化
     urlObserver.observe(document, { subtree: true, childList: true });
+
+    // 监听采集完成事件
+    document.addEventListener('hanliCollectionCompleted', () => {
+        console.log('收到采集完成通知，更新按钮状态为"已采集"');
+        updateCollectButtonStatus('completed');
+        // 通知popup.js采集完成
+        window.dispatchEvent(new CustomEvent('hanliPopupCollectionCompleted'));
+    });
+
+    // 监听采集失败事件
+    document.addEventListener('hanliCollectionFailed', () => {
+        console.log('收到采集失败通知，重置按钮状态');
+        updateCollectButtonStatus('ready');
+        // 通知popup.js采集失败
+        window.dispatchEvent(new CustomEvent('hanliPopupCollectionFailed'));
+    });
+
 })();

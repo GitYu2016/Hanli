@@ -65,8 +65,8 @@ class HanliPlugin {
             
             // 6. 检测图片尺寸并筛选
             const imageInfoList = await this.imageCollector.detectAndFilterImages(allImages, {
-                minWidth: 50,   // 最小尺寸要求很低，确保获取所有图片
-                minHeight: 50,
+                minWidth: 800,   // 最小宽度800px
+                minHeight: 800,  // 最小高度800px
                 maxWidth: 10000, // 最大尺寸要求很高
                 maxHeight: 10000,
                 targetWidth: 800,
@@ -89,23 +89,15 @@ class HanliPlugin {
                 area: img.width * img.height
             })));
             
-            // 8. 筛选大于800x800px的图片
-            let largeImages = imageInfoList.filter(img => img.width > 800 && img.height > 800);
-            let filteredImages = largeImages.map(img => img.url);
+            // 8. 所有图片都已经通过800x800px筛选，直接使用
+            let filteredImages = imageInfoList.map(img => img.url);
             
-            console.log(`大于800×800px的图片数量: ${largeImages.length}`);
-            console.log('大尺寸图片列表:', largeImages.map(img => ({
+            console.log(`通过800×800px筛选的图片数量: ${imageInfoList.length}`);
+            console.log('筛选后的图片列表:', imageInfoList.map(img => ({
                 url: img.url,
                 size: `${img.width}×${img.height}`,
                 area: img.width * img.height
             })));
-            
-            // 9. 如果没有大尺寸图片，选择最大的几张
-            if (filteredImages.length === 0 && imageInfoList.length > 0) {
-                console.log('没有大于800×800px的图片，选择最大的几张');
-                const topImages = imageInfoList.slice(0, Math.min(5, imageInfoList.length));
-                filteredImages = topImages.map(img => img.url);
-            }
             
             console.log('筛选后图片数量:', filteredImages.length);
             console.log('筛选后图片URLs:', filteredImages);
@@ -117,11 +109,14 @@ class HanliPlugin {
                 imageInfoList   // 包含详细尺寸信息的图片列表
             };
             
-            // 11. 发送数据到hanli-app
-            await this.sendToHanliApp({
+            // 11. 先发送JSON数据到hanli-app的data文件夹
+            await this.sendJsonDataToApp({
                 goodsInfoData: finalGoodsInfoData,
                 monitoringData
             });
+            
+            // 12. 异步下载媒体文件（不阻塞主流程）
+            this.downloadMediaFilesAsync(finalGoodsInfoData, monitoringData);
             
         } catch (error) {
             console.error('数据采集失败:', error);
@@ -129,7 +124,218 @@ class HanliPlugin {
         }
     }
 
-    // 发送数据到hanli-app
+    // 发送JSON数据到hanli-app（立即返回）
+    async sendJsonDataToApp(data) {
+        try {
+            console.log('开始发送JSON数据到hanli-app...');
+            
+            // 生成媒体数据
+            const mediaData = this.generateMediaData(data.goodsInfoData);
+            
+            // 发送JSON文件到App
+            const jsonData = {
+                goodsId: data.goodsInfoData.goodsId,
+                collectTime: data.goodsInfoData.collectTime,
+                goodsInfo: JSON.stringify(data.goodsInfoData, null, 2),
+                monitoring: JSON.stringify(data.monitoringData, null, 2),
+                mediaData: JSON.stringify(mediaData, null, 2)
+            };
+            
+            const response = await fetch('http://localhost:3001/api/save-json-files', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(jsonData)
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    console.log('JSON数据已成功保存到hanli-app的data文件夹');
+                    console.log('保存的文件:', result.files);
+                    // JSON数据保存成功后，立即唤起App
+                    this.tryOpenApp();
+                } else {
+                    console.error('保存JSON数据失败:', result.error);
+                    alert('保存JSON数据失败：' + result.error);
+                }
+            } else {
+                console.error('无法连接到hanli-app，状态码:', response.status);
+                alert('无法连接到hanli-app，请确保应用正在运行');
+            }
+        } catch (error) {
+            console.error('发送JSON数据到hanli-app失败:', error);
+            alert('无法连接到hanli-app，请确保应用正在运行');
+        }
+    }
+    
+    // 异步下载媒体文件
+    async downloadMediaFilesAsync(goodsInfoData, monitoringData) {
+        try {
+            console.log('开始异步下载媒体文件...');
+            
+            // 生成媒体数据
+            const mediaData = this.generateMediaData(goodsInfoData);
+            
+            // 发送下载请求到App
+            const downloadData = {
+                goodsId: goodsInfoData.goodsId,
+                mediaList: mediaData.media
+            };
+            
+            const response = await fetch('http://localhost:3001/api/download-media', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(downloadData)
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    console.log('媒体文件下载完成:', result.downloadedFiles);
+                    // 可以在这里添加下载完成的提示
+                    this.showDownloadCompleteNotification(result.downloadedFiles.length);
+                } else {
+                    console.error('媒体文件下载失败:', result.error);
+                }
+            } else {
+                console.error('媒体文件下载请求失败，状态码:', response.status);
+            }
+        } catch (error) {
+            console.error('异步下载媒体文件失败:', error);
+        }
+    }
+    
+    // 生成媒体数据
+    generateMediaData(goodsInfoData) {
+        const mediaList = [];
+        
+        // 添加图片数据
+        if (goodsInfoData.filteredImages && goodsInfoData.filteredImages.length > 0) {
+            goodsInfoData.filteredImages.forEach((url, index) => {
+                const imageInfo = goodsInfoData.imageInfoList.find(img => img.url === url);
+                mediaList.push({
+                    url: url,
+                    width: imageInfo ? imageInfo.width : 0,
+                    height: imageInfo ? imageInfo.height : 0,
+                    isTargetSize: imageInfo ? imageInfo.isTargetSize : false,
+                    type: 'image',
+                    path: null // 初始为null，下载后更新
+                });
+            });
+        }
+        
+        // 添加视频数据（如果有的话）
+        if (goodsInfoData.videos && goodsInfoData.videos.length > 0) {
+            goodsInfoData.videos.forEach(video => {
+                mediaList.push({
+                    url: video.url,
+                    width: video.width || 0,
+                    height: video.height || 0,
+                    isTargetSize: false,
+                    type: 'video',
+                    path: null
+                });
+            });
+        }
+        
+        return {
+            goodsId: goodsInfoData.goodsId,
+            media: mediaList
+        };
+    }
+    
+    // 尝试打开App
+    tryOpenApp() {
+        try {
+            console.log('JSON数据已保存到data文件夹，正在唤起App...');
+            
+            // 创建一个隐藏的iframe来触发协议，避免打开新标签页
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = 'hanliapp://open';
+            document.body.appendChild(iframe);
+            
+            // 立即移除iframe
+            setTimeout(() => {
+                if (iframe.parentNode) {
+                    iframe.parentNode.removeChild(iframe);
+                }
+            }, 100);
+            
+            // 显示toast提示
+            this.showToast('App已成功唤起！', 'success');
+        } catch (e) {
+            console.warn('无法唤起App:', e);
+            this.showToast('唤起App失败，请手动打开', 'error');
+        }
+    }
+    
+    // 显示toast提示
+    showToast(message, type = 'info') {
+        // 创建toast容器（如果不存在）
+        let toastContainer = document.getElementById('hanli-toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'hanli-toast-container';
+            toastContainer.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                pointer-events: none;
+            `;
+            document.body.appendChild(toastContainer);
+        }
+        
+        // 创建toast元素
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            pointer-events: auto;
+            max-width: 300px;
+            word-wrap: break-word;
+        `;
+        toast.textContent = message;
+        
+        // 添加到容器
+        toastContainer.appendChild(toast);
+        
+        // 触发动画
+        setTimeout(() => {
+            toast.style.transform = 'translateX(0)';
+        }, 10);
+        
+        // 自动移除
+        setTimeout(() => {
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 300);
+        }, 3000);
+    }
+    
+    // 显示下载完成通知
+    showDownloadCompleteNotification(fileCount) {
+        console.log(`媒体文件下载完成，共下载 ${fileCount} 个文件`);
+        this.showToast(`媒体文件下载完成！共下载 ${fileCount} 个文件`, 'success');
+    }
+
+    // 发送数据到hanli-app（保留原方法作为备用）
     async sendToHanliApp(data) {
         try {
             const response = await fetch('http://localhost:3001/api/import-goods', {

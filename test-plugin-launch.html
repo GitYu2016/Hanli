@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试插件唤起App</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056CC;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>测试插件唤起App功能</h1>
+    
+    <div class="test-section">
+        <h2>1. 直接协议调用测试</h2>
+        <button onclick="testDirectProtocol()">测试 hanliapp://open</button>
+        <button onclick="testDirectProtocolWithData()">测试 hanliapp://open?data=test</button>
+        <div id="direct-log" class="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 插件方式调用测试</h2>
+        <button onclick="testPluginMethod()">测试插件iframe方式</button>
+        <div id="plugin-log" class="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 检查App状态</h2>
+        <button onclick="checkAppStatus()">检查App是否运行</button>
+        <div id="status-log" class="log"></div>
+    </div>
+
+    <script>
+        function log(elementId, message) {
+            const logElement = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `[${timestamp}] ${message}<br>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function testDirectProtocol() {
+            log('direct-log', '尝试直接调用 hanliapp://open...');
+            try {
+                window.open('hanliapp://open', '_blank');
+                log('direct-log', '✅ 协议调用成功，请检查App是否被唤起');
+            } catch (error) {
+                log('direct-log', `❌ 协议调用失败: ${error.message}`);
+            }
+        }
+
+        function testDirectProtocolWithData() {
+            log('direct-log', '尝试调用 hanliapp://open?data=test...');
+            try {
+                window.open('hanliapp://open?data=test', '_blank');
+                log('direct-log', '✅ 带数据协议调用成功，请检查App是否被唤起');
+            } catch (error) {
+                log('direct-log', `❌ 带数据协议调用失败: ${error.message}`);
+            }
+        }
+
+        function testPluginMethod() {
+            log('plugin-log', '尝试使用插件iframe方式调用...');
+            try {
+                // 模拟插件的调用方式
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = 'hanliapp://open';
+                document.body.appendChild(iframe);
+                
+                log('plugin-log', '✅ iframe已创建并设置src为hanliapp://open');
+                
+                // 立即移除iframe
+                setTimeout(() => {
+                    if (iframe.parentNode) {
+                        iframe.parentNode.removeChild(iframe);
+                        log('plugin-log', '✅ iframe已移除');
+                    }
+                }, 100);
+                
+                log('plugin-log', '✅ 插件方式调用完成，请检查App是否被唤起');
+            } catch (error) {
+                log('plugin-log', `❌ 插件方式调用失败: ${error.message}`);
+            }
+        }
+
+        function checkAppStatus() {
+            log('status-log', '检查App运行状态...');
+            
+            // 尝试通过HTTP API检查App状态
+            fetch('http://localhost:3001/api/health')
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                })
+                .then(data => {
+                    log('status-log', `✅ App正在运行: ${data.message}`);
+                    log('status-log', `📅 时间戳: ${data.timestamp}`);
+                })
+                .catch(error => {
+                    log('status-log', `❌ App未运行或无法连接: ${error.message}`);
+                    log('status-log', '💡 请确保Hanli App已启动并监听端口3001');
+                });
+        }
+
+        // 页面加载时自动检查App状态
+        window.addEventListener('load', () => {
+            log('status-log', '页面加载完成，自动检查App状态...');
+            checkAppStatus();
+        });
+    </script>
+</body>
+</html>

@@ -113,8 +113,8 @@ class ImageCollector {
     // 检测图片尺寸并筛选
     async detectAndFilterImages(imageUrls, options = {}) {
         const {
-            minWidth = 50,   // 最小尺寸要求很低，确保获取所有图片
-            minHeight = 50,
+            minWidth = 800,   // 最小宽度800px
+            minHeight = 800,  // 最小高度800px
             maxWidth = 10000, // 最大尺寸要求很高
             maxHeight = 10000,
             targetWidth = 800,

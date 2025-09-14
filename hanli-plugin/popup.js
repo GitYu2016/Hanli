@@ -21,18 +21,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             
             if (response.ok) {
+                const result = await response.json();
                 statusIcon.className = 'status-icon connected';
-                statusText.textContent = '韩立客户端已连接';
+                statusText.textContent = 'Hanli已连接';
                 collectBtn.disabled = false;
                 collectBtn.textContent = '开始采集';
+                console.log('连接检查成功:', result);
             } else {
-                throw new Error('连接失败');
+                const errorText = await response.text();
+                throw new Error(`连接失败: ${response.status} - ${errorText}`);
             }
         } catch (error) {
+            console.error('连接检查失败:', error);
             statusIcon.className = 'status-icon disconnected';
-            statusText.textContent = '韩立客户端未连接';
+            statusText.textContent = 'Hanli未连接';
             collectBtn.disabled = true;
-            collectBtn.textContent = '请先启动韩立客户端';
+            collectBtn.textContent = '请先启动Hanli';
         }
     }
 
@@ -48,19 +52,58 @@ document.addEventListener('DOMContentLoaded', async () => {
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
                 func: () => {
-                    if (typeof window.scrapeRawData === 'function') {
-                        window.scrapeRawData();
-                    } else {
-                        alert('采集功能未就绪，请确保页面已完全加载');
+                    // 检查是否正在采集中
+                    if (window.isCollecting) {
+                        console.log('采集正在进行中，请等待完成');
+                        return;
                     }
+                    
+                    // 检查必要的组件是否加载
+                    if (typeof window.scrapeRawData !== 'function') {
+                        alert('采集功能未就绪，请确保页面已完全加载');
+                        return;
+                    }
+                    
+                    if (typeof window.collectionManager === 'undefined') {
+                        alert('CollectionManager未加载，请刷新页面重试');
+                        return;
+                    }
+                    
+                    if (typeof window.mediaManager === 'undefined') {
+                        alert('MediaManager未加载，请刷新页面重试');
+                        return;
+                    }
+                    
+                    // 添加事件监听器
+                    const handleCollectionComplete = () => {
+                        collectBtn.disabled = false;
+                        collectBtn.textContent = '开始采集';
+                        window.removeEventListener('hanliPopupCollectionCompleted', handleCollectionComplete);
+                        window.removeEventListener('hanliPopupCollectionFailed', handleCollectionFailed);
+                    };
+                    
+                    const handleCollectionFailed = () => {
+                        collectBtn.disabled = false;
+                        collectBtn.textContent = '开始采集';
+                        window.removeEventListener('hanliPopupCollectionCompleted', handleCollectionComplete);
+                        window.removeEventListener('hanliPopupCollectionFailed', handleCollectionFailed);
+                    };
+                    
+                    window.addEventListener('hanliPopupCollectionCompleted', handleCollectionComplete);
+                    window.addEventListener('hanliPopupCollectionFailed', handleCollectionFailed);
+                    
+                    // 执行采集
+                    window.scrapeRawData();
                 }
             });
 
-            // 延迟恢复按钮状态
+            // 设置超时，防止按钮永远处于采集中状态
             setTimeout(() => {
-                collectBtn.disabled = false;
-                collectBtn.textContent = '开始采集';
-            }, 2000);
+                if (collectBtn.disabled) {
+                    collectBtn.disabled = false;
+                    collectBtn.textContent = '开始采集';
+                }
+            }, 30000); // 30秒超时
 
         } catch (error) {
             console.error('采集失败:', error);

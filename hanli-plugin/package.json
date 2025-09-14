@@ -1,7 +1,7 @@
 {
   "name": "hanli-plugin",
   "version": "1.0.0",
-  "description": "韩立商品数据采集Chrome浏览器插件",
+  "description": "Hanli商品数据采集Chrome浏览器插件",
   "main": "background.js",
   "scripts": {
     "build": "echo 'Chrome extension build completed'",
