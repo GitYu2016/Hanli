@@ -2,7 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs').promises;
+const fs = require('fs');
+const fsPromises = require('fs').promises;
 // 移除uuid导入，使用自定义的ID生成函数
 
 const app = express();
@@ -17,9 +18,9 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 const dataDir = path.join(__dirname, 'data');
 const ensureDataDir = async () => {
     try {
-        await fs.access(dataDir);
+        await fsPromises.access(dataDir);
     } catch {
-        await fs.mkdir(dataDir, { recursive: true });
+        await fsPromises.mkdir(dataDir, { recursive: true });
     }
 };
 
@@ -28,32 +29,96 @@ function generateProductId() {
     return Math.floor(100000000000 + Math.random() * 900000000000).toString();
 }
 
+// 加载产品数据
+async function loadProductData(productDir) {
+    try {
+        const productData = {};
+        
+        // 读取product.json
+        const productFile = path.join(productDir, 'product.json');
+        if (fs.existsSync(productFile)) {
+            const productContent = await fsPromises.readFile(productFile, 'utf8');
+            const productInfo = JSON.parse(productContent);
+            Object.assign(productData, productInfo);
+        }
+        
+        // 读取monitoring.json
+        const monitoringFile = path.join(productDir, 'monitoring.json');
+        if (fs.existsSync(monitoringFile)) {
+            const monitoringContent = await fsPromises.readFile(monitoringFile, 'utf8');
+            const monitoringInfo = JSON.parse(monitoringContent);
+            Object.assign(productData, monitoringInfo);
+        }
+        
+        // 读取media.json
+        const mediaFile = path.join(productDir, 'media.json');
+        if (fs.existsSync(mediaFile)) {
+            const mediaContent = await fsPromises.readFile(mediaFile, 'utf8');
+            const mediaInfo = JSON.parse(mediaContent);
+            productData.media = mediaInfo;
+        }
+        
+        // 获取图片文件列表
+        const files = await fsPromises.readdir(productDir);
+        const imageFiles = files.filter(file => 
+            file.endsWith('.jpg') || file.endsWith('.jpeg') || file.endsWith('.png') || file.endsWith('.gif')
+        );
+        
+        if (imageFiles.length > 0) {
+            productData.images = imageFiles.map(file => ({
+                filename: file,
+                url: `file://${path.join(productDir, file)}`,
+                localPath: path.join(productDir, file)
+            }));
+        }
+        
+        // 获取视频文件列表
+        const videoFiles = files.filter(file => 
+            file.endsWith('.mp4') || file.endsWith('.avi') || file.endsWith('.mov') || file.endsWith('.webm')
+        );
+        
+        if (videoFiles.length > 0) {
+            productData.videos = videoFiles.map(file => ({
+                filename: file,
+                url: `file://${path.join(productDir, file)}`,
+                localPath: path.join(productDir, file)
+            }));
+        }
+        
+        return productData;
+        
+    } catch (error) {
+        console.error('加载产品数据失败:', error);
+        throw error;
+    }
+}
+
 // 保存JSON文件到商品文件夹
 async function saveJsonFiles(goodsId, jsonData) {
     const goodsLibraryDir = path.join(dataDir, 'goods-library');
     const productDir = path.join(goodsLibraryDir, goodsId);
-    await fs.mkdir(productDir, { recursive: true });
+    await fsPromises.mkdir(productDir, { recursive: true });
     
     const files = [];
     
     // 保存商品信息JSON
     if (jsonData.goodsInfo) {
         const goodsInfoPath = path.join(productDir, 'product.json');
-        await fs.writeFile(goodsInfoPath, jsonData.goodsInfo, 'utf8');
+        await fsPromises.writeFile(goodsInfoPath, jsonData.goodsInfo, 'utf8');
         files.push(goodsInfoPath);
     }
     
     // 保存监控数据JSON
     if (jsonData.monitoring) {
         const monitoringPath = path.join(productDir, 'monitoring.json');
-        await fs.writeFile(monitoringPath, jsonData.monitoring, 'utf8');
+        await fsPromises.writeFile(monitoringPath, jsonData.monitoring, 'utf8');
         files.push(monitoringPath);
     }
     
     // 保存媒体数据JSON
     if (jsonData.mediaData) {
         const mediaPath = path.join(productDir, 'media.json');
-        await fs.writeFile(mediaPath, jsonData.mediaData, 'utf8');
+        await fsPromises.writeFile(mediaPath, jsonData.mediaData, 'utf8');
         files.push(mediaPath);
     }
     
@@ -66,7 +131,7 @@ async function downloadMediaFiles(goodsId, mediaList) {
     const productDir = path.join(goodsLibraryDir, goodsId);
     
     // 确保商品目录存在
-    await fs.mkdir(productDir, { recursive: true });
+    await fsPromises.mkdir(productDir, { recursive: true });
     
     const downloadedFiles = [];
     
@@ -105,7 +170,7 @@ async function downloadMediaFiles(goodsId, mediaList) {
             
             // 直接保存到商品目录，不使用子文件夹
             const filePath = path.join(productDir, filename);
-            await fs.writeFile(filePath, buffer);
+            await fsPromises.writeFile(filePath, buffer);
             
             // 更新媒体数据中的路径
             media.path = path.relative(dataDir, filePath);
@@ -144,7 +209,7 @@ app.get('/api/products/count', async (req, res) => {
         }
         
         // 读取目录内容
-        const items = await fs.promises.readdir(goodsLibraryPath, { withFileTypes: true });
+        const items = await fsPromises.readdir(goodsLibraryPath, { withFileTypes: true });
         
         // 统计文件夹数量
         const folderCount = items.filter(item => item.isDirectory()).length;
@@ -227,6 +292,44 @@ app.post('/api/download-media', async (req, res) => {
     }
 });
 
+// 获取单个产品详情
+app.get('/api/products/:goodsId', async (req, res) => {
+    try {
+        const { goodsId } = req.params;
+        
+        if (!goodsId) {
+            return res.status(400).json({ 
+                success: false, 
+                error: '商品ID不能为空' 
+            });
+        }
+        
+        const productDir = path.join(dataDir, 'goods-library', goodsId);
+        
+        if (!fs.existsSync(productDir)) {
+            return res.status(404).json({
+                success: false,
+                error: '产品不存在'
+            });
+        }
+        
+        // 读取产品数据文件
+        const productData = await loadProductData(productDir);
+        
+        res.json({
+            success: true,
+            product: productData
+        });
+        
+    } catch (error) {
+        console.error('获取产品详情失败:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 // 导入商品并打开详情页
 app.post('/api/import-goods-and-open', async (req, res) => {
     try {
@@ -270,7 +373,7 @@ app.get('/api/products', async (req, res) => {
             return res.json({ success: true, products: [] });
         }
         
-        const entries = await fs.readdir(goodsLibraryDir, { withFileTypes: true });
+        const entries = await fsPromises.readdir(goodsLibraryDir, { withFileTypes: true });
         
         for (const entry of entries) {
             if (entry.isDirectory()) {
@@ -278,7 +381,7 @@ app.get('/api/products', async (req, res) => {
                 const productJsonPath = path.join(productDir, 'product.json');
                 
                 try {
-                    const productData = await fs.readFile(productJsonPath, 'utf8');
+                    const productData = await fsPromises.readFile(productJsonPath, 'utf8');
                     const product = JSON.parse(productData);
                     products.push({
                         goodsId: entry.name,
@@ -319,7 +422,7 @@ app.get('/api/products/:goodsId', async (req, res) => {
         
         // 读取商品信息
         try {
-            const productData = await fs.readFile(productJsonPath, 'utf8');
+            const productData = await fsPromises.readFile(productJsonPath, 'utf8');
             product.goodsInfo = JSON.parse(productData);
         } catch (error) {
             console.warn(`读取商品信息失败: ${goodsId}`, error.message);
@@ -327,7 +430,7 @@ app.get('/api/products/:goodsId', async (req, res) => {
         
         // 读取监控数据
         try {
-            const monitoringData = await fs.readFile(monitoringJsonPath, 'utf8');
+            const monitoringData = await fsPromises.readFile(monitoringJsonPath, 'utf8');
             product.monitoring = JSON.parse(monitoringData);
         } catch (error) {
             console.warn(`读取监控数据失败: ${goodsId}`, error.message);
@@ -335,7 +438,7 @@ app.get('/api/products/:goodsId', async (req, res) => {
         
         // 读取媒体数据
         try {
-            const mediaData = await fs.readFile(mediaJsonPath, 'utf8');
+            const mediaData = await fsPromises.readFile(mediaJsonPath, 'utf8');
             product.mediaData = JSON.parse(mediaData);
         } catch (error) {
             console.warn(`读取媒体数据失败: ${goodsId}`, error.message);

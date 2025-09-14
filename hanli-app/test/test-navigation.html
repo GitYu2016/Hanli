@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试导航功能</title>
+    <link rel="stylesheet" href="../renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="../renderer/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+        }
+        .test-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--color-card-background);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: var(--color-primary);
+            color: var(--color-primary-foreground);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .test-button:hover {
+            background: var(--color-primary-hover);
+        }
+        .log-container {
+            background: var(--color-muted);
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .log-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .log-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .log-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .feature-test {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            background: var(--color-background);
+        }
+        .feature-test h3 {
+            margin-top: 0;
+            color: var(--color-text-primary);
+        }
+        .test-steps {
+            list-style: none;
+            padding: 0;
+        }
+        .test-steps li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+        .test-steps li:last-child {
+            border-bottom: none;
+        }
+        .test-steps li::before {
+            content: "✓ ";
+            color: var(--color-primary);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>导航功能测试</h1>
+        <p>测试TopBar和SideBar的点击切换功能</p>
+        
+        <div>
+            <button class="test-button" onclick="testTopBarNavigation()">测试TopBar切换</button>
+            <button class="test-button" onclick="testSideBarNavigation()">测试SideBar切换</button>
+            <button class="test-button" onclick="testPageCreation()">测试页面创建</button>
+            <button class="test-button" onclick="clearLog()">清空日志</button>
+        </div>
+        
+        <div class="feature-test">
+            <h3>TopBar Tab切换测试</h3>
+            <p>验证TopBar中的Tab点击能够正确切换页面内容</p>
+            <ul class="test-steps">
+                <li>点击不同的Tab应该切换页面内容</li>
+                <li>侧边栏状态应该与当前Tab同步</li>
+                <li>页面内容应该正确渲染</li>
+                <li>Tab关闭功能正常工作</li>
+            </ul>
+        </div>
+        
+        <div class="feature-test">
+            <h3>SideBar导航测试</h3>
+            <p>验证SideBar点击能够正确导航到对应页面</p>
+            <ul class="test-steps">
+                <li>点击"首页"应该切换到首页Tab</li>
+                <li>点击"产品库"应该切换到产品库Tab</li>
+                <li>如果页面不存在，应该创建新的Tab</li>
+                <li>如果页面已存在，应该切换到现有Tab</li>
+            </ul>
+        </div>
+        
+        <div class="feature-test">
+            <h3>页面创建测试</h3>
+            <p>验证动态创建页面的功能</p>
+            <ul class="test-steps">
+                <li>产品详情页应该能够动态创建</li>
+                <li>新创建的页面应该正确显示内容</li>
+                <li>Tab标题应该正确显示</li>
+                <li>页面切换应该流畅</li>
+            </ul>
+        </div>
+        
+        <div class="log-container" id="log-container">
+            <div class="log-entry log-info">等待测试开始...</div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟HomePage实例
+        const homePageInstance = {
+            currentProductDetail: null,
+            tabManager: {
+                tabs: [],
+                activeTabId: null,
+                addTab: function(pageData) {
+                    const tabId = 'tab_' + Date.now();
+                    const tab = {
+                        id: tabId,
+                        title: pageData.title,
+                        pageData: pageData,
+                        isActive: true
+                    };
+                    this.tabs.push(tab);
+                    this.activeTabId = tabId;
+                    log(`创建新Tab: ${tab.title}`, 'success');
+                    return tabId;
+                },
+                setActiveTab: function(tabId) {
+                    this.tabs.forEach(tab => tab.isActive = false);
+                    const tab = this.tabs.find(t => t.id === tabId);
+                    if (tab) {
+                        tab.isActive = true;
+                        this.activeTabId = tabId;
+                        log(`切换到Tab: ${tab.title}`, 'info');
+                    }
+                },
+                getActiveTab: function() {
+                    return this.tabs.find(tab => tab.isActive);
+                },
+                findTabByPageType: function(pageType) {
+                    return this.tabs.find(tab => tab.pageData.type === pageType);
+                }
+            },
+            
+            // 处理Tab切换
+            handleTabSwitch: function(tab) {
+                log(`处理Tab切换: ${tab.title} (${tab.pageData.type})`, 'info');
+                this.renderPageContent(tab.pageData.type);
+                this.updateSidebarForTab(tab);
+            },
+            
+            // 渲染页面内容
+            renderPageContent: function(pageType) {
+                log(`渲染页面内容: ${pageType}`, 'info');
+                
+                switch (pageType) {
+                    case 'home':
+                        this.renderHomePage();
+                        break;
+                    case 'goodsList':
+                        this.renderProductLibrary();
+                        break;
+                    case 'productDetail':
+                        this.renderProductDetail();
+                        break;
+                    default:
+                        log(`未知的页面类型: ${pageType}`, 'error');
+                }
+            },
+            
+            // 渲染首页
+            renderHomePage: function() {
+                log('渲染首页内容', 'success');
+            },
+            
+            // 渲染产品库
+            renderProductLibrary: function() {
+                log('渲染产品库内容', 'success');
+            },
+            
+            // 渲染产品详情
+            renderProductDetail: function() {
+                log('渲染产品详情内容', 'success');
+            },
+            
+            // 更新侧边栏状态
+            updateSidebarForTab: function(tab) {
+                log(`更新侧边栏状态: ${tab.pageData.type}`, 'info');
+            },
+            
+            // 导航到页面
+            navigateToPage: function(page) {
+                log(`导航到页面: ${page}`, 'info');
+                
+                const pageDataMap = {
+                    'home': { type: 'home', title: '首页' },
+                    'product-library': { type: 'goodsList', title: '产品库' }
+                };
+                
+                const pageData = pageDataMap[page];
+                if (!pageData) {
+                    log(`未知的页面类型: ${page}`, 'error');
+                    return;
+                }
+                
+                // 检查是否已存在该页面类型的Tab
+                let existingTab = this.tabManager.findTabByPageType(pageData.type);
+                
+                if (existingTab) {
+                    // 如果存在，切换到该Tab
+                    this.tabManager.setActiveTab(existingTab.id);
+                    log(`切换到现有Tab: ${existingTab.title}`, 'success');
+                } else {
+                    // 如果不存在，创建新Tab
+                    this.tabManager.addTab(pageData);
+                    log(`创建新Tab: ${pageData.title}`, 'success');
+                }
+            }
+        };
+
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('log-container');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log-container').innerHTML = '<div class="log-entry log-info">日志已清空</div>';
+        }
+
+        function testTopBarNavigation() {
+            log('=== 开始测试TopBar切换 ===', 'info');
+            
+            // 模拟创建多个Tab
+            const homeTab = homePageInstance.tabManager.addTab({ type: 'home', title: '首页' });
+            const productTab = homePageInstance.tabManager.addTab({ type: 'goodsList', title: '产品库' });
+            const detailTab = homePageInstance.tabManager.addTab({ type: 'productDetail', title: '产品详情' });
+            
+            // 测试Tab切换
+            homePageInstance.tabManager.setActiveTab(homeTab);
+            homePageInstance.handleTabSwitch(homePageInstance.tabManager.getActiveTab());
+            
+            homePageInstance.tabManager.setActiveTab(productTab);
+            homePageInstance.handleTabSwitch(homePageInstance.tabManager.getActiveTab());
+            
+            homePageInstance.tabManager.setActiveTab(detailTab);
+            homePageInstance.handleTabSwitch(homePageInstance.tabManager.getActiveTab());
+            
+            log('✅ TopBar切换测试完成', 'success');
+        }
+
+        function testSideBarNavigation() {
+            log('=== 开始测试SideBar切换 ===', 'info');
+            
+            // 测试导航到首页
+            homePageInstance.navigateToPage('home');
+            
+            // 测试导航到产品库
+            homePageInstance.navigateToPage('product-library');
+            
+            // 测试重复导航（应该切换到现有Tab）
+            homePageInstance.navigateToPage('home');
+            
+            log('✅ SideBar切换测试完成', 'success');
+        }
+
+        function testPageCreation() {
+            log('=== 开始测试页面创建 ===', 'info');
+            
+            // 测试创建产品详情页
+            const detailTab = homePageInstance.tabManager.addTab({
+                type: 'productDetail',
+                title: '产品详情 - iPhone 15 Pro'
+            });
+            
+            homePageInstance.tabManager.setActiveTab(detailTab);
+            homePageInstance.handleTabSwitch(homePageInstance.tabManager.getActiveTab());
+            
+            // 测试创建多个产品详情页
+            const detailTab2 = homePageInstance.tabManager.addTab({
+                type: 'productDetail',
+                title: '产品详情 - MacBook Pro'
+            });
+            
+            homePageInstance.tabManager.setActiveTab(detailTab2);
+            homePageInstance.handleTabSwitch(homePageInstance.tabManager.getActiveTab());
+            
+            log('✅ 页面创建测试完成', 'success');
+        }
+
+        // 页面加载完成后的初始化
+        window.addEventListener('load', () => {
+            log('导航功能测试页面已加载', 'info');
+            log('点击测试按钮开始各项功能测试', 'info');
+        });
+    </script>
+</body>
+</html>

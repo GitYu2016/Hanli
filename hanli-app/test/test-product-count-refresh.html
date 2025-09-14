@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试产品总数刷新功能</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .test-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-running {
+            background: #28a745;
+        }
+        .status-stopped {
+            background: #dc3545;
+        }
+        .log-container {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .log-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .log-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .log-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .product-count-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>测试产品总数刷新功能</h1>
+        <p>模拟App端的产品总数自动刷新功能</p>
+        
+        <div>
+            <span class="status-indicator" id="statusIndicator"></span>
+            <span id="statusText">准备开始测试...</span>
+        </div>
+        
+        <div>
+            <div class="product-count-display">
+                产品总数: <span id="product-count">0</span>
+            </div>
+        </div>
+        
+        <div>
+            <button class="test-button" onclick="startRefresh()">开始自动刷新</button>
+            <button class="test-button" onclick="stopRefresh()">停止自动刷新</button>
+            <button class="test-button" onclick="manualRefresh()">手动刷新一次</button>
+            <button class="test-button" onclick="clearLog()">清空日志</button>
+        </div>
+        
+        <div class="log-container" id="log-container">
+            <div class="log-entry log-info">等待测试开始...</div>
+        </div>
+    </div>
+
+    <script>
+        let refreshTimer = null;
+        let refreshCount = 0;
+
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('log-container');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log-container').innerHTML = '<div class="log-entry log-info">日志已清空</div>';
+        }
+
+        function updateStatus(running, message) {
+            const indicator = document.getElementById('statusIndicator');
+            const text = document.getElementById('statusText');
+            
+            if (running) {
+                indicator.className = 'status-indicator status-running';
+                text.textContent = message;
+            } else {
+                indicator.className = 'status-indicator status-stopped';
+                text.textContent = message;
+            }
+        }
+
+        async function loadProductCount() {
+            try {
+                const response = await fetch('http://localhost:3001/api/products/count');
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('product-count').textContent = data.count || 0;
+                    log(`产品总数已更新: ${data.count}`, 'success');
+                    return data.count;
+                } else {
+                    log(`获取产品总数失败: ${response.status}`, 'error');
+                    document.getElementById('product-count').textContent = '0';
+                    return 0;
+                }
+            } catch (error) {
+                log(`获取产品总数失败: ${error.message}`, 'error');
+                document.getElementById('product-count').textContent = '0';
+                return 0;
+            }
+        }
+
+        function startRefresh() {
+            if (refreshTimer) {
+                log('定时刷新已在运行中', 'info');
+                return;
+            }
+
+            log('开始启动产品总数自动刷新（每5秒）...', 'info');
+            updateStatus(true, '自动刷新运行中');
+            
+            // 立即执行一次
+            loadProductCount();
+            
+            // 设置定时器
+            refreshTimer = setInterval(() => {
+                refreshCount++;
+                log(`第${refreshCount}次自动刷新...`, 'info');
+                loadProductCount();
+            }, 5000);
+            
+            log('自动刷新已启动，间隔5秒', 'success');
+        }
+
+        function stopRefresh() {
+            if (!refreshTimer) {
+                log('定时刷新未运行', 'info');
+                return;
+            }
+
+            clearInterval(refreshTimer);
+            refreshTimer = null;
+            refreshCount = 0;
+            
+            log('自动刷新已停止', 'info');
+            updateStatus(false, '自动刷新已停止');
+        }
+
+        function manualRefresh() {
+            log('手动刷新产品总数...', 'info');
+            loadProductCount();
+        }
+
+        // 页面加载完成后的初始化
+        window.addEventListener('load', () => {
+            log('测试页面已加载', 'info');
+            log('请确保App正在运行 (npm start)', 'info');
+            log('点击"开始自动刷新"按钮开始测试', 'info');
+            
+            // 初始加载一次
+            loadProductCount();
+        });
+
+        // 页面卸载时清理定时器
+        window.addEventListener('beforeunload', () => {
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+            }
+        });
+    </script>
+</body>
+</html>

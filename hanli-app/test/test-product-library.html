@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试产品库功能</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .test-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .log-container {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .log-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .log-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .log-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .product-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .product-table th,
+        .product-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .product-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .product-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>测试产品库功能</h1>
+        <p>测试产品库API和数据显示功能</p>
+        
+        <div>
+            <button class="test-button" onclick="testProductsAPI()">测试产品API</button>
+            <button class="test-button" onclick="testProductCount()">测试产品总数</button>
+            <button class="test-button" onclick="clearLog()">清空日志</button>
+        </div>
+        
+        <div id="product-table-container" style="display: none;">
+            <h3>产品列表</h3>
+            <table class="product-table" id="product-table">
+                <thead>
+                    <tr>
+                        <th>商品ID</th>
+                        <th>商品名称</th>
+                        <th>销量</th>
+                        <th>价格</th>
+                        <th>采集时间</th>
+                    </tr>
+                </thead>
+                <tbody id="product-table-body">
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="log-container" id="log-container">
+            <div class="log-entry log-info">等待测试开始...</div>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('log-container');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log-container').innerHTML = '<div class="log-entry log-info">日志已清空</div>';
+        }
+
+        async function testProductsAPI() {
+            try {
+                log('开始测试产品API...', 'info');
+                
+                const response = await fetch('http://localhost:3001/api/products');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        log(`产品API测试成功，获取到 ${data.products.length} 个产品`, 'success');
+                        displayProducts(data.products);
+                    } else {
+                        log(`产品API返回错误: ${data.error}`, 'error');
+                    }
+                } else {
+                    log(`产品API请求失败: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`产品API测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testProductCount() {
+            try {
+                log('开始测试产品总数API...', 'info');
+                
+                const response = await fetch('http://localhost:3001/api/products/count');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        log(`产品总数API测试成功，总数: ${data.count}`, 'success');
+                    } else {
+                        log(`产品总数API返回错误: ${data.error}`, 'error');
+                    }
+                } else {
+                    log(`产品总数API请求失败: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`产品总数API测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        function displayProducts(products) {
+            const tableBody = document.getElementById('product-table-body');
+            const tableContainer = document.getElementById('product-table-container');
+            
+            tableBody.innerHTML = '';
+            
+            products.forEach(product => {
+                const row = document.createElement('tr');
+                
+                const goodsCat3 = product.goodsCat3 || product.goodsTitleEn || '未知商品';
+                const goodsSold = product.goodsSold || 0;
+                const price = getProductPrice(product);
+                const collectTime = formatCollectTime(product.collectTime);
+                
+                row.innerHTML = `
+                    <td>${product.goodsId}</td>
+                    <td title="${goodsCat3}">${goodsCat3.length > 50 ? goodsCat3.substring(0, 50) + '...' : goodsCat3}</td>
+                    <td>${goodsSold.toLocaleString()}</td>
+                    <td>${price}</td>
+                    <td>${collectTime}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            tableContainer.style.display = 'block';
+            log(`已显示 ${products.length} 个产品`, 'success');
+        }
+
+        function getProductPrice(product) {
+            if (product.skuList && product.skuList.length > 0) {
+                const sku = product.skuList[0];
+                return sku.goodsPromoPrice || sku.goodsNormalPrice || '价格未知';
+            }
+            return '价格未知';
+        }
+
+        function formatCollectTime(collectTime) {
+            if (!collectTime) return '未知时间';
+            
+            try {
+                const date = new Date(collectTime);
+                return date.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (error) {
+                return collectTime;
+            }
+        }
+
+        // 页面加载完成后的初始化
+        window.addEventListener('load', () => {
+            log('测试页面已加载', 'info');
+            log('请确保App正在运行 (npm start)', 'info');
+            log('点击"测试产品API"按钮开始测试', 'info');
+        });
+    </script>
+</body>
+</html>

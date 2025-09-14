@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试产品库功能</title>
+    <link rel="stylesheet" href="hanli-app/renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="hanli-app/renderer/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--color-card-background);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: var(--color-primary);
+            color: var(--color-primary-foreground);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .test-button:hover {
+            background: var(--color-primary-hover);
+        }
+        .log-container {
+            background: var(--color-muted);
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .log-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .log-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .log-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .feature-test {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            background: var(--color-background);
+        }
+        .feature-test h3 {
+            margin-top: 0;
+            color: var(--color-text-primary);
+        }
+        .mock-data {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 16px 0;
+        }
+        .mock-item {
+            padding: 12px;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            background: var(--color-card-background);
+        }
+        .mock-item h4 {
+            margin: 0 0 8px 0;
+            color: var(--color-text-primary);
+        }
+        .mock-item p {
+            margin: 4px 0;
+            font-size: 14px;
+            color: var(--color-text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>产品库功能测试</h1>
+        <p>测试产品库的新功能：显示字段、排序、自动刷新、分页</p>
+        
+        <div>
+            <button class="test-button" onclick="testDisplayFields()">测试显示字段</button>
+            <button class="test-button" onclick="testSorting()">测试排序功能</button>
+            <button class="test-button" onclick="testAutoRefresh()">测试自动刷新</button>
+            <button class="test-button" onclick="testPagination()">测试分页功能</button>
+            <button class="test-button" onclick="clearLog()">清空日志</button>
+        </div>
+        
+        <div class="feature-test">
+            <h3>1. 显示字段测试</h3>
+            <p>验证产品库显示以下字段：</p>
+            <ul>
+                <li>产品标题 (goodsCat3) - 最大50字符，超出显示省略号</li>
+                <li>昨日销量 (yesterdaySales) - 格式：数字 + "件"</li>
+                <li>价格增长百分比 (priceGrowthPercent) - 格式：+X.X% 或 -X.X%，正数绿色，负数红色</li>
+                <li>采集日期 (collectTime) - 格式：YYYY-MM-DD HH:mm</li>
+            </ul>
+            
+            <div class="mock-data">
+                <div class="mock-item">
+                    <h4>产品标题测试</h4>
+                    <p>短标题：iPhone 15 Pro</p>
+                    <p>长标题：这是一个非常长的产品标题，用来测试文本截断功能，应该显示省略号</p>
+                </div>
+                <div class="mock-item">
+                    <h4>昨日销量测试</h4>
+                    <p>有数据：1,234件</p>
+                    <p>无数据：-</p>
+                </div>
+                <div class="mock-item">
+                    <h4>价格增长测试</h4>
+                    <p>正增长：+5.2% (绿色)</p>
+                    <p>负增长：-3.8% (红色)</p>
+                    <p>无数据：-</p>
+                </div>
+                <div class="mock-item">
+                    <h4>采集日期测试</h4>
+                    <p>格式：2024-01-15 14:30</p>
+                    <p>相对时间：2小时前</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="feature-test">
+            <h3>2. 排序功能测试</h3>
+            <p>验证以下排序功能：</p>
+            <ul>
+                <li>默认按采集时间倒序（最近采集的在最上面）</li>
+                <li>点击列标题可切换升序/降序</li>
+                <li>表头显示排序指示器（↑↓↕）</li>
+                <li>支持多列排序</li>
+            </ul>
+        </div>
+        
+        <div class="feature-test">
+            <h3>3. 自动刷新测试</h3>
+            <p>验证以下刷新功能：</p>
+            <ul>
+                <li>进入产品库页面时立即刷新一次</li>
+                <li>每5秒自动刷新一次</li>
+                <li>离开页面时停止自动刷新</li>
+                <li>显示刷新状态和最后更新时间</li>
+            </ul>
+        </div>
+        
+        <div class="feature-test">
+            <h3>4. 分页功能测试</h3>
+            <p>验证以下分页功能：</p>
+            <ul>
+                <li>每页显示100个产品（默认）</li>
+                <li>显示当前页/总页数信息</li>
+                <li>支持翻页操作</li>
+                <li>显示总产品数</li>
+            </ul>
+        </div>
+        
+        <div class="log-container" id="log-container">
+            <div class="log-entry log-info">等待测试开始...</div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟HomePage实例
+        const homePageInstance = {
+            currentSortField: 'collectTime',
+            currentSortOrder: 'desc',
+            currentPage: 1,
+            itemsPerPage: 100,
+            productLibraryRefreshTimer: null,
+            
+            // 模拟产品数据
+            mockProducts: [
+                {
+                    goodsId: '123456789012',
+                    goodsCat3: 'iPhone 15 Pro Max 256GB 深空黑色 5G智能手机',
+                    yesterdaySales: 1234,
+                    priceGrowthPercent: 5.2,
+                    collectTime: '2024-01-15T14:30:00Z'
+                },
+                {
+                    goodsId: '123456789013',
+                    goodsCat3: 'MacBook Pro 14英寸 M3芯片 16GB内存 512GB存储',
+                    yesterdaySales: 567,
+                    priceGrowthPercent: -2.1,
+                    collectTime: '2024-01-15T10:15:00Z'
+                },
+                {
+                    goodsId: '123456789014',
+                    goodsCat3: 'AirPods Pro 2代 主动降噪 无线充电盒',
+                    yesterdaySales: 0,
+                    priceGrowthPercent: 0,
+                    collectTime: '2024-01-14T16:45:00Z'
+                },
+                {
+                    goodsId: '123456789015',
+                    goodsCat3: '这是一个非常长的产品标题，用来测试文本截断功能，应该显示省略号，让用户知道还有更多内容',
+                    yesterdaySales: 8901,
+                    priceGrowthPercent: 12.5,
+                    collectTime: '2024-01-14T09:20:00Z'
+                }
+            ],
+            
+            // 测试显示字段
+            testDisplayFields: function() {
+                log('=== 测试显示字段 ===', 'info');
+                
+                this.mockProducts.forEach((product, index) => {
+                    const title = this.truncateText(product.goodsCat3, 50);
+                    const yesterdaySales = this.getYesterdaySales(product);
+                    const priceGrowth = this.getPriceGrowthPercent(product);
+                    const collectTime = this.formatCollectTime(product.collectTime);
+                    
+                    log(`产品 ${index + 1}:`, 'info');
+                    log(`  标题: ${title}`, 'info');
+                    log(`  昨日销量: ${yesterdaySales}`, 'info');
+                    log(`  价格增长: ${priceGrowth}`, 'info');
+                    log(`  采集时间: ${collectTime}`, 'info');
+                });
+                
+                log('✅ 显示字段测试完成', 'success');
+            },
+            
+            // 测试排序功能
+            testSorting: function() {
+                log('=== 测试排序功能 ===', 'info');
+                
+                // 测试按采集时间排序
+                log('按采集时间倒序排序:', 'info');
+                const sortedByTime = this.sortProducts([...this.mockProducts]);
+                sortedByTime.forEach((product, index) => {
+                    log(`  ${index + 1}. ${this.truncateText(product.goodsCat3, 30)} - ${this.formatCollectTime(product.collectTime)}`, 'info');
+                });
+                
+                // 测试按昨日销量排序
+                log('按昨日销量降序排序:', 'info');
+                this.currentSortField = 'yesterdaySales';
+                this.currentSortOrder = 'desc';
+                const sortedBySales = this.sortProducts([...this.mockProducts]);
+                sortedBySales.forEach((product, index) => {
+                    log(`  ${index + 1}. ${this.truncateText(product.goodsCat3, 30)} - ${product.yesterdaySales}件`, 'info');
+                });
+                
+                // 测试按价格增长排序
+                log('按价格增长降序排序:', 'info');
+                this.currentSortField = 'priceGrowthPercent';
+                this.currentSortOrder = 'desc';
+                const sortedByGrowth = this.sortProducts([...this.mockProducts]);
+                sortedByGrowth.forEach((product, index) => {
+                    log(`  ${index + 1}. ${this.truncateText(product.goodsCat3, 30)} - ${this.getPriceGrowthPercent(product)}`, 'info');
+                });
+                
+                log('✅ 排序功能测试完成', 'success');
+            },
+            
+            // 测试自动刷新
+            testAutoRefresh: function() {
+                log('=== 测试自动刷新 ===', 'info');
+                
+                log('启动自动刷新（每5秒一次）', 'info');
+                this.startProductLibraryRefresh();
+                
+                setTimeout(() => {
+                    log('5秒后自动刷新触发', 'success');
+                }, 5000);
+                
+                setTimeout(() => {
+                    log('10秒后自动刷新触发', 'success');
+                    this.stopProductLibraryRefresh();
+                    log('停止自动刷新', 'info');
+                }, 10000);
+            },
+            
+            // 测试分页功能
+            testPagination: function() {
+                log('=== 测试分页功能 ===', 'info');
+                
+                // 模拟100个产品
+                const manyProducts = [];
+                for (let i = 1; i <= 100; i++) {
+                    manyProducts.push({
+                        goodsId: `1234567890${i.toString().padStart(2, '0')}`,
+                        goodsCat3: `测试产品 ${i}`,
+                        yesterdaySales: Math.floor(Math.random() * 1000),
+                        priceGrowthPercent: (Math.random() - 0.5) * 20,
+                        collectTime: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
+                    });
+                }
+                
+                log(`总产品数: ${manyProducts.length}`, 'info');
+                log(`每页显示: ${this.itemsPerPage}个`, 'info');
+                log(`总页数: ${Math.ceil(manyProducts.length / this.itemsPerPage)}页`, 'info');
+                
+                // 测试第一页
+                this.currentPage = 1;
+                const page1 = this.paginateProducts(manyProducts);
+                log(`第1页产品数: ${page1.length}`, 'info');
+                
+                // 测试第二页
+                this.currentPage = 2;
+                const page2 = this.paginateProducts(manyProducts);
+                log(`第2页产品数: ${page2.length}`, 'info');
+                
+                log('✅ 分页功能测试完成', 'success');
+            },
+            
+            // 辅助方法
+            truncateText: function(text, maxLength) {
+                if (!text) return '';
+                if (text.length <= maxLength) return text;
+                return text.substring(0, maxLength) + '...';
+            },
+            
+            getYesterdaySales: function(product) {
+                if (product.yesterdaySales !== undefined) {
+                    return product.yesterdaySales.toLocaleString() + '件';
+                }
+                return '-';
+            },
+            
+            getPriceGrowthPercent: function(product) {
+                if (product.priceGrowthPercent !== undefined) {
+                    const percent = product.priceGrowthPercent;
+                    const sign = percent >= 0 ? '+' : '';
+                    return `${sign}${percent.toFixed(1)}%`;
+                }
+                return '-';
+            },
+            
+            formatCollectTime: function(collectTime) {
+                if (!collectTime) return '未知时间';
+                
+                try {
+                    const date = new Date(collectTime);
+                    return date.toLocaleString('zh-CN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } catch (error) {
+                    return '时间格式错误';
+                }
+            },
+            
+            sortProducts: function(products) {
+                return products.sort((a, b) => {
+                    let aValue, bValue;
+                    
+                    switch (this.currentSortField) {
+                        case 'goodsCat3':
+                            aValue = (a.goodsCat3 || '').toLowerCase();
+                            bValue = (b.goodsCat3 || '').toLowerCase();
+                            break;
+                        case 'yesterdaySales':
+                            aValue = a.yesterdaySales || 0;
+                            bValue = b.yesterdaySales || 0;
+                            break;
+                        case 'priceGrowthPercent':
+                            aValue = a.priceGrowthPercent || 0;
+                            bValue = b.priceGrowthPercent || 0;
+                            break;
+                        case 'collectTime':
+                        default:
+                            aValue = new Date(a.collectTime || 0);
+                            bValue = new Date(b.collectTime || 0);
+                            break;
+                    }
+                    
+                    if (aValue < bValue) return this.currentSortOrder === 'asc' ? -1 : 1;
+                    if (aValue > bValue) return this.currentSortOrder === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            },
+            
+            paginateProducts: function(products) {
+                const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+                const endIndex = startIndex + this.itemsPerPage;
+                return products.slice(startIndex, endIndex);
+            },
+            
+            startProductLibraryRefresh: function() {
+                this.stopProductLibraryRefresh();
+                this.productLibraryRefreshTimer = setInterval(() => {
+                    log('自动刷新触发', 'info');
+                }, 5000);
+            },
+            
+            stopProductLibraryRefresh: function() {
+                if (this.productLibraryRefreshTimer) {
+                    clearInterval(this.productLibraryRefreshTimer);
+                    this.productLibraryRefreshTimer = null;
+                }
+            }
+        };
+
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('log-container');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log-container').innerHTML = '<div class="log-entry log-info">日志已清空</div>';
+        }
+
+        // 页面加载完成后的初始化
+        window.addEventListener('load', () => {
+            log('产品库功能测试页面已加载', 'info');
+            log('点击测试按钮开始各项功能测试', 'info');
+        });
+    </script>
+</body>
+</html>

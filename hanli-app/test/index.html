@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hanli App 测试页面索引</title>
+    <link rel="stylesheet" href="../renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="../renderer/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .test-index-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--color-card-background);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            min-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+        .test-index-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--color-border);
+        }
+        .test-index-header h1 {
+            color: var(--color-text-primary);
+            margin: 0 0 10px 0;
+            font-size: 2.5em;
+        }
+        .test-index-header p {
+            color: var(--color-text-secondary);
+            font-size: 1.2em;
+            margin: 0;
+        }
+        .test-categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+        .test-category {
+            background: var(--color-background);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .test-category h3 {
+            color: var(--color-text-primary);
+            margin: 0 0 16px 0;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .test-category-icon {
+            font-size: 1.2em;
+        }
+        .test-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .test-item {
+            margin-bottom: 12px;
+        }
+        .test-link {
+            display: block;
+            padding: 12px 16px;
+            background: var(--color-muted);
+            color: var(--color-text-primary);
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+        .test-link:hover {
+            background: var(--color-hover);
+            border-color: var(--color-primary);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .test-link:active {
+            transform: translateY(0);
+        }
+        .test-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .test-description {
+            font-size: 0.9em;
+            color: var(--color-text-secondary);
+            line-height: 1.4;
+        }
+        .test-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding: 20px;
+            background: var(--color-muted);
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--color-primary);
+            margin-bottom: 4px;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            color: var(--color-text-secondary);
+        }
+        .quick-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        .quick-action-btn {
+            background: var(--color-primary);
+            color: var(--color-primary-foreground);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s ease;
+        }
+        .quick-action-btn:hover {
+            background: var(--color-primary-hover);
+        }
+        .quick-action-btn.secondary {
+            background: var(--color-secondary);
+            color: var(--color-secondary-foreground);
+        }
+        .quick-action-btn.secondary:hover {
+            background: var(--color-secondary-hover);
+        }
+        
+        /* 回到顶部按钮 */
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: var(--color-primary);
+            color: var(--color-primary-foreground);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .back-to-top:hover {
+            background: var(--color-primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+        }
+        
+        .back-to-top.show {
+            display: flex;
+        }
+        
+        /* 滚动条样式 */
+        .test-index-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .test-index-container::-webkit-scrollbar-track {
+            background: var(--color-muted);
+            border-radius: 4px;
+        }
+        
+        .test-index-container::-webkit-scrollbar-thumb {
+            background: var(--color-border);
+            border-radius: 4px;
+        }
+        
+        .test-index-container::-webkit-scrollbar-thumb:hover {
+            background: var(--color-text-secondary);
+        }
+        
+        /* 平滑滚动 */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* 移动端优化 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .test-index-container {
+                padding: 20px;
+                min-height: calc(100vh - 20px);
+            }
+            
+            .test-index-header h1 {
+                font-size: 2em;
+            }
+            
+            .test-index-header p {
+                font-size: 1em;
+            }
+            
+            .test-categories {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            
+            .test-category {
+                padding: 16px;
+            }
+            
+            .test-stats {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+            
+            .quick-actions {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .quick-action-btn {
+                width: 100%;
+            }
+            
+            .back-to-top {
+                bottom: 20px;
+                right: 20px;
+                width: 45px;
+                height: 45px;
+                font-size: 18px;
+            }
+        }
+        
+        /* 小屏幕优化 */
+        @media (max-width: 480px) {
+            .test-index-container {
+                padding: 15px;
+                border-radius: 8px;
+            }
+            
+            .test-index-header h1 {
+                font-size: 1.8em;
+            }
+            
+            .test-category h3 {
+                font-size: 1.1em;
+            }
+            
+            .test-link {
+                padding: 10px 12px;
+            }
+            
+            .test-name {
+                font-size: 0.95em;
+            }
+            
+            .test-description {
+                font-size: 0.85em;
+            }
+            
+            .back-to-top {
+                bottom: 15px;
+                right: 15px;
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-index-container">
+        <div class="test-index-header">
+            <h1>🧪 Hanli App 测试页面</h1>
+            <p>所有功能测试页面的集中管理入口</p>
+        </div>
+        
+        <div class="test-categories">
+            <div class="test-category">
+                <h3><span class="test-category-icon">🔌</span>插件功能测试</h3>
+                <ul class="test-list">
+                    <li class="test-item">
+                        <a href="test-plugin-fetch.html" class="test-link">
+                            <div class="test-name">插件Fetch测试</div>
+                            <div class="test-description">测试插件与App的fetch连接功能</div>
+                        </a>
+                    </li>
+                    <li class="test-item">
+                        <a href="test-plugin-launch.html" class="test-link">
+                            <div class="test-name">插件启动测试</div>
+                            <div class="test-description">测试插件启动App的功能</div>
+                        </a>
+                    </li>
+                    <li class="test-item">
+                        <a href="test-collection.html" class="test-link">
+                            <div class="test-name">数据采集测试</div>
+                            <div class="test-description">测试插件数据采集功能</div>
+                        </a>
+                    </li>
+                    <li class="test-item">
+                        <a href="test-debug-fetch.html" class="test-link">
+                            <div class="test-name">Fetch调试测试</div>
+                            <div class="test-description">调试fetch请求的详细过程</div>
+                        </a>
+                    </li>
+                    <li class="test-item">
+                        <a href="test-simple-fetch.html" class="test-link">
+                            <div class="test-name">简单Fetch测试</div>
+                            <div class="test-description">基础的fetch功能测试</div>
+                        </a>
+                    </li>
+                    <li class="test-item">
+                        <a href="test-plugin-modal.html" class="test-link">
+                            <div class="test-name">插件弹窗测试</div>
+                            <div class="test-description">测试插件弹窗功能</div>
+                        </a>
+                    </li>
+                    <li class="test-item">
+                        <a href="test-navigation.html" class="test-link">
+                            <div class="test-name">导航功能测试</div>
+                            <div class="test-description">测试TopBar和SideBar的点击切换功能</div>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="test-category">
+                <h3><span class="test-category-icon">📱</span>App功能测试</h3>
+                <ul class="test-list">
+                    <li class="test-item">
+                        <a href="test-app-launch.html" class="test-link">
+                            <div class="test-name">App启动测试</div>
+                            <div class="test-description">测试App的启动和窗口管理</div>
+                        </a>
+                    </li>
+                    <li class="test-item">
+                        <a href="test-app-startup.html" class="test-link">
+                            <div class="test-name">App启动流程测试</div>
+                            <div class="test-description">测试App完整启动流程</div>
+                        </a>
+                    </li>
+                    <li class="test-item">
+                        <a href="test-window-size.html" class="test-link">
+                            <div class="test-name">窗口大小测试</div>
+                            <div class="test-description">测试窗口大小和最大化功能</div>
+                        </a>
+                    </li>
+                    <li class="test-item">
+                        <a href="test-button-status.html" class="test-link">
+                            <div class="test-name">按钮状态测试</div>
+                            <div class="test-description">测试各种按钮的交互状态</div>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="test-category">
+                <h3><span class="test-category-icon">📊</span>数据功能测试</h3>
+                <ul class="test-list">
+                    <li class="test-item">
+                        <a href="test-product-count-refresh.html" class="test-link">
+                            <div class="test-name">产品总数刷新测试</div>
+                            <div class="test-description">测试产品总数的自动刷新功能</div>
+                        </a>
+                    </li>
+                    <li class="test-item">
+                        <a href="test-product-library.html" class="test-link">
+                            <div class="test-name">产品库基础测试</div>
+                            <div class="test-description">测试产品库的基本显示功能</div>
+                        </a>
+                    </li>
+                    <li class="test-item">
+                        <a href="test-product-library-features.html" class="test-link">
+                            <div class="test-name">产品库功能测试</div>
+                            <div class="test-description">测试产品库的完整功能（排序、刷新、分页）</div>
+                        </a>
+                    </li>
+                    <li class="test-item">
+                        <a href="test-product-detail.html" class="test-link">
+                            <div class="test-name">产品详情测试</div>
+                            <div class="test-description">测试产品详情页面的显示</div>
+                        </a>
+                    </li>
+                    <li class="test-item">
+                        <a href="test-product-detail-api.html" class="test-link">
+                            <div class="test-name">产品详情API测试</div>
+                            <div class="test-description">测试产品详情API接口</div>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="test-category">
+                <h3><span class="test-category-icon">🎨</span>界面功能测试</h3>
+                <ul class="test-list">
+                    <li class="test-item">
+                        <a href="test-topbar-adjustments.html" class="test-link">
+                            <div class="test-name">TopBar调整测试</div>
+                            <div class="test-description">测试TopBar的padding和3个点菜单</div>
+                        </a>
+                    </li>
+                    <li class="test-item">
+                        <a href="test-settings-modal.html" class="test-link">
+                            <div class="test-name">设置弹窗测试</div>
+                            <div class="test-description">测试系统设置弹窗功能</div>
+                        </a>
+                    </li>
+                    <li class="test-item">
+                        <a href="test-settings-interaction.html" class="test-link">
+                            <div class="test-name">设置交互测试</div>
+                            <div class="test-description">测试设置弹窗的按钮交互</div>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="test-category">
+                <h3><span class="test-category-icon">🔧</span>协议和通信测试</h3>
+                <ul class="test-list">
+                    <li class="test-item">
+                        <a href="test-protocol.html" class="test-link">
+                            <div class="test-name">协议测试</div>
+                            <div class="test-description">测试hanliapp://协议功能</div>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="test-stats">
+            <div class="stat-item">
+                <div class="stat-number">20</div>
+                <div class="stat-label">测试页面</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">5</div>
+                <div class="stat-label">测试分类</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">100%</div>
+                <div class="stat-label">功能覆盖</div>
+            </div>
+        </div>
+        
+        <div class="quick-actions">
+            <button class="quick-action-btn" onclick="openAllTests()">打开所有测试</button>
+            <button class="quick-action-btn secondary" onclick="refreshStats()">刷新统计</button>
+        </div>
+    </div>
+    
+    <!-- 回到顶部按钮 -->
+    <button class="back-to-top" id="backToTop" onclick="scrollToTop()" title="回到顶部">
+        ↑
+    </button>
+
+    <script>
+        function openAllTests() {
+            const testLinks = document.querySelectorAll('.test-link');
+            testLinks.forEach((link, index) => {
+                setTimeout(() => {
+                    window.open(link.href, '_blank');
+                }, index * 200); // 每200ms打开一个，避免浏览器阻止
+            });
+        }
+        
+        function refreshStats() {
+            // 刷新页面统计
+            location.reload();
+        }
+        
+        // 回到顶部功能
+        function scrollToTop() {
+            const container = document.querySelector('.test-index-container');
+            container.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+        
+        // 滚动检测
+        function handleScroll() {
+            const backToTop = document.getElementById('backToTop');
+            const container = document.querySelector('.test-index-container');
+            
+            if (container.scrollTop > 300) {
+                backToTop.classList.add('show');
+            } else {
+                backToTop.classList.remove('show');
+            }
+        }
+        
+        // 页面加载完成后的初始化
+        window.addEventListener('load', () => {
+            console.log('测试页面索引已加载');
+            console.log('共发现', document.querySelectorAll('.test-link').length, '个测试页面');
+            
+            // 绑定滚动事件
+            const container = document.querySelector('.test-index-container');
+            container.addEventListener('scroll', handleScroll);
+            
+            // 初始化回到顶部按钮状态
+            handleScroll();
+        });
+    </script>
+</body>
+</html>

@@ -142,6 +142,10 @@ class TabManager {
                 this.renderTabs();
                 // 触发页面切换事件
                 this.onTabSwitch(tab);
+                // 通知HomePage实例进行页面切换
+                if (window.homePageInstance) {
+                    window.homePageInstance.handleTabSwitch(tab);
+                }
             }
         });
 
@@ -175,6 +179,12 @@ class HomePage {
         this.activePage = 'home';
         this.isResizing = false;
         this.tabManager = new TabManager();
+        this.productCountRefreshTimer = null; // 产品总数刷新定时器
+        this.productLibraryRefreshTimer = null; // 产品库刷新定时器
+        this.currentSortField = 'collectTime';
+        this.currentSortOrder = 'desc';
+        this.currentPage = 1;
+        this.itemsPerPage = 100;
         this.init();
     }
 
@@ -184,7 +194,11 @@ class HomePage {
         this.bindEvents();
         this.renderTabs();
         this.loadDashboardData();
+        this.applyStoredSettings();
         this.setupIPCListeners();
+        
+        // 设置全局引用，供TabManager使用
+        window.homePageInstance = this;
     }
 
     // 加载主题
@@ -242,24 +256,21 @@ class HomePage {
         this.bindKeyboardShortcuts();
 
         // 设置按钮点击事件
-        document.getElementById('settings-btn').addEventListener('click', () => {
-            this.showSettingsModal();
-        });
+        const settingsBtn = document.getElementById('settings-btn');
+        if (settingsBtn) {
+            settingsBtn.addEventListener('click', () => {
+                this.openSettingsModal();
+            });
+        }
 
+        // 3个点菜单点击事件
+        const menuDots = document.getElementById('menu-dots');
+        if (menuDots) {
+            menuDots.addEventListener('click', () => {
+                this.openMenuDots();
+            });
+        }
 
-        // 弹窗关闭事件
-        document.getElementById('settings-close').addEventListener('click', () => {
-            this.hideSettingsModal();
-        });
-
-        document.getElementById('settings-save').addEventListener('click', () => {
-            this.saveSettings();
-        });
-
-        // 主题选择事件
-        document.getElementById('theme-select').addEventListener('change', (e) => {
-            this.setTheme(e.target.value);
-        });
 
         // 监听系统主题变化
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
@@ -328,6 +339,15 @@ class HomePage {
         if (pageId) {
             this.activePage = pageId;
             this.updateSidebarActiveState();
+        }
+        
+        // 根据Tab类型管理产品总数刷新
+        if (tab.pageType === 'home') {
+            // 切换到首页，启动定时刷新
+            this.startProductCountRefresh();
+        } else {
+            // 离开首页，停止定时刷新
+            this.stopProductCountRefresh();
         }
     }
     
@@ -421,6 +441,11 @@ class HomePage {
         // 更新当前页面
         this.activePage = page;
         this.updateSidebarActiveState();
+        
+        // 如果是产品库页面，加载产品数据
+        if (page === 'product-library') {
+            this.loadProductLibrary();
+        }
     }
 
 
@@ -446,31 +471,118 @@ class HomePage {
         document.querySelector(`[data-page="${this.activePage}"]`)?.classList.add('active');
     }
 
-
-    // 显示设置弹窗
-    showSettingsModal() {
-        const modal = document.getElementById('settings-modal');
-        modal.classList.add('active');
-        document.getElementById('theme-select').value = this.currentTheme;
+    // 处理Tab切换
+    handleTabSwitch(tab) {
+        console.log('处理Tab切换:', tab);
+        
+        // 根据Tab类型渲染对应的页面内容
+        this.renderPageContent(tab.pageData.type);
+        
+        // 更新侧边栏状态
+        this.updateSidebarForTab(tab);
     }
 
-    // 隐藏设置弹窗
-    hideSettingsModal() {
-        const modal = document.getElementById('settings-modal');
-        modal.classList.remove('active');
+    // 渲染页面内容
+    renderPageContent(pageType) {
+        console.log('渲染页面内容:', pageType);
+        
+        switch (pageType) {
+            case 'home':
+                this.renderHomePage();
+                break;
+            case 'goodsList':
+                this.loadProductLibrary();
+                break;
+            case 'productDetail':
+                // 产品详情页已经在Tab切换时处理了数据加载
+                if (this.currentProductDetail) {
+                    this.renderProductDetailPage(this.currentProductDetail);
+                }
+                break;
+            default:
+                console.warn('未知的页面类型:', pageType);
+        }
     }
 
-    // 保存设置
-    saveSettings() {
-        const theme = document.getElementById('theme-select').value;
-        this.setTheme(theme);
-        this.hideSettingsModal();
-        this.showToast('设置已保存');
+    // 渲染首页
+    renderHomePage() {
+        const pageContainer = document.getElementById('page-container');
+        pageContainer.innerHTML = `
+            <div class="page-content">
+                <div class="welcome-section">
+                    <h1 class="welcome-title">欢迎使用Hanli</h1>
+                    <p class="welcome-subtitle">产品管理系统</p>
+                </div>
+                
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">📦</div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="product-count">-</div>
+                            <div class="stat-label">产品总数</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-content">
+                            <div class="stat-number">-</div>
+                            <div class="stat-label">今日采集</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">⭐</div>
+                        <div class="stat-content">
+                            <div class="stat-number">-</div>
+                            <div class="stat-label">平均评分</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // 加载首页数据
+        this.loadDashboardData();
     }
+
+    // 根据Tab更新侧边栏状态
+    updateSidebarForTab(tab) {
+        // 清除所有侧边栏项的激活状态
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        // 根据Tab类型设置对应的侧边栏项为激活状态
+        let targetPage = null;
+        switch (tab.pageData.type) {
+            case 'home':
+                targetPage = 'home';
+                break;
+            case 'goodsList':
+                targetPage = 'product-library';
+                break;
+            case 'productDetail':
+                // 产品详情页不更新侧边栏状态，保持当前状态
+                return;
+        }
+        
+        if (targetPage) {
+            const sidebarItem = document.querySelector(`[data-page="${targetPage}"]`);
+            if (sidebarItem) {
+                sidebarItem.classList.add('active');
+                this.activePage = targetPage;
+            }
+        }
+    }
+
+
+
 
     // 加载仪表板数据
     loadDashboardData() {
         this.loadProductCount();
+        this.startProductCountRefresh();
     }
 
     // 加载产品总数
@@ -481,6 +593,7 @@ class HomePage {
             if (response.ok) {
                 const data = await response.json();
                 document.getElementById('product-count').textContent = data.count || 0;
+                console.log('产品总数已更新:', data.count);
             } else {
                 console.error('获取产品总数失败:', response.status);
                 document.getElementById('product-count').textContent = '0';
@@ -488,6 +601,1303 @@ class HomePage {
         } catch (error) {
             console.error('获取产品总数失败:', error);
             document.getElementById('product-count').textContent = '0';
+        }
+    }
+
+    // 开始产品总数定时刷新
+    startProductCountRefresh() {
+        // 清除现有定时器
+        this.stopProductCountRefresh();
+        
+        // 设置5秒定时刷新
+        this.productCountRefreshTimer = setInterval(() => {
+            // 只有在首页且没有其他活动Tab时才刷新
+            if (this.isOnHomePage()) {
+                console.log('定时刷新产品总数...');
+                this.loadProductCount();
+            }
+        }, 5000);
+        
+        console.log('产品总数定时刷新已启动，间隔5秒');
+    }
+
+    // 停止产品总数定时刷新
+    stopProductCountRefresh() {
+        if (this.productCountRefreshTimer) {
+            clearInterval(this.productCountRefreshTimer);
+            this.productCountRefreshTimer = null;
+            console.log('产品总数定时刷新已停止');
+        }
+    }
+
+    // 检查是否在首页
+    isOnHomePage() {
+        const activeTab = this.tabManager.getActiveTab();
+        return activeTab && activeTab.pageType === 'home';
+    }
+
+    // 检查是否在产品库页面
+    isOnProductLibraryPage() {
+        const activeTab = this.tabManager.getActiveTab();
+        return activeTab && activeTab.pageData && activeTab.pageData.type === 'goodsList';
+    }
+
+    // 加载产品库数据
+    async loadProductLibrary() {
+        try {
+            console.log('开始加载产品库数据...');
+            
+            // 通过API获取产品列表
+            const response = await fetch('http://localhost:3001/api/products');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    // 对产品进行排序
+                    const sortedProducts = this.sortProducts(data.products);
+                    
+                    // 分页处理
+                    const paginatedProducts = this.paginateProducts(sortedProducts);
+                    
+                    this.renderProductLibrary(paginatedProducts, data.products.length);
+                    console.log('产品库数据加载成功:', data.products.length, '个产品');
+                    
+                    // 只有在产品库页面时才启动自动刷新
+                    if (this.isOnProductLibraryPage()) {
+                        this.startProductLibraryRefresh();
+                    }
+                } else {
+                    console.error('获取产品列表失败:', data.error);
+                    this.showProductLibraryError('获取产品列表失败');
+                }
+            } else {
+                console.error('获取产品列表失败:', response.status);
+                this.showProductLibraryError('网络请求失败');
+            }
+        } catch (error) {
+            console.error('加载产品库数据失败:', error);
+            this.showProductLibraryError('加载数据失败');
+        }
+    }
+
+    // 渲染产品库表格
+    renderProductLibrary(products, totalCount = 0) {
+        const pageContainer = document.getElementById('page-container');
+        
+        // 创建产品库页面内容
+        const productLibraryHTML = `
+            <div class="product-library-page">
+                <div class="page-header">
+                    <h1 class="page-title">产品库</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" onclick="homePageInstance.refreshProductLibrary()">
+                            <span>🔄</span> 刷新
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="product-table-container">
+                    <table class="product-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-sort="goodsCat3">产品标题</th>
+                                <th class="sortable" data-sort="yesterdaySales">昨日销量</th>
+                                <th class="sortable" data-sort="priceGrowthPercent">价格增长</th>
+                                <th class="sortable" data-sort="collectTime">采集日期</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-table-body">
+                            ${this.generateProductTableRows(products)}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="product-summary">
+                    <div class="summary-item">
+                        <span class="summary-label">总产品数:</span>
+                        <span class="summary-value">${totalCount}</span>
+                    </div>
+                    <div class="pagination-info">
+                        <span>第 <strong>${this.currentPage}</strong> 页，共 <strong>${Math.ceil(totalCount / this.itemsPerPage)}</strong> 页</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        pageContainer.innerHTML = productLibraryHTML;
+        
+        // 绑定排序事件
+        this.bindSortEvents();
+    }
+
+    // 生成产品表格行
+    generateProductTableRows(products) {
+        return products.map(product => {
+            const goodsCat3 = product.goodsCat3 || product.goodsTitleEn || '未知商品';
+            const yesterdaySales = this.getYesterdaySales(product);
+            const priceGrowthPercent = this.getPriceGrowthPercent(product);
+            const collectTime = this.formatCollectTime(product.collectTime);
+            
+            return `
+                <tr class="product-row" data-goods-id="${product.goodsId}">
+                    <td class="product-name" title="${goodsCat3}">
+                        <div class="name-content">${this.truncateText(goodsCat3, 50)}</div>
+                    </td>
+                    <td class="product-sales">${yesterdaySales}</td>
+                    <td class="product-price-growth ${priceGrowthPercent.startsWith('+') ? 'positive' : priceGrowthPercent.startsWith('-') ? 'negative' : ''}">${priceGrowthPercent}</td>
+                    <td class="product-time">${collectTime}</td>
+                    <td class="product-actions">
+                        <button class="btn btn-sm btn-primary" onclick="homePageInstance.viewProductDetail('${product.goodsId}')">
+                            查看详情
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // 获取产品价格
+    getProductPrice(product) {
+        if (product.skuList && product.skuList.length > 0) {
+            const sku = product.skuList[0];
+            return sku.goodsPromoPrice || sku.goodsNormalPrice || '价格未知';
+        }
+        return '价格未知';
+    }
+
+    // 获取昨日销量
+    getYesterdaySales(product) {
+        if (product.yesterdaySales !== undefined) {
+            return product.yesterdaySales.toLocaleString() + '件';
+        }
+        return '-';
+    }
+
+    // 获取价格增长百分比
+    getPriceGrowthPercent(product) {
+        if (product.priceGrowthPercent !== undefined) {
+            const percent = product.priceGrowthPercent;
+            const sign = percent >= 0 ? '+' : '';
+            return `${sign}${percent.toFixed(1)}%`;
+        }
+        return '-';
+    }
+
+    // 截断文本
+    truncateText(text, maxLength) {
+        if (!text) return '';
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
+    }
+
+    // 排序产品
+    sortProducts(products) {
+        return products.sort((a, b) => {
+            let aValue, bValue;
+            
+            switch (this.currentSortField) {
+                case 'goodsCat3':
+                    aValue = (a.goodsCat3 || '').toLowerCase();
+                    bValue = (b.goodsCat3 || '').toLowerCase();
+                    break;
+                case 'yesterdaySales':
+                    aValue = a.yesterdaySales || 0;
+                    bValue = b.yesterdaySales || 0;
+                    break;
+                case 'priceGrowthPercent':
+                    aValue = a.priceGrowthPercent || 0;
+                    bValue = b.priceGrowthPercent || 0;
+                    break;
+                case 'collectTime':
+                default:
+                    aValue = new Date(a.collectTime || 0);
+                    bValue = new Date(b.collectTime || 0);
+                    break;
+            }
+            
+            if (aValue < bValue) return this.currentSortOrder === 'asc' ? -1 : 1;
+            if (aValue > bValue) return this.currentSortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }
+
+    // 分页产品
+    paginateProducts(products) {
+        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        return products.slice(startIndex, endIndex);
+    }
+
+    // 启动产品库自动刷新
+    startProductLibraryRefresh() {
+        // 清除现有定时器
+        this.stopProductLibraryRefresh();
+        
+        // 设置新的定时器，每5秒刷新一次
+        this.productLibraryRefreshTimer = setInterval(() => {
+            // 只有在产品库页面时才执行刷新
+            if (this.isOnProductLibraryPage()) {
+                console.log('自动刷新产品库数据...');
+                this.loadProductLibrary();
+            }
+        }, 5000);
+    }
+
+    // 停止产品库自动刷新
+    stopProductLibraryRefresh() {
+        if (this.productLibraryRefreshTimer) {
+            clearInterval(this.productLibraryRefreshTimer);
+            this.productLibraryRefreshTimer = null;
+        }
+    }
+
+    // 绑定排序事件
+    bindSortEvents() {
+        const sortableHeaders = document.querySelectorAll('.product-table th.sortable');
+        sortableHeaders.forEach(header => {
+            header.addEventListener('click', () => {
+                const sortField = header.dataset.sort;
+                this.handleSort(sortField);
+            });
+        });
+    }
+
+    // 处理排序
+    handleSort(field) {
+        if (this.currentSortField === field) {
+            // 切换排序顺序
+            this.currentSortOrder = this.currentSortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+            // 设置新的排序字段，默认为降序
+            this.currentSortField = field;
+            this.currentSortOrder = 'desc';
+        }
+        
+        // 更新表头样式
+        this.updateSortHeaders();
+        
+        // 重新加载数据
+        this.loadProductLibrary();
+    }
+
+    // 更新排序表头样式
+    updateSortHeaders() {
+        const sortableHeaders = document.querySelectorAll('.product-table th.sortable');
+        sortableHeaders.forEach(header => {
+            header.classList.remove('sort-asc', 'sort-desc');
+            if (header.dataset.sort === this.currentSortField) {
+                header.classList.add(`sort-${this.currentSortOrder}`);
+            }
+        });
+    }
+
+    // 格式化采集时间
+    formatCollectTime(collectTime) {
+        if (!collectTime) return '未知时间';
+        
+        try {
+            const date = new Date(collectTime);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (error) {
+            return collectTime;
+        }
+    }
+
+    // 刷新产品库
+    async refreshProductLibrary() {
+        console.log('刷新产品库...');
+        await this.loadProductLibrary();
+        this.showToast('产品库已刷新');
+    }
+
+    // 查看产品详情
+    async viewProductDetail(goodsId) {
+        console.log('查看产品详情:', goodsId);
+        
+        try {
+            // 获取产品详情数据
+            const response = await fetch(`http://localhost:3001/api/products/${goodsId}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    // 创建产品详情Tab
+                    this.openProductDetailTab(data.product);
+                } else {
+                    this.showToast('获取产品详情失败: ' + data.error);
+                }
+            } else {
+                this.showToast('获取产品详情失败: ' + response.status);
+            }
+        } catch (error) {
+            console.error('获取产品详情失败:', error);
+            this.showToast('获取产品详情失败: ' + error.message);
+        }
+    }
+
+    // 打开产品详情Tab
+    openProductDetailTab(product) {
+        // 检查是否已存在该产品的详情Tab
+        const existingTab = this.tabManager.findTabByPageType('productDetail');
+        if (existingTab) {
+            // 如果存在，切换到该Tab并更新数据
+            this.tabManager.setActiveTab(existingTab.id);
+            this.tabManager.renderTabs();
+            this.loadProductDetailData(product);
+        } else {
+            // 如果不存在，创建新Tab
+            const pageData = {
+                type: 'productDetail',
+                title: `产品详情 - ${product.goodsCat3 || product.goodsTitleEn || product.goodsId}`,
+                productId: product.goodsId
+            };
+            this.tabManager.addTab(pageData);
+            this.loadProductDetailData(product);
+        }
+    }
+
+    // 加载产品详情数据
+    loadProductDetailData(product) {
+        this.currentProductDetail = product;
+        this.renderProductDetailPage(product);
+    }
+
+    // 渲染产品详情页面
+    renderProductDetailPage(product) {
+        const pageContainer = document.getElementById('page-container');
+        
+        const productDetailHTML = `
+            <div class="product-detail-page">
+                <div class="page-header">
+                    <h1 class="page-title">产品详情</h1>
+                </div>
+                
+                <div class="product-detail-content">
+                    <!-- 第一个卡片：图表 -->
+                    <div class="detail-section">
+                        <h3 class="section-title">数据趋势</h3>
+                        <div class="detail-card chart-card">
+                            <div class="card-content">
+                                <div class="chart-container">
+                                    <canvas id="product-chart" width="800" height="400"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 第二个卡片：媒体 -->
+                    <div class="detail-section">
+                        <h3 class="section-title">媒体资源</h3>
+                        <div class="detail-card media-card">
+                            <div class="card-content">
+                                ${this.renderMediaContent(product)}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 第三个卡片：产品信息 -->
+                    <div class="detail-section">
+                        <h3 class="section-title">产品信息</h3>
+                        <div class="detail-card info-card">
+                            <div class="card-content">
+                                ${this.renderProductInfo(product)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        pageContainer.innerHTML = productDetailHTML;
+        
+        // 渲染图表
+        this.renderProductChart(product);
+    }
+
+    // 渲染媒体内容
+    renderMediaContent(product) {
+        let mediaHTML = '<div class="media-grid">';
+        
+        // 视频
+        if (product.videos && product.videos.length > 0) {
+            mediaHTML += '<div class="media-section">';
+            mediaHTML += '<h4>视频</h4>';
+            mediaHTML += '<div class="video-list">';
+            product.videos.forEach((video, index) => {
+                mediaHTML += `
+                    <div class="video-item">
+                        <video controls>
+                            <source src="${video.url}" type="video/mp4">
+                            您的浏览器不支持视频播放
+                        </video>
+                        <p class="video-title">视频 ${index + 1}</p>
+                    </div>
+                `;
+            });
+            mediaHTML += '</div></div>';
+        }
+        
+        // 图片
+        if (product.images && product.images.length > 0) {
+            mediaHTML += '<div class="media-section">';
+            mediaHTML += '<h4>图片</h4>';
+            mediaHTML += '<div class="image-grid">';
+            product.images.forEach((image, index) => {
+                mediaHTML += `
+                    <div class="image-item">
+                        <img src="${image.url}" alt="产品图片 ${index + 1}" onclick="homePageInstance.openImageModal('${image.url}')">
+                    </div>
+                `;
+            });
+            mediaHTML += '</div></div>';
+        }
+        
+        // 如果没有媒体文件
+        if ((!product.videos || product.videos.length === 0) && (!product.images || product.images.length === 0)) {
+            mediaHTML += '<div class="no-media">暂无媒体资源</div>';
+        }
+        
+        mediaHTML += '</div>';
+        return mediaHTML;
+    }
+
+    // 渲染产品信息
+    renderProductInfo(product) {
+        let infoHTML = '<div class="product-info-grid">';
+        
+        // 基本信息
+        infoHTML += '<div class="info-section">';
+        infoHTML += '<h4>基本信息</h4>';
+        infoHTML += '<div class="info-list">';
+        infoHTML += `<div class="info-item"><span class="label">商品ID:</span><span class="value">${product.goodsId}</span></div>`;
+        if (product.itemId) {
+            infoHTML += `<div class="info-item"><span class="label">商品编号:</span><span class="value">${product.itemId}</span></div>`;
+        }
+        if (product.goodsCat1) {
+            infoHTML += `<div class="info-item"><span class="label">分类1:</span><span class="value">${product.goodsCat1}</span></div>`;
+        }
+        if (product.goodsCat2) {
+            infoHTML += `<div class="info-item"><span class="label">分类2:</span><span class="value">${product.goodsCat2}</span></div>`;
+        }
+        if (product.goodsCat3) {
+            infoHTML += `<div class="info-item"><span class="label">商品名称:</span><span class="value">${product.goodsCat3}</span></div>`;
+        }
+        infoHTML += '</div></div>';
+        
+        // 价格信息
+        if (product.skuList && product.skuList.length > 0) {
+            infoHTML += '<div class="info-section">';
+            infoHTML += '<h4>价格信息</h4>';
+            infoHTML += '<div class="info-list">';
+            product.skuList.forEach((sku, index) => {
+                infoHTML += `<div class="info-item"><span class="label">SKU ${index + 1}:</span><span class="value">${sku.skuName || '未知'}</span></div>`;
+                if (sku.goodsPromoPrice) {
+                    infoHTML += `<div class="info-item"><span class="label">促销价:</span><span class="value price">${sku.goodsPromoPrice}</span></div>`;
+                }
+                if (sku.goodsNormalPrice) {
+                    infoHTML += `<div class="info-item"><span class="label">原价:</span><span class="value price">${sku.goodsNormalPrice}</span></div>`;
+                }
+            });
+            infoHTML += '</div></div>';
+        }
+        
+        // 销量信息
+        infoHTML += '<div class="info-section">';
+        infoHTML += '<h4>销量信息</h4>';
+        infoHTML += '<div class="info-list">';
+        infoHTML += `<div class="info-item"><span class="label">销量:</span><span class="value">${(product.goodsSold || 0).toLocaleString()}</span></div>`;
+        if (product.collectTime) {
+            infoHTML += `<div class="info-item"><span class="label">采集时间:</span><span class="value">${this.formatCollectTime(product.collectTime)}</span></div>`;
+        }
+        infoHTML += '</div></div>';
+        
+        // 商品属性
+        if (product.goodsPropertyInfo) {
+            infoHTML += '<div class="info-section">';
+            infoHTML += '<h4>商品属性</h4>';
+            infoHTML += '<div class="info-list">';
+            Object.entries(product.goodsPropertyInfo).forEach(([key, value]) => {
+                infoHTML += `<div class="info-item"><span class="label">${key}:</span><span class="value">${value}</span></div>`;
+            });
+            infoHTML += '</div></div>';
+        }
+        
+        // 店铺信息
+        if (product.storeData) {
+            infoHTML += '<div class="info-section">';
+            infoHTML += '<h4>店铺信息</h4>';
+            infoHTML += '<div class="info-list">';
+            if (product.storeName) {
+                infoHTML += `<div class="info-item"><span class="label">店铺名称:</span><span class="value">${product.storeName}</span></div>`;
+            }
+            if (product.storeData.storeRating) {
+                infoHTML += `<div class="info-item"><span class="label">店铺评分:</span><span class="value">${product.storeData.storeRating}</span></div>`;
+            }
+            if (product.storeData.storeSold) {
+                infoHTML += `<div class="info-item"><span class="label">店铺销量:</span><span class="value">${product.storeData.storeSold.toLocaleString()}</span></div>`;
+            }
+            infoHTML += '</div></div>';
+        }
+        
+        infoHTML += '</div>';
+        return infoHTML;
+    }
+
+    // 渲染产品图表
+    renderProductChart(product) {
+        const ctx = document.getElementById('product-chart');
+        if (!ctx) return;
+        
+        // 检查Chart.js是否已加载
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js未加载，使用简单图表');
+            this.renderSimpleChart(ctx, this.generateMockChartData(product));
+            return;
+        }
+        
+        // 生成模拟数据
+        const mockData = this.generateMockChartData(product);
+        
+        // 销毁现有图表
+        if (this.productChart) {
+            this.productChart.destroy();
+        }
+        
+        // 创建Chart.js图表
+        this.productChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: mockData.labels,
+                datasets: [
+                    {
+                        label: '销量',
+                        data: mockData.sales,
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: '促销价',
+                        data: mockData.promoPrice,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    },
+                    {
+                        label: '原价',
+                        data: mockData.normalPrice,
+                        borderColor: '#2ecc71',
+                        backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    },
+                    {
+                        label: '评分',
+                        data: mockData.rating,
+                        borderColor: '#f39c12',
+                        backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y2'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: '日期'
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: '销量'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: '价格 (元)'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    },
+                    y2: {
+                        type: 'linear',
+                        display: false,
+                        min: 0,
+                        max: 5
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: '产品数据趋势图'
+                    }
+                }
+            }
+        });
+    }
+
+    // 生成模拟图表数据
+    generateMockChartData(product) {
+        const days = 30;
+        const data = {
+            labels: [],
+            sales: [],
+            promoPrice: [],
+            normalPrice: [],
+            rating: []
+        };
+        
+        // 生成过去30天的数据
+        for (let i = days - 1; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            data.labels.push(date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }));
+            
+            // 模拟销量数据（基于当前销量）
+            const baseSales = product.goodsSold || 0;
+            const variation = Math.random() * 0.3 - 0.15; // ±15%变化
+            data.sales.push(Math.max(0, Math.round(baseSales * (1 + variation))));
+            
+            // 模拟价格数据
+            const promoPrice = this.extractPrice(product.skuList?.[0]?.goodsPromoPrice);
+            const normalPrice = this.extractPrice(product.skuList?.[0]?.goodsNormalPrice);
+            data.promoPrice.push(promoPrice);
+            data.normalPrice.push(normalPrice);
+            
+            // 模拟评分数据
+            const baseRating = product.storeData?.storeRating || 4.5;
+            const ratingVariation = (Math.random() - 0.5) * 0.2; // ±0.1变化
+            data.rating.push(Math.max(0, Math.min(5, baseRating + ratingVariation)));
+        }
+        
+        return data;
+    }
+
+    // 提取价格数值
+    extractPrice(priceStr) {
+        if (!priceStr) return 0;
+        const match = priceStr.match(/[\d.]+/);
+        return match ? parseFloat(match[0]) : 0;
+    }
+
+    // 渲染简单图表（暂时替代Chart.js）
+    renderSimpleChart(canvas, data) {
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        const padding = 40;
+        const chartWidth = width - padding * 2;
+        const chartHeight = height - padding * 2;
+        
+        // 清空画布
+        ctx.clearRect(0, 0, width, height);
+        
+        // 绘制背景
+        ctx.fillStyle = '#f8f9fa';
+        ctx.fillRect(0, 0, width, height);
+        
+        // 绘制标题
+        ctx.fillStyle = '#333';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('产品数据趋势图', width / 2, 25);
+        
+        // 绘制图例
+        const legendY = height - 20;
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'left';
+        
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillRect(10, legendY - 10, 15, 10);
+        ctx.fillText('销量', 30, legendY);
+        
+        ctx.fillStyle = '#3498db';
+        ctx.fillRect(80, legendY - 10, 15, 10);
+        ctx.fillText('促销价', 100, legendY);
+        
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(150, legendY - 10, 15, 10);
+        ctx.fillText('原价', 170, legendY);
+        
+        ctx.fillStyle = '#f39c12';
+        ctx.fillRect(200, legendY - 10, 15, 10);
+        ctx.fillText('评分', 220, legendY);
+        
+        // 绘制提示信息
+        ctx.fillStyle = '#666';
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('（模拟数据 - 需要集成Chart.js实现完整图表功能）', width / 2, height - 5);
+    }
+
+    // 打开图片模态框
+    openImageModal(imageUrl) {
+        // 创建图片查看模态框
+        const modal = document.createElement('div');
+        modal.className = 'image-modal';
+        modal.innerHTML = `
+            <div class="modal-overlay" onclick="this.parentElement.remove()">
+                <div class="modal-content" onclick="event.stopPropagation()">
+                    <img src="${imageUrl}" alt="产品图片">
+                    <button class="modal-close" onclick="this.closest('.image-modal').remove()">×</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    // 返回产品库
+    goBackToProductLibrary() {
+        // 切换到产品库Tab
+        const productLibraryTab = this.tabManager.findTabByPageType('goodsList');
+        if (productLibraryTab) {
+            this.tabManager.setActiveTab(productLibraryTab.id);
+            this.tabManager.renderTabs();
+        }
+    }
+
+    // 显示产品库错误
+    showProductLibraryError(message) {
+        const pageContainer = document.getElementById('page-container');
+        pageContainer.innerHTML = `
+            <div class="error-page">
+                <div class="error-icon">⚠️</div>
+                <div class="error-message">${message}</div>
+                <button class="btn btn-primary" onclick="homePageInstance.loadProductLibrary()">
+                    重试
+                </button>
+            </div>
+        `;
+    }
+
+    // 清理资源
+    cleanup() {
+        this.stopProductCountRefresh();
+    }
+
+    // 打开3个点菜单
+    openMenuDots() {
+        console.log('打开3个点菜单');
+        this.showMenuDots();
+    }
+
+    // 显示3个点菜单
+    showMenuDots() {
+        // 检查是否已经存在菜单
+        const existingMenu = document.querySelector('.menu-dots-dropdown');
+        if (existingMenu) {
+            existingMenu.remove();
+            return;
+        }
+
+        // 创建菜单
+        const menu = document.createElement('div');
+        menu.className = 'menu-dots-dropdown';
+        menu.innerHTML = this.generateMenuDotsHTML();
+        document.body.appendChild(menu);
+
+        // 绑定事件
+        this.bindMenuDotsEvents(menu);
+
+        // 定位菜单
+        this.positionMenuDots(menu);
+    }
+
+    // 生成3个点菜单HTML
+    generateMenuDotsHTML() {
+        return `
+            <div class="menu-dots-overlay" onclick="homePageInstance.closeMenuDots()">
+                <div class="menu-dots-content" onclick="event.stopPropagation()">
+                    <div class="menu-dots-item" onclick="homePageInstance.menuAction('new-product')">
+                        <div class="menu-dots-icon">📦</div>
+                        <div class="menu-dots-text">新建产品</div>
+                    </div>
+                    <div class="menu-dots-item" onclick="homePageInstance.menuAction('import-data')">
+                        <div class="menu-dots-icon">📥</div>
+                        <div class="menu-dots-text">导入数据</div>
+                    </div>
+                    <div class="menu-dots-item" onclick="homePageInstance.menuAction('export-data')">
+                        <div class="menu-dots-icon">📤</div>
+                        <div class="menu-dots-text">导出数据</div>
+                    </div>
+                    <div class="menu-dots-divider"></div>
+                    <div class="menu-dots-item" onclick="homePageInstance.menuAction('about')">
+                        <div class="menu-dots-icon">ℹ️</div>
+                        <div class="menu-dots-text">关于</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // 绑定3个点菜单事件
+    bindMenuDotsEvents(menu) {
+        // ESC键关闭
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                this.closeMenuDots();
+                document.removeEventListener('keydown', handleKeyDown);
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+    }
+
+    // 定位3个点菜单
+    positionMenuDots(menu) {
+        const menuDots = document.getElementById('menu-dots');
+        const rect = menuDots.getBoundingClientRect();
+        const menuContent = menu.querySelector('.menu-dots-content');
+        
+        // 计算位置
+        const top = rect.bottom + 8;
+        const right = window.innerWidth - rect.right;
+        
+        menuContent.style.top = `${top}px`;
+        menuContent.style.right = `${right}px`;
+    }
+
+    // 关闭3个点菜单
+    closeMenuDots() {
+        const menu = document.querySelector('.menu-dots-dropdown');
+        if (menu) {
+            menu.remove();
+        }
+    }
+
+    // 菜单项点击处理
+    menuAction(action) {
+        console.log('菜单项点击:', action);
+        
+        switch (action) {
+            case 'new-product':
+                this.showToast('新建产品功能');
+                break;
+            case 'import-data':
+                this.showToast('导入数据功能');
+                break;
+            case 'export-data':
+                this.showToast('导出数据功能');
+                break;
+            case 'about':
+                this.showToast('关于Hanli');
+                break;
+        }
+        
+        this.closeMenuDots();
+    }
+
+    // 打开系统设置弹窗
+    openSettingsModal() {
+        // 检查是否已经存在设置弹窗
+        const existingModal = document.querySelector('.settings-modal');
+        if (existingModal) {
+            console.log('设置弹窗已存在，不重复打开');
+            return;
+        }
+
+        console.log('打开系统设置弹窗');
+        this.showSettingsModal();
+    }
+
+    // 显示系统设置弹窗
+    showSettingsModal() {
+        try {
+            // 创建模态框
+            const modal = document.createElement('div');
+            modal.className = 'settings-modal';
+            modal.innerHTML = this.generateSettingsModalHTML();
+            document.body.appendChild(modal);
+
+            // 绑定事件
+            this.bindSettingsModalEvents(modal);
+            
+            console.log('系统设置弹窗已打开');
+        } catch (error) {
+            console.error('打开系统设置弹窗失败:', error);
+            this.showToast('打开设置失败，请重试');
+        }
+    }
+
+    // 生成系统设置弹窗HTML
+    generateSettingsModalHTML() {
+        const currentTheme = this.getCurrentTheme();
+        
+        return `
+            <div class="modal-overlay" onclick="homePageInstance.closeSettingsModal()">
+                <div class="modal-content settings-modal-content" onclick="event.stopPropagation()">
+                    <div class="modal-header">
+                        <h2 class="modal-title">系统设置</h2>
+                        <button class="modal-close" onclick="homePageInstance.closeSettingsModal()">×</button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="settings-section">
+                            <h3 class="section-title">外观设置</h3>
+                            
+                            <div class="setting-item">
+                                <label class="setting-label">主题模式</label>
+                                <div class="setting-control">
+                                    <div class="theme-selector">
+                                        <label class="theme-option ${currentTheme === 'light' ? 'active' : ''}" data-theme="light">
+                                            <input type="radio" name="theme" value="light" ${currentTheme === 'light' ? 'checked' : ''}>
+                                            <span class="theme-preview light-theme">
+                                                <div class="preview-header"></div>
+                                                <div class="preview-content"></div>
+                                            </span>
+                                            <span class="theme-name">浅色主题</span>
+                                        </label>
+                                        
+                                        <label class="theme-option ${currentTheme === 'dark' ? 'active' : ''}" data-theme="dark">
+                                            <input type="radio" name="theme" value="dark" ${currentTheme === 'dark' ? 'checked' : ''}>
+                                            <span class="theme-preview dark-theme">
+                                                <div class="preview-header"></div>
+                                                <div class="preview-content"></div>
+                                            </span>
+                                            <span class="theme-name">深色主题</span>
+                                        </label>
+                                        
+                                        <label class="theme-option ${currentTheme === 'auto' ? 'active' : ''}" data-theme="auto">
+                                            <input type="radio" name="theme" value="auto" ${currentTheme === 'auto' ? 'checked' : ''}>
+                                            <span class="theme-preview auto-theme">
+                                                <div class="preview-header"></div>
+                                                <div class="preview-content"></div>
+                                            </span>
+                                            <span class="theme-name">跟随系统</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <label class="setting-label">语言设置</label>
+                                <div class="setting-control">
+                                    <select class="setting-select" id="language-select">
+                                        <option value="zh-CN">简体中文</option>
+                                        <option value="en-US">English</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-section">
+                            <h3 class="section-title">功能设置</h3>
+                            
+                            <div class="setting-item">
+                                <label class="setting-label">自动刷新产品数据</label>
+                                <div class="setting-control">
+                                    <label class="switch">
+                                        <input type="checkbox" id="auto-refresh" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span class="setting-description">在首页时每5秒自动刷新产品总数</span>
+                                </div>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <label class="setting-label">显示采集时间</label>
+                                <div class="setting-control">
+                                    <label class="switch">
+                                        <input type="checkbox" id="show-collect-time" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span class="setting-description">在产品列表中显示采集时间</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-section">
+                            <h3 class="section-title">数据设置</h3>
+                            
+                            <div class="setting-item">
+                                <label class="setting-label">数据存储路径</label>
+                                <div class="setting-control">
+                                    <input type="text" class="setting-input" id="data-path" value="${this.getDataPath()}" readonly>
+                                    <button class="btn btn-sm btn-secondary" onclick="homePageInstance.openDataFolder()">打开文件夹</button>
+                                </div>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <label class="setting-label">缓存管理</label>
+                                <div class="setting-control">
+                                    <button class="btn btn-sm btn-warning" onclick="homePageInstance.clearCache()">清理缓存</button>
+                                    <span class="setting-description">清理临时文件和缓存数据</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="homePageInstance.closeSettingsModal()">取消</button>
+                        <button class="btn btn-primary" onclick="homePageInstance.saveSettings()">保存设置</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // 绑定系统设置弹窗事件
+    bindSettingsModalEvents(modal) {
+        // 主题选择事件
+        const themeOptions = modal.querySelectorAll('.theme-option');
+        themeOptions.forEach(option => {
+            option.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // 移除其他选项的active类
+                themeOptions.forEach(opt => opt.classList.remove('active'));
+                // 添加当前选项的active类
+                option.classList.add('active');
+                // 选中对应的radio
+                const radio = option.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.checked = true;
+                    // 预览主题效果
+                    this.previewTheme(radio.value);
+                }
+            });
+        });
+
+        // 语言选择事件
+        const languageSelect = modal.querySelector('#language-select');
+        if (languageSelect) {
+            languageSelect.addEventListener('change', (e) => {
+                console.log('语言设置变更:', e.target.value);
+            });
+        }
+
+        // 开关事件
+        const switches = modal.querySelectorAll('.switch input[type="checkbox"]');
+        switches.forEach(switchEl => {
+            switchEl.addEventListener('change', (e) => {
+                console.log('设置变更:', e.target.id, e.target.checked);
+            });
+        });
+
+        // 按钮事件
+        const cancelBtn = modal.querySelector('.btn-secondary');
+        const saveBtn = modal.querySelector('.btn-primary');
+        
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.closeSettingsModal();
+            });
+        }
+        
+        if (saveBtn) {
+            saveBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.saveSettings();
+            });
+        }
+
+        // 模态框关闭事件
+        const modalOverlay = modal.querySelector('.modal-overlay');
+        if (modalOverlay) {
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) {
+                    this.closeSettingsModal();
+                }
+            });
+        }
+
+        // 关闭按钮事件
+        const closeBtn = modal.querySelector('.modal-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.closeSettingsModal();
+            });
+        }
+
+        // ESC键关闭
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                this.closeSettingsModal();
+                document.removeEventListener('keydown', handleKeyDown);
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+    }
+
+    // 预览主题效果
+    previewTheme(theme) {
+        const body = document.body;
+        
+        // 移除现有主题类
+        body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+        
+        // 添加新主题类
+        if (theme === 'auto') {
+            // 跟随系统主题
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            body.classList.add(prefersDark ? 'theme-dark' : 'theme-light');
+        } else {
+            body.classList.add(`theme-${theme}`);
+        }
+    }
+
+    // 获取当前主题
+    getCurrentTheme() {
+        return localStorage.getItem('app-theme') || 'auto';
+    }
+
+    // 获取数据存储路径
+    getDataPath() {
+        // 这里应该从主进程获取实际的数据路径
+        return '/Users/chiuyu/Projects/hanli-master/hanli-app/data';
+    }
+
+    // 关闭系统设置弹窗
+    closeSettingsModal() {
+        const modal = document.querySelector('.settings-modal');
+        if (modal) {
+            // 清理事件监听器
+            const modalOverlay = modal.querySelector('.modal-overlay');
+            if (modalOverlay) {
+                modalOverlay.replaceWith(modalOverlay.cloneNode(true));
+            }
+            
+            // 移除模态框
+            modal.remove();
+        }
+        
+        // 恢复原始主题
+        this.applyStoredTheme();
+        
+        console.log('系统设置弹窗已关闭');
+    }
+
+    // 保存设置
+    saveSettings() {
+        const modal = document.querySelector('.settings-modal');
+        if (!modal) {
+            console.warn('设置弹窗不存在，无法保存设置');
+            return;
+        }
+
+        try {
+            // 获取主题设置
+            const selectedThemeRadio = modal.querySelector('input[name="theme"]:checked');
+            if (selectedThemeRadio) {
+                const selectedTheme = selectedThemeRadio.value;
+                localStorage.setItem('app-theme', selectedTheme);
+                console.log('主题设置已保存:', selectedTheme);
+            }
+
+            // 获取语言设置
+            const languageSelect = modal.querySelector('#language-select');
+            if (languageSelect) {
+                const language = languageSelect.value;
+                localStorage.setItem('app-language', language);
+                console.log('语言设置已保存:', language);
+            }
+
+            // 获取功能设置
+            const autoRefreshCheckbox = modal.querySelector('#auto-refresh');
+            const showCollectTimeCheckbox = modal.querySelector('#show-collect-time');
+            
+            if (autoRefreshCheckbox) {
+                const autoRefresh = autoRefreshCheckbox.checked;
+                localStorage.setItem('app-auto-refresh', autoRefresh.toString());
+                console.log('自动刷新设置已保存:', autoRefresh);
+            }
+            
+            if (showCollectTimeCheckbox) {
+                const showCollectTime = showCollectTimeCheckbox.checked;
+                localStorage.setItem('app-show-collect-time', showCollectTime.toString());
+                console.log('显示采集时间设置已保存:', showCollectTime);
+            }
+
+            // 应用设置
+            this.applyStoredTheme();
+            this.applyStoredSettings();
+
+            // 显示保存成功提示
+            this.showToast('设置已保存');
+
+            // 关闭弹窗
+            this.closeSettingsModal();
+            
+        } catch (error) {
+            console.error('保存设置时发生错误:', error);
+            this.showToast('保存设置失败，请重试');
+        }
+    }
+
+    // 应用存储的主题
+    applyStoredTheme() {
+        const theme = this.getCurrentTheme();
+        const body = document.body;
+        
+        // 移除现有主题类
+        body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+        
+        if (theme === 'auto') {
+            // 跟随系统主题
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            body.classList.add(prefersDark ? 'theme-dark' : 'theme-light');
+        } else {
+            body.classList.add(`theme-${theme}`);
+        }
+    }
+
+    // 应用存储的设置
+    applyStoredSettings() {
+        // 应用自动刷新设置
+        const autoRefresh = localStorage.getItem('app-auto-refresh') === 'true';
+        if (autoRefresh && this.isOnHomePage()) {
+            this.startProductCountRefresh();
+        } else {
+            this.stopProductCountRefresh();
+        }
+    }
+
+    // 打开数据文件夹
+    openDataFolder() {
+        // 这里应该调用主进程API打开文件夹
+        console.log('打开数据文件夹');
+        this.showToast('正在打开数据文件夹...');
+    }
+
+    // 清理缓存
+    clearCache() {
+        if (confirm('确定要清理缓存吗？这将删除所有临时文件。')) {
+            // 这里应该调用主进程API清理缓存
+            console.log('清理缓存');
+            this.showToast('缓存清理完成');
         }
     }
 
@@ -709,6 +2119,15 @@ class HomePage {
 }
 
 // 页面加载完成后初始化
+let homePageInstance = null;
+
 document.addEventListener('DOMContentLoaded', () => {
-    new HomePage();
+    homePageInstance = new HomePage();
+});
+
+// 页面卸载时清理资源
+window.addEventListener('beforeunload', () => {
+    if (homePageInstance) {
+        homePageInstance.cleanup();
+    }
 });

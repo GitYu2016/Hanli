@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试App启动</title>
+    <link rel="stylesheet" href="hanli-app/renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="hanli-app/renderer/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--color-card-background);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: var(--color-primary);
+            color: var(--color-primary-foreground);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .test-button:hover {
+            background: var(--color-primary-hover);
+        }
+        .log-container {
+            background: var(--color-muted);
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .log-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .log-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .log-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .log-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-check {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+        .status-card {
+            padding: 16px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            background: var(--color-background);
+            text-align: center;
+        }
+        .status-card.success {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+        .status-card.error {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+        .status-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>测试App启动状态</h1>
+        <p>验证App启动时不会显示设置弹窗</p>
+        
+        <div>
+            <button class="test-button" onclick="checkStartupStatus()">检查启动状态</button>
+            <button class="test-button" onclick="testSettingsButton()">测试设置按钮</button>
+            <button class="test-button" onclick="clearLog()">清空日志</button>
+        </div>
+        
+        <div class="status-check" id="status-check">
+            <!-- 状态检查结果将在这里显示 -->
+        </div>
+        
+        <div class="log-container" id="log-container">
+            <div class="log-entry log-info">等待测试开始...</div>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('log-container');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log-container').innerHTML = '<div class="log-entry log-info">日志已清空</div>';
+        }
+
+        function checkStartupStatus() {
+            log('=== 开始检查App启动状态 ===', 'info');
+            
+            const statusCheck = document.getElementById('status-check');
+            statusCheck.innerHTML = '';
+            
+            // 检查是否有设置弹窗
+            const settingsModal = document.querySelector('.settings-modal');
+            const oldSettingsModal = document.getElementById('settings-modal');
+            
+            if (settingsModal) {
+                addStatusCard('动态设置弹窗', '❌', '发现动态创建的设置弹窗', 'error');
+                log('发现动态创建的设置弹窗', 'error');
+            } else {
+                addStatusCard('动态设置弹窗', '✅', '未发现动态创建的设置弹窗', 'success');
+                log('未发现动态创建的设置弹窗', 'success');
+            }
+            
+            if (oldSettingsModal) {
+                addStatusCard('旧设置弹窗', '❌', '发现HTML中的旧设置弹窗', 'error');
+                log('发现HTML中的旧设置弹窗', 'error');
+            } else {
+                addStatusCard('旧设置弹窗', '✅', '未发现HTML中的旧设置弹窗', 'success');
+                log('未发现HTML中的旧设置弹窗', 'success');
+            }
+            
+            // 检查设置按钮是否存在
+            const settingsBtn = document.getElementById('settings-btn');
+            if (settingsBtn) {
+                addStatusCard('设置按钮', '✅', '设置按钮存在且可点击', 'success');
+                log('设置按钮存在', 'success');
+            } else {
+                addStatusCard('设置按钮', '❌', '设置按钮不存在', 'error');
+                log('设置按钮不存在', 'error');
+            }
+            
+            // 检查主题选择器
+            const themeSelect = document.getElementById('theme-select');
+            if (themeSelect) {
+                addStatusCard('旧主题选择器', '❌', '发现旧的theme-select元素', 'error');
+                log('发现旧的theme-select元素', 'error');
+            } else {
+                addStatusCard('旧主题选择器', '✅', '未发现旧的theme-select元素', 'success');
+                log('未发现旧的theme-select元素', 'success');
+            }
+            
+            log('=== 启动状态检查完成 ===', 'info');
+        }
+
+        function addStatusCard(title, icon, message, type) {
+            const statusCheck = document.getElementById('status-check');
+            const card = document.createElement('div');
+            card.className = `status-card ${type}`;
+            card.innerHTML = `
+                <div class="status-icon">${icon}</div>
+                <h4>${title}</h4>
+                <p>${message}</p>
+            `;
+            statusCheck.appendChild(card);
+        }
+
+        function testSettingsButton() {
+            log('=== 开始测试设置按钮 ===', 'info');
+            
+            const settingsBtn = document.getElementById('settings-btn');
+            if (settingsBtn) {
+                log('设置按钮存在，模拟点击...', 'info');
+                settingsBtn.click();
+                
+                setTimeout(() => {
+                    const settingsModal = document.querySelector('.settings-modal');
+                    if (settingsModal) {
+                        log('设置弹窗成功打开', 'success');
+                        addStatusCard('设置按钮功能', '✅', '设置按钮可以正常打开弹窗', 'success');
+                    } else {
+                        log('设置弹窗未能打开', 'error');
+                        addStatusCard('设置按钮功能', '❌', '设置按钮无法打开弹窗', 'error');
+                    }
+                }, 100);
+            } else {
+                log('设置按钮不存在', 'error');
+                addStatusCard('设置按钮功能', '❌', '设置按钮不存在', 'error');
+            }
+        }
+
+        // 页面加载完成后的初始化
+        window.addEventListener('load', () => {
+            log('测试页面已加载', 'info');
+            log('点击"检查启动状态"按钮开始检查', 'info');
+            
+            // 自动检查启动状态
+            setTimeout(() => {
+                checkStartupStatus();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

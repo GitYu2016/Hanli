@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试窗口尺寸设置</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+            margin: 0;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .log-container {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .log-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .log-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .log-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .window-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+        .info-card {
+            padding: 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f8f9fa;
+            text-align: center;
+        }
+        .info-card h4 {
+            margin: 0 0 8px 0;
+            color: #333;
+        }
+        .info-card .value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>测试窗口尺寸设置</h1>
+        <p>验证App窗口是否设置为100%屏幕尺寸</p>
+        
+        <div>
+            <button class="test-button" onclick="checkWindowSize()">检查窗口尺寸</button>
+            <button class="test-button" onclick="checkScreenSize()">检查屏幕尺寸</button>
+            <button class="test-button" onclick="clearLog()">清空日志</button>
+        </div>
+        
+        <div class="window-info" id="window-info">
+            <!-- 窗口信息将在这里显示 -->
+        </div>
+        
+        <div class="log-container" id="log-container">
+            <div class="log-entry log-info">等待测试开始...</div>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('log-container');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log-container').innerHTML = '<div class="log-entry log-info">日志已清空</div>';
+        }
+
+        function checkWindowSize() {
+            log('=== 开始检查窗口尺寸 ===', 'info');
+            
+            const windowInfo = document.getElementById('window-info');
+            windowInfo.innerHTML = '';
+            
+            // 获取窗口尺寸
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            const screenWidth = screen.width;
+            const screenHeight = screen.height;
+            const availWidth = screen.availWidth;
+            const availHeight = screen.availHeight;
+            
+            // 计算使用率
+            const widthUsage = ((windowWidth / availWidth) * 100).toFixed(1);
+            const heightUsage = ((windowHeight / availHeight) * 100).toFixed(1);
+            
+            // 显示窗口信息
+            addInfoCard('窗口宽度', `${windowWidth}px`, windowWidth >= availWidth * 0.9 ? 'success' : 'error');
+            addInfoCard('窗口高度', `${windowHeight}px`, windowHeight >= availHeight * 0.9 ? 'success' : 'error');
+            addInfoCard('屏幕宽度', `${screenWidth}px`, 'info');
+            addInfoCard('屏幕高度', `${screenHeight}px`, 'info');
+            addInfoCard('可用宽度', `${availWidth}px`, 'info');
+            addInfoCard('可用高度', `${availHeight}px`, 'info');
+            addInfoCard('宽度使用率', `${widthUsage}%`, widthUsage >= 90 ? 'success' : 'warning');
+            addInfoCard('高度使用率', `${heightUsage}%`, heightUsage >= 90 ? 'success' : 'warning');
+            
+            log(`窗口尺寸: ${windowWidth} x ${windowHeight}`, 'info');
+            log(`屏幕尺寸: ${screenWidth} x ${screenHeight}`, 'info');
+            log(`可用尺寸: ${availWidth} x ${availHeight}`, 'info');
+            log(`宽度使用率: ${widthUsage}%`, widthUsage >= 90 ? 'success' : 'warning');
+            log(`高度使用率: ${heightUsage}%`, heightUsage >= 90 ? 'success' : 'warning');
+            
+            if (widthUsage >= 90 && heightUsage >= 90) {
+                log('✅ 窗口尺寸设置正确，使用了90%以上的屏幕空间', 'success');
+            } else {
+                log('❌ 窗口尺寸设置不正确，未使用足够的屏幕空间', 'error');
+            }
+        }
+
+        function checkScreenSize() {
+            log('=== 开始检查屏幕信息 ===', 'info');
+            
+            log(`屏幕分辨率: ${screen.width} x ${screen.height}`, 'info');
+            log(`可用区域: ${screen.availWidth} x ${screen.availHeight}`, 'info');
+            log(`颜色深度: ${screen.colorDepth}位`, 'info');
+            log(`像素比: ${window.devicePixelRatio}`, 'info');
+            
+            // 检查是否在Electron环境中
+            if (window.navigator.userAgent.includes('Electron')) {
+                log('✅ 运行在Electron环境中', 'success');
+            } else {
+                log('⚠️ 运行在浏览器环境中，无法测试Electron窗口设置', 'warning');
+            }
+        }
+
+        function addInfoCard(title, value, type) {
+            const windowInfo = document.getElementById('window-info');
+            const card = document.createElement('div');
+            card.className = `info-card ${type}`;
+            card.innerHTML = `
+                <h4>${title}</h4>
+                <div class="value">${value}</div>
+            `;
+            windowInfo.appendChild(card);
+        }
+
+        // 页面加载完成后的初始化
+        window.addEventListener('load', () => {
+            log('测试页面已加载', 'info');
+            log('点击"检查窗口尺寸"按钮开始测试', 'info');
+            
+            // 自动检查窗口尺寸
+            setTimeout(() => {
+                checkWindowSize();
+                checkScreenSize();
+            }, 500);
+        });
+
+        // 监听窗口大小变化
+        window.addEventListener('resize', () => {
+            log('窗口大小发生变化', 'info');
+            setTimeout(() => {
+                checkWindowSize();
+            }, 100);
+        });
+    </script>
+</body>
+</html>

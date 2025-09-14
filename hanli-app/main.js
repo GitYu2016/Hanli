@@ -26,10 +26,15 @@ if (process.platform === 'darwin') {
 let mainWindow;
 
 function createWindow() {
-    // 创建浏览器窗口
+    // 获取屏幕尺寸
+    const { screen } = require('electron');
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
+    
+    // 创建浏览器窗口 - 使用100%屏幕尺寸
     mainWindow = new BrowserWindow({
-        width: 1200,
-        height: 800,
+        width: screenWidth,
+        height: screenHeight,
         minWidth: 800,
         minHeight: 600,
         title: 'Hanli',
@@ -41,7 +46,11 @@ function createWindow() {
         },
         titleBarStyle: 'hiddenInset', // macOS样式
         show: false, // 先不显示，等加载完成后再显示
-        icon: path.join(__dirname, 'assets/icon.png') // 应用图标
+        icon: path.join(__dirname, 'assets/icon.png'), // 应用图标
+        fullscreenable: true, // 允许全屏
+        maximizable: true, // 允许最大化
+        minimizable: true, // 允许最小化
+        resizable: true // 允许调整大小
     });
 
     // 加载应用的index.html
@@ -53,6 +62,9 @@ function createWindow() {
     // 窗口准备好后显示
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();
+        
+        // 最大化窗口以使用100%屏幕空间
+        mainWindow.maximize();
         
         // 开发模式下打开开发者工具
         if (process.argv.includes('--dev')) {
@@ -191,6 +203,7 @@ app.on('open-url', (event, url) => {
                 mainWindow.restore();
             }
             mainWindow.show();
+            mainWindow.maximize();
             mainWindow.focus();
             console.log('App已置于最前窗口');
         } else {
@@ -208,6 +221,7 @@ app.on('second-instance', (event, commandLine, workingDirectory) => {
             mainWindow.restore();
         }
         mainWindow.show();
+        mainWindow.maximize();
         mainWindow.focus();
         console.log('App已置于最前窗口（第二个实例）');
     }
@@ -238,6 +252,13 @@ app.on('activate', () => {
     // 在macOS上，当点击dock图标并且没有其他窗口打开时，通常在应用中重新创建窗口
     if (BrowserWindow.getAllWindows().length === 0) {
         createWindow();
+    } else if (mainWindow) {
+        // 如果窗口存在但被最小化，则恢复并最大化
+        if (mainWindow.isMinimized()) {
+            mainWindow.restore();
+        }
+        mainWindow.maximize();
+        mainWindow.focus();
     }
 });
 
@@ -276,8 +297,9 @@ app.on('open-url', (event, url) => {
         if (mainWindow.isMinimized()) {
             mainWindow.restore();
         }
-        mainWindow.focus();
         mainWindow.show();
+        mainWindow.maximize();
+        mainWindow.focus();
     } else {
         console.log('App未运行，创建新窗口');
         // 如果应用没有运行，创建新窗口
@@ -294,8 +316,9 @@ app.on('second-instance', (event, commandLine, workingDirectory) => {
         if (mainWindow.isMinimized()) {
             mainWindow.restore();
         }
-        mainWindow.focus();
         mainWindow.show();
+        mainWindow.maximize();
+        mainWindow.focus();
     }
 });
 

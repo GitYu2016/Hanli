@@ -6,6 +6,7 @@
     <title>Hanli - 产品管理系统</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="theme/light/colors.css" id="theme-colors">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div id="home-page" class="home-page">
@@ -24,6 +25,7 @@
                 </div>
             </div>
             <div class="top-bar-right">
+                <div class="menu-dots" id="menu-dots">⋯</div>
                 <div class="settings-icon" id="settings-btn">⚙️</div>
             </div>
         </div>
@@ -71,29 +73,6 @@
         </div>
     </div>
 
-    <!-- 设置弹窗 -->
-    <div id="settings-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">系统设置</h3>
-                <button class="modal-close" id="settings-close">×</button>
-            </div>
-            <div class="modal-body">
-                <div class="setting-group">
-                    <label class="setting-label">主题设置</label>
-                    <select id="theme-select" class="setting-select">
-                        <option value="system">跟随系统</option>
-                        <option value="light">浅色主题</option>
-                        <option value="dark">深色主题</option>
-                    </select>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-primary" id="settings-save">保存设置</button>
-                <button class="btn btn-secondary" id="settings-cancel">取消</button>
-            </div>
-        </div>
-    </div>
 
     <script src="app.js"></script>
 </body>
