@@ -582,6 +582,62 @@ function extractPrice(priceStr) {
     return match ? parseFloat(match[0]) : 0;
 }
 
+// 获取产品附件列表
+app.get('/api/products/:goodsId/attachments', async (req, res) => {
+    try {
+        const { goodsId } = req.params;
+        const goodsLibraryDir = path.join(dataDir, 'goods-library');
+        const productDir = path.join(goodsLibraryDir, goodsId);
+        
+        // 检查产品目录是否存在
+        if (!fs.existsSync(productDir)) {
+            return res.status(404).json({ 
+                error: '产品目录不存在',
+                attachments: []
+            });
+        }
+        
+        // 读取目录下的所有文件
+        const files = await fsPromises.readdir(productDir);
+        
+        // 过滤出JSON和PDF文件
+        const attachments = [];
+        for (const file of files) {
+            const filePath = path.join(productDir, file);
+            const stats = await fsPromises.stat(filePath);
+            
+            // 只处理文件，跳过目录
+            if (stats.isFile()) {
+                const ext = path.extname(file).toLowerCase();
+                if (ext === '.json' || ext === '.pdf') {
+                    attachments.push({
+                        name: file,
+                        type: ext === '.json' ? 'JSON文件' : 'PDF文件',
+                        size: stats.size,
+                        modified: stats.mtime,
+                        path: filePath
+                    });
+                }
+            }
+        }
+        
+        // 按修改时间排序，最新的在前
+        attachments.sort((a, b) => b.modified - a.modified);
+        
+        res.json({
+            success: true,
+            attachments: attachments
+        });
+        
+    } catch (error) {
+        console.error('获取附件列表失败:', error);
+        res.status(500).json({ 
+            error: '获取附件列表失败',
+            attachments: []
+        });
+    }
+});
+
 // 启动服务器
 async function startServer() {
     await ensureDataDir();

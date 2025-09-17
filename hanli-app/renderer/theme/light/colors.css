@@ -36,6 +36,11 @@
     --color-secondary-foreground: #ffffff;
     --color-secondary-hover: #545b62;
     
+    /* 图表颜色 */
+    --color-success: #28a745;
+    --color-warning: #ffc107;
+    --color-info: #17a2b8;
+    
     /* 图标背景 */
     --color-icon-background: #f8f9fa;
     

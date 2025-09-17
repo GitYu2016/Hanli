@@ -41,7 +41,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-left: 56px;
+    padding-left: 80px;
     padding-right: 12px;
     flex-shrink: 0;
     background-color: transparent;
@@ -49,6 +49,10 @@ body {
     box-shadow: none;
     position: relative;
 }
+
+/* 窗口控制按钮位置已通过main.js中的titleBarOverlay.y: 8调整 */
+/* 这里不需要额外的CSS，窗口控制按钮会向下移动8px，但内容保持原位置 */
+
 
 /* 检测是否为浏览器环境，调整padding */
 .top-bar.browser-mode {
@@ -101,23 +105,28 @@ body {
     gap: 8px;
     padding: 8px 12px;
     border-radius: 12px;
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: var(--color-hover);
     cursor: pointer;
     transition: all 2s ease-in-out;
-    min-width: 88px;
-    max-width: 156px;
     position: relative;
     user-select: none;
     flex-shrink: 0;
+    width: fit-content;
+}
+
+.tab:hover:not(.active) {
+    background-color: var(--color-hover);
 }
 
 .tab.active {
-    background-color: rgba(0, 0, 0, 0.1);
-    min-width: 156px;
-    max-width: 200px;
+    background-color: var(--color-active);
 }
 
 .tab.active .tab-icon {
+    color: var(--color-text-primary);
+}
+
+.tab.active .tab-text {
     color: var(--color-text-primary);
 }
 
@@ -129,7 +138,7 @@ body {
     align-items: center;
     justify-content: center;
     color: var(--color-text-secondary);
-    transition: color 0.2s ease;
+    transition: color 0.2s ease, opacity 0.2s ease;
 }
 
 .tab-icon i {
@@ -145,18 +154,23 @@ body {
 }
 
 .tab-close {
-    font-size: 14px;
-    width: 20px;
-    height: 20px;
+    font-size: 16px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--color-text-secondary);
-    transition: color 0.2s ease;
+    transition: color 0.2s ease, opacity 0.2s ease;
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
 }
 
 .tab-close i {
-    font-size: 14px;
+    font-size: 16px;
     color: inherit;
 }
 
@@ -170,57 +184,53 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    color: var(--color-text-secondary);
+    transition: color 0.2s ease;
+    max-width: 250px;
+    min-width: 0;
 }
 
-.tab-close {
-    font-size: 16px;
-    width: 24px;
-    height: 24px;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    opacity: 0.6;
-    transition: opacity 0.2s ease;
-}
+/* 删除重复的tab-close定义 */
 
 .tab-close:hover {
     opacity: 1;
 }
 
+/* 关闭按钮绝对定位已合并到上面的定义中 */
+
+/* 激活状态：显示关闭按钮，隐藏图标 */
 .tab.active .tab-icon {
-    display: none;
+    opacity: 0;
 }
 
 .tab.active .tab-close {
-    display: flex;
+    opacity: 1;
 }
 
-.tab:hover:not(.active) .tab-icon {
-    display: none;
+/* 悬浮状态：图标透明，关闭按钮显示 */
+.tab:hover .tab-icon {
+    opacity: 0;
 }
 
-.tab:hover:not(.active) .tab-close {
-    display: flex;
+.tab:hover .tab-close {
+    opacity: 1;
 }
 
-.tab.active:hover .tab-icon {
-    display: none;
-}
-
-.tab.active:hover .tab-close {
-    display: flex;
+/* 单个Tab的特殊样式 */
+.tab.single-tab .tab-icon {
+    opacity: 1 !important; /* 单个Tab时图标始终显示 */
 }
 
 .tab.single-tab .tab-close {
-    display: none;
+    opacity: 0 !important; /* 单个Tab时关闭按钮始终隐藏 */
 }
 
 .tab.single-tab:hover .tab-icon {
-    display: flex;
+    opacity: 1 !important; /* 悬停时图标保持显示 */
 }
 
 .tab.single-tab:hover .tab-close {
-    display: none;
+    opacity: 0 !important; /* 悬停时关闭按钮保持隐藏 */
 }
 
 .top-bar-right {
@@ -232,42 +242,6 @@ body {
     min-width: 0;
 }
 
-.menu-dots {
-    font-size: 20px;
-    cursor: pointer;
-    padding: 8px;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-    color: var(--color-text-secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    user-select: none;
-    font-weight: bold;
-    line-height: 1;
-}
-
-.menu-dots i {
-    font-size: 20px;
-    color: inherit;
-}
-
-.menu-dots:hover {
-    background-color: var(--color-hover);
-    color: var(--color-text-primary);
-    transform: scale(1.05);
-}
-
-.menu-dots:active {
-    transform: scale(0.95);
-}
-
-.menu-dots:focus {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
-}
 
 .settings-icon {
     font-size: 20px;
@@ -811,12 +785,7 @@ body {
     }
     
     .tab {
-        min-width: 72px; /* 小屏幕减少最小宽度 */
         padding: 6px 8px;
-    }
-    
-    .tab.active {
-        min-width: 120px; /* 小屏幕减少激活状态最小宽度 */
     }
     
     .dashboard-grid {
@@ -944,6 +913,15 @@ body {
 .product-name {
     max-width: 300px;
     min-width: 200px;
+}
+
+.product-name.clickable {
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.product-name.clickable:hover {
+    color: var(--color-primary);
 }
 
 .name-content {
@@ -1143,9 +1121,212 @@ body {
     color: var(--color-text-primary);
 }
 
+/* 合并图表的容器样式 */
+.charts-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.chart-item {
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 20px;
+}
+
+.chart-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.chart-item-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin: 0 0 12px 0;
+}
+
+/* 简化采集信息样式 */
+.collect-info-simple {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background-color: var(--color-card-background);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    flex-wrap: wrap;
+}
+
+.collect-person,
+.collect-time,
+.collect-link {
+    color: var(--color-text-secondary);
+}
+
+.collect-separator {
+    color: var(--color-text-secondary);
+    opacity: 0.5;
+}
+
+.collect-url-link {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.collect-url-link:hover {
+    color: var(--color-primary-hover);
+    text-decoration: underline;
+}
+
+.copy-btn-small {
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.copy-btn-small:hover {
+    background-color: var(--color-hover);
+    color: var(--color-primary);
+}
+
+.copy-btn-small i {
+    font-size: 12px;
+}
+
+/* 附件列表样式 */
+.attachments-card {
+    margin-bottom: 16px;
+}
+
+.attachments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.attachment-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background-color: var(--color-card-background);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.attachment-item:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+}
+
+.attachment-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background-color: var(--color-hover);
+    flex-shrink: 0;
+}
+
+.attachment-icon i {
+    font-size: 16px;
+    color: var(--color-primary);
+}
+
+.attachment-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.attachment-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 4px;
+    word-break: break-all;
+}
+
+.attachment-meta {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    flex-wrap: wrap;
+}
+
+.attachment-type {
+    color: var(--color-primary);
+    font-weight: 500;
+}
+
+.attachment-separator {
+    opacity: 0.5;
+}
+
+.attachment-size,
+.attachment-date {
+    color: var(--color-text-secondary);
+}
+
+.attachment-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.attachment-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.attachment-btn:hover {
+    background-color: var(--color-hover);
+    color: var(--color-primary);
+}
+
+.attachment-btn i {
+    font-size: 14px;
+}
+
+.loading-attachments,
+.no-attachments,
+.error-attachments {
+    text-align: center;
+    padding: 24px;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+}
+
+.error-attachments {
+    color: var(--color-destructive);
+}
+
 .chart-container {
     padding: 16px;
-    background: #fafafa;
+    background: transparent;
     border-radius: 6px;
     margin: 16px;
     text-align: center;
@@ -1844,92 +2025,8 @@ input:checked + .slider:before {
     }
 }
 
-/* 3个点菜单样式 */
-.menu-dots-dropdown {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1500;
-    display: flex;
-    align-items: flex-start;
-    justify-content: flex-end;
-}
-
-.menu-dots-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: transparent;
-}
-
-.menu-dots-content {
-    position: absolute;
-    background: var(--color-card-background);
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-    min-width: 180px;
-    padding: 8px 0;
-    margin-top: 8px;
-    margin-right: 8px;
-    overflow: hidden;
-}
-
-.menu-dots-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    color: var(--color-text-primary);
-}
-
-.menu-dots-item:hover {
-    background: var(--color-hover);
-}
-
-.menu-dots-icon {
-    font-size: 16px;
-    width: 20px;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.menu-dots-icon i {
-    font-size: 16px;
-    color: inherit;
-}
-
-.menu-dots-text {
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.menu-dots-divider {
-    height: 1px;
-    background: var(--color-border);
-    margin: 4px 0;
-}
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-    .menu-dots-content {
-        min-width: 160px;
-        margin-right: 4px;
-    }
-    
-    .menu-dots-item {
-        padding: 10px 12px;
-    }
-    
-    .menu-dots-text {
-        font-size: 13px;
-    }
+    /* 响应式样式 */
 }

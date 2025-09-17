@@ -1,7 +1,7 @@
 // 页面图标定义 - 使用 Phosphor Icons
 const PAGE_ICONS = {
     home: `<i class="ph ph-house"></i>`,
-    goodsDetail: `<i class="ph ph-image"></i>`,
+    productDetail: `<i class="ph ph-image"></i>`,
     goodsList: `<i class="ph ph-package"></i>`
 };
 
@@ -77,6 +77,16 @@ class TabManager {
                 }
 
                 this.renderTabs();
+                
+                // 如果关闭的是活动Tab，需要触发页面切换
+                if (isActiveTab && this.tabs.length > 0) {
+                    const newActiveTab = this.tabs[newActiveIndex];
+                    this.onTabSwitch(newActiveTab);
+                    // 通知HomePage实例进行页面切换
+                    if (window.homePageInstance && window.homePageInstance.handleTabSwitch) {
+                        window.homePageInstance.handleTabSwitch(newActiveTab);
+                    }
+                }
             }, 200);
         } else {
             // 如果找不到元素，直接执行关闭逻辑
@@ -93,6 +103,16 @@ class TabManager {
             }
 
             this.renderTabs();
+            
+            // 如果关闭的是活动Tab，需要触发页面切换
+            if (isActiveTab && this.tabs.length > 0) {
+                const newActiveTab = this.tabs[newActiveIndex];
+                this.onTabSwitch(newActiveTab);
+                // 通知HomePage实例进行页面切换
+                if (window.homePageInstance && window.homePageInstance.handleTabSwitch) {
+                    window.homePageInstance.handleTabSwitch(newActiveTab);
+                }
+            }
         }
     }
 
@@ -128,7 +148,8 @@ class TabManager {
 
         // 添加点击事件
         tabDiv.addEventListener('click', (e) => {
-            if (e.target.classList.contains('tab-close')) {
+            // 检查是否点击了关闭按钮或其子元素
+            if (e.target.closest('.tab-close')) {
                 e.stopPropagation();
                 this.closeTab(tab.id);
             } else {
@@ -163,6 +184,15 @@ class TabManager {
     // 根据页面类型查找Tab
     findTabByPageType(pageType) {
         return this.tabs.find(tab => tab.pageType === pageType);
+    }
+
+    // 根据页面类型和特定参数查找Tab（用于产品详情等需要区分不同实例的页面）
+    findTabByPageTypeAndParam(pageType, paramKey, paramValue) {
+        return this.tabs.find(tab => 
+            tab.pageType === pageType && 
+            tab.pageData && 
+            tab.pageData[paramKey] === paramValue
+        );
     }
 }
 
@@ -258,13 +288,6 @@ class HomePage {
             });
         }
 
-        // 3个点菜单点击事件
-        const menuDots = document.getElementById('menu-dots');
-        if (menuDots) {
-            menuDots.addEventListener('click', () => {
-                this.openMenuDots();
-            });
-        }
 
 
         // 监听系统主题变化
@@ -473,15 +496,15 @@ class HomePage {
         console.log('处理Tab切换:', tab);
         
         // 根据Tab类型渲染对应的页面内容
-        this.renderPageContent(tab.pageData.type);
+        this.renderPageContent(tab.pageData.type, tab.pageData);
         
         // 更新侧边栏状态
         this.updateSidebarForTab(tab);
     }
 
     // 渲染页面内容
-    renderPageContent(pageType) {
-        console.log('渲染页面内容:', pageType);
+    renderPageContent(pageType, pageData = null) {
+        console.log('渲染页面内容:', pageType, pageData);
         
         switch (pageType) {
             case 'home':
@@ -494,8 +517,10 @@ class HomePage {
                 this.loadProductLibrary();
                 break;
             case 'productDetail':
-                // 产品详情页已经在Tab切换时处理了数据加载
-                if (this.currentProductDetail) {
+                // 产品详情页需要根据productId重新加载数据
+                if (pageData && pageData.productId) {
+                    this.loadProductDetailByGoodsId(pageData.productId);
+                } else if (this.currentProductDetail) {
                     this.renderProductDetailPage(this.currentProductDetail);
                 }
                 break;
@@ -713,11 +738,6 @@ class HomePage {
             <div class="product-library-page">
                 <div class="page-header">
                     <h1 class="page-title">产品库</h1>
-                    <div class="page-actions">
-                        <button class="btn btn-primary" onclick="homePageInstance.refreshProductLibrary()">
-                            <i class="ph ph-arrow-clockwise"></i> 刷新
-                        </button>
-                    </div>
                 </div>
                 
                 <div class="product-table-container">
@@ -728,7 +748,6 @@ class HomePage {
                                 <th class="sortable" data-sort="yesterdaySales">昨日销量</th>
                                 <th class="sortable" data-sort="priceGrowthPercent">价格增长</th>
                                 <th class="sortable" data-sort="collectTime">采集日期</th>
-                                <th>操作</th>
                             </tr>
                         </thead>
                         <tbody id="product-table-body">
@@ -765,17 +784,12 @@ class HomePage {
             
             return `
                 <tr class="product-row" data-goods-id="${product.goodsId}">
-                    <td class="product-name" title="${goodsCat3}">
+                    <td class="product-name clickable" title="${goodsCat3}" onclick="homePageInstance.viewProductDetail('${product.goodsId}')">
                         <div class="name-content">${this.truncateText(goodsCat3, 50)}</div>
                     </td>
                     <td class="product-sales">${yesterdaySales}</td>
                     <td class="product-price-growth ${priceGrowthPercent.startsWith('+') ? 'positive' : priceGrowthPercent.startsWith('-') ? 'negative' : ''}">${priceGrowthPercent}</td>
                     <td class="product-time">${collectTime}</td>
-                    <td class="product-actions">
-                        <button class="btn btn-sm btn-primary" onclick="homePageInstance.viewProductDetail('${product.goodsId}')">
-                            查看详情
-                        </button>
-                    </td>
                 </tr>
             `;
         }).join('');
@@ -934,12 +948,7 @@ class HomePage {
         }
     }
 
-    // 刷新产品库
-    async refreshProductLibrary() {
-        console.log('刷新产品库...');
-        await this.loadProductLibrary();
-        this.showToast('产品库已刷新');
-    }
+    // 刷新产品库功能已移除
 
     // 查看产品详情
     async viewProductDetail(goodsId) {
@@ -967,8 +976,8 @@ class HomePage {
 
     // 打开产品详情Tab
     openProductDetailTab(product) {
-        // 检查是否已存在该产品的详情Tab
-        const existingTab = this.tabManager.findTabByPageType('productDetail');
+        // 检查是否已存在该产品的详情Tab（根据商品ID查找）
+        const existingTab = this.tabManager.findTabByPageTypeAndParam('productDetail', 'productId', product.goodsId);
         if (existingTab) {
             // 如果存在，切换到该Tab并更新数据
             this.tabManager.setActiveTab(existingTab.id);
@@ -992,6 +1001,28 @@ class HomePage {
         this.renderProductDetailPage(product);
     }
 
+    // 根据商品ID加载产品详情
+    async loadProductDetailByGoodsId(goodsId) {
+        console.log('根据商品ID加载产品详情:', goodsId);
+        
+        try {
+            const response = await fetch(`http://localhost:3001/api/products/${goodsId}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    this.loadProductDetailData(data.product);
+                } else {
+                    this.showToast('获取产品详情失败: ' + data.error);
+                }
+            } else {
+                this.showToast('获取产品详情失败: ' + response.status);
+            }
+        } catch (error) {
+            console.error('获取产品详情失败:', error);
+            this.showToast('获取产品详情失败: ' + error.message);
+        }
+    }
+
     // 渲染产品详情页面
     renderProductDetailPage(product) {
         const pageContainer = document.getElementById('page-container');
@@ -1007,72 +1038,42 @@ class HomePage {
                     <div class="detail-section">
                         <h3 class="section-title">数据趋势</h3>
                         
-                        <!-- 销量图表 -->
+                        <!-- 合并的趋势图表卡片 -->
                         <div class="detail-card chart-card">
                             <div class="card-header">
-                                <h4 class="chart-title">销量趋势</h4>
+                                <h4 class="chart-title">销量、价格、评分趋势</h4>
                             </div>
                             <div class="card-content">
+                                <div class="charts-container">
+                                    <!-- 销量图表 -->
+                                    <div class="chart-item">
+                                        <h5 class="chart-item-title">销量趋势</h5>
                                 <div class="chart-container">
-                                    <canvas id="sales-chart" width="800" height="200"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 价格图表 -->
-                        <div class="detail-card chart-card">
-                            <div class="card-header">
-                                <h4 class="chart-title">价格趋势</h4>
-                            </div>
-                            <div class="card-content">
-                                <div class="chart-container">
-                                    <canvas id="price-chart" width="800" height="200"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 评分图表 -->
-                        <div class="detail-card chart-card">
-                            <div class="card-header">
-                                <h4 class="chart-title">评分趋势</h4>
-                            </div>
-                            <div class="card-content">
-                                <div class="chart-container">
-                                    <canvas id="rating-chart" width="800" height="200"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- 第二个卡片：采集信息 -->
-                    <div class="detail-section">
-                        <h3 class="section-title">采集信息</h3>
-                        <div class="detail-card">
-                            <div class="card-content">
-                                <div class="url-section">
-                                    <div class="url-label">采集链接：</div>
-                                    <div class="url-container">
-                                        <a href="${product.goodsInfo?.collectUrl || '#'}" 
-                                           class="url-link" 
-                                           target="_blank" 
-                                           rel="noopener noreferrer"
-                                           id="collect-url-link">
-                                            ${product.goodsInfo?.collectUrl || '暂无采集链接'}
-                                        </a>
-                                        <button class="copy-btn" id="copy-url-btn" title="复制链接">
-                                            <i class="ph ph-copy"></i>
-                                        </button>
+                                            <canvas id="sales-chart" width="800" height="150"></canvas>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 价格图表 -->
+                                    <div class="chart-item">
+                                        <h5 class="chart-item-title">价格趋势</h5>
+                                        <div class="chart-container">
+                                            <canvas id="price-chart" width="800" height="150"></canvas>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 评分图表 -->
+                                    <div class="chart-item">
+                                        <h5 class="chart-item-title">评分趋势</h5>
+                                        <div class="chart-container">
+                                            <canvas id="rating-chart" width="800" height="150"></canvas>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="collect-time">
-                                    <span class="time-label">采集时间：</span>
-                                    <span class="time-value">${product.goodsInfo?.collectTime || product.monitoring?.collectTime || '未知'}</span>
-                                </div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- 第三个卡片：媒体 -->
+                    <!-- 第二个卡片：媒体 -->
                     <div class="detail-section">
                         <h3 class="section-title">媒体资源</h3>
                         <div class="detail-card media-card">
@@ -1091,6 +1092,41 @@ class HomePage {
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- 第四个卡片：附件 -->
+                    <div class="detail-section">
+                        <h3 class="section-title">附件</h3>
+                        <div class="detail-card attachments-card">
+                            <div class="card-content">
+                                <div id="attachments-list">
+                                    <div class="loading-attachments">正在加载附件...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 最后一个卡片：采集信息（简化版） -->
+                    <div class="detail-section">
+                        <div class="collect-info-simple">
+                            <span class="collect-person">采集人：系统</span>
+                            <span class="collect-separator">•</span>
+                            <span class="collect-time">采集时间：${this.formatCollectTime(product.goodsInfo?.collectTime || product.monitoring?.collectTime)}</span>
+                            <span class="collect-separator">•</span>
+                            <span class="collect-link">采集链接：</span>
+                            <a href="${product.goodsInfo?.collectUrl || '#'}" 
+                               class="collect-url-link" 
+                               target="_blank" 
+                               rel="noopener noreferrer"
+                               id="collect-url-link">
+                                ${product.goodsInfo?.collectUrl ? '查看原链接' : '暂无链接'}
+                            </a>
+                            ${product.goodsInfo?.collectUrl ? `
+                            <button class="copy-btn-small" id="copy-url-btn" title="复制链接">
+                                <i class="ph ph-copy"></i>
+                            </button>
+                            ` : ''}
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -1102,6 +1138,104 @@ class HomePage {
         
         // 初始化URL功能
         this.initUrlFeatures();
+        
+        // 加载附件列表
+        this.loadAttachments(product.goodsId);
+    }
+    
+    // 加载附件列表
+    async loadAttachments(goodsId) {
+        const attachmentsList = document.getElementById('attachments-list');
+        if (!attachmentsList) return;
+        
+        try {
+            const response = await fetch(`http://localhost:3001/api/products/${goodsId}/attachments`);
+            const data = await response.json();
+            
+            if (data.success && data.attachments.length > 0) {
+                attachmentsList.innerHTML = this.renderAttachmentsList(data.attachments);
+            } else {
+                attachmentsList.innerHTML = '<div class="no-attachments">暂无附件</div>';
+            }
+        } catch (error) {
+            console.error('加载附件失败:', error);
+            attachmentsList.innerHTML = '<div class="error-attachments">加载附件失败</div>';
+        }
+    }
+    
+    // 渲染附件列表
+    renderAttachmentsList(attachments) {
+        let html = '<div class="attachments-list">';
+        
+        attachments.forEach(attachment => {
+            const sizeText = this.formatFileSize(attachment.size);
+            const modifiedText = this.formatDate(attachment.modified);
+            const iconClass = attachment.name.endsWith('.json') ? 'ph-file-json' : 'ph-file-pdf';
+            
+            html += `
+                <div class="attachment-item">
+                    <div class="attachment-icon">
+                        <i class="ph ${iconClass}"></i>
+                    </div>
+                    <div class="attachment-info">
+                        <div class="attachment-name">${attachment.name}</div>
+                        <div class="attachment-meta">
+                            <span class="attachment-type">${attachment.type}</span>
+                            <span class="attachment-separator">•</span>
+                            <span class="attachment-size">${sizeText}</span>
+                            <span class="attachment-separator">•</span>
+                            <span class="attachment-date">${modifiedText}</span>
+                        </div>
+                    </div>
+                    <div class="attachment-actions">
+                        <button class="attachment-btn" onclick="homePageInstance.downloadAttachment('${attachment.name}')" title="下载">
+                            <i class="ph ph-download"></i>
+                        </button>
+                        ${attachment.name.endsWith('.json') ? `
+                        <button class="attachment-btn" onclick="homePageInstance.viewJsonFile('${attachment.name}')" title="查看">
+                            <i class="ph ph-eye"></i>
+                        </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        return html;
+    }
+    
+    // 格式化文件大小
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+    
+    // 格式化日期
+    formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+    
+    // 下载附件
+    downloadAttachment(filename) {
+        // 这里可以实现下载功能
+        this.showToast(`下载 ${filename}`, 'info');
+    }
+    
+    // 查看JSON文件
+    viewJsonFile(filename) {
+        // 这里可以实现查看JSON文件内容的功能
+        this.showToast(`查看 ${filename}`, 'info');
     }
     
     // 初始化URL相关功能
@@ -1365,7 +1499,7 @@ class HomePage {
             } else {
                 // 如果API调用失败，使用本地生成的数据
                 console.warn('无法获取真实趋势数据，使用本地数据');
-                const mockData = this.generateMockChartData(product);
+        const mockData = this.generateMockChartData(product);
                 this.renderSalesChart(mockData);
                 this.renderPriceChart(mockData);
                 this.renderRatingChart(mockData);
@@ -1390,8 +1524,8 @@ class HomePage {
             this.salesChart.destroy();
         }
         
-        const isSinglePoint = chartData.labels.length === 1;
-        const chartType = isSinglePoint ? 'bar' : 'line';
+        // 统一使用折线图
+        const chartType = 'line';
         
         this.salesChart = new Chart(ctx, {
             type: chartType,
@@ -1400,11 +1534,14 @@ class HomePage {
                 datasets: [{
                     label: '销量',
                     data: chartData.sales,
-                    borderColor: '#e74c3c',
-                    backgroundColor: isSinglePoint ? 'rgba(231, 76, 60, 0.8)' : 'rgba(231, 76, 60, 0.1)',
+                    borderColor: 'var(--color-primary)',
+                    backgroundColor: 'transparent',
                     tension: 0.4,
-                    pointRadius: isSinglePoint ? 8 : 4,
-                    pointHoverRadius: isSinglePoint ? 10 : 6
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: 'var(--color-primary)',
+                    pointBorderColor: 'var(--color-primary)',
+                    borderWidth: 2
                 }]
             },
             options: {
@@ -1418,10 +1555,17 @@ class HomePage {
                         display: true,
                         title: {
                             display: true,
-                            text: isSinglePoint ? '当前数据' : '日期',
+                            text: '日期',
                             font: {
-                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
-                            }
+                                family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                            },
+                            color: 'var(--color-text-secondary)'
+                        },
+                        ticks: {
+                            color: 'var(--color-text-secondary)'
+                        },
+                        grid: {
+                            color: 'var(--color-border)'
                         }
                     },
                     y: {
@@ -1430,8 +1574,15 @@ class HomePage {
                             display: true,
                             text: '销量',
                             font: {
-                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
-                            }
+                                family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                            },
+                            color: 'var(--color-text-secondary)'
+                        },
+                        ticks: {
+                            color: 'var(--color-text-secondary)'
+                        },
+                        grid: {
+                            color: 'var(--color-border)'
                         }
                     }
                 },
@@ -1454,8 +1605,8 @@ class HomePage {
             this.priceChart.destroy();
         }
         
-        const isSinglePoint = chartData.labels.length === 1;
-        const chartType = isSinglePoint ? 'bar' : 'line';
+        // 统一使用折线图
+        const chartType = 'line';
         
         this.priceChart = new Chart(ctx, {
             type: chartType,
@@ -1465,20 +1616,26 @@ class HomePage {
                     {
                         label: '促销价',
                         data: chartData.promoPrice,
-                        borderColor: '#3498db',
-                        backgroundColor: isSinglePoint ? 'rgba(52, 152, 219, 0.8)' : 'rgba(52, 152, 219, 0.1)',
+                        borderColor: 'var(--color-warning)',
+                        backgroundColor: 'transparent',
                         tension: 0.4,
-                        pointRadius: isSinglePoint ? 8 : 4,
-                        pointHoverRadius: isSinglePoint ? 10 : 6
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: 'var(--color-warning)',
+                        pointBorderColor: 'var(--color-warning)',
+                        borderWidth: 2
                     },
                     {
                         label: '原价',
                         data: chartData.normalPrice,
-                        borderColor: '#2ecc71',
-                        backgroundColor: isSinglePoint ? 'rgba(46, 204, 113, 0.8)' : 'rgba(46, 204, 113, 0.1)',
+                        borderColor: 'var(--color-success)',
+                        backgroundColor: 'transparent',
                         tension: 0.4,
-                        pointRadius: isSinglePoint ? 8 : 4,
-                        pointHoverRadius: isSinglePoint ? 10 : 6
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: 'var(--color-success)',
+                        pointBorderColor: 'var(--color-success)',
+                        borderWidth: 2
                     }
                 ]
             },
@@ -1493,10 +1650,17 @@ class HomePage {
                         display: true,
                         title: {
                             display: true,
-                            text: isSinglePoint ? '当前数据' : '日期',
+                            text: '日期',
                             font: {
-                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
-                            }
+                                family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                            },
+                            color: 'var(--color-text-secondary)'
+                        },
+                        ticks: {
+                            color: 'var(--color-text-secondary)'
+                        },
+                        grid: {
+                            color: 'var(--color-border)'
                         }
                     },
                     y: {
@@ -1505,8 +1669,15 @@ class HomePage {
                             display: true,
                             text: '价格 (元)',
                             font: {
-                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
-                            }
+                                family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                            },
+                            color: 'var(--color-text-secondary)'
+                        },
+                        ticks: {
+                            color: 'var(--color-text-secondary)'
+                        },
+                        grid: {
+                            color: 'var(--color-border)'
                         }
                     }
                 },
@@ -1515,8 +1686,9 @@ class HomePage {
                         position: 'top',
                         labels: {
                             font: {
-                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
-                            }
+                                family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                            },
+                            color: 'var(--color-text-secondary)'
                         }
                     }
                 }
@@ -1534,8 +1706,8 @@ class HomePage {
             this.ratingChart.destroy();
         }
         
-        const isSinglePoint = chartData.labels.length === 1;
-        const chartType = isSinglePoint ? 'bar' : 'line';
+        // 统一使用折线图
+        const chartType = 'line';
         
         this.ratingChart = new Chart(ctx, {
             type: chartType,
@@ -1544,11 +1716,14 @@ class HomePage {
                 datasets: [{
                     label: '评分',
                     data: chartData.rating,
-                    borderColor: '#f39c12',
-                    backgroundColor: isSinglePoint ? 'rgba(243, 156, 18, 0.8)' : 'rgba(243, 156, 18, 0.1)',
+                    borderColor: 'var(--color-info)',
+                    backgroundColor: 'transparent',
                     tension: 0.4,
-                    pointRadius: isSinglePoint ? 8 : 4,
-                    pointHoverRadius: isSinglePoint ? 10 : 6
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: 'var(--color-info)',
+                    pointBorderColor: 'var(--color-info)',
+                    borderWidth: 2
                 }]
             },
             options: {
@@ -1562,10 +1737,17 @@ class HomePage {
                         display: true,
                         title: {
                             display: true,
-                            text: isSinglePoint ? '当前数据' : '日期',
+                            text: '日期',
                             font: {
-                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
-                            }
+                                family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                            },
+                            color: 'var(--color-text-secondary)'
+                        },
+                        ticks: {
+                            color: 'var(--color-text-secondary)'
+                        },
+                        grid: {
+                            color: 'var(--color-border)'
                         }
                     },
                     y: {
@@ -1576,8 +1758,15 @@ class HomePage {
                             display: true,
                             text: '评分',
                             font: {
-                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
-                            }
+                                family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                            },
+                            color: 'var(--color-text-secondary)'
+                        },
+                        ticks: {
+                            color: 'var(--color-text-secondary)'
+                        },
+                        grid: {
+                            color: 'var(--color-border)'
                         }
                     }
                 },
@@ -1593,8 +1782,8 @@ class HomePage {
     // 创建图表的通用方法
     createChart(ctx, chartData, title) {
         // 检查数据点数量，决定图表类型
-        const isSinglePoint = chartData.labels.length === 1;
-        const chartType = isSinglePoint ? 'bar' : 'line';
+        // 统一使用折线图
+        const chartType = 'line';
         
         this.productChart = new Chart(ctx, {
             type: chartType,
@@ -1658,7 +1847,7 @@ class HomePage {
                         display: true,
                         title: {
                             display: true,
-                            text: isSinglePoint ? '当前数据' : '日期',
+                            text: '日期',
                             font: {
                                 family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
                             }
@@ -1895,125 +2084,6 @@ class HomePage {
     // 清理资源
     cleanup() {
         this.stopProductCountRefresh();
-    }
-
-    // 打开3个点菜单
-    openMenuDots() {
-        console.log('打开3个点菜单');
-        this.showMenuDots();
-    }
-
-    // 显示3个点菜单
-    showMenuDots() {
-        // 检查是否已经存在菜单
-        const existingMenu = document.querySelector('.menu-dots-dropdown');
-        if (existingMenu) {
-            existingMenu.remove();
-            return;
-        }
-
-        // 创建菜单
-        const menu = document.createElement('div');
-        menu.className = 'menu-dots-dropdown';
-        menu.innerHTML = this.generateMenuDotsHTML();
-        document.body.appendChild(menu);
-
-        // 绑定事件
-        this.bindMenuDotsEvents(menu);
-
-        // 定位菜单
-        this.positionMenuDots(menu);
-    }
-
-    // 生成3个点菜单HTML
-    generateMenuDotsHTML() {
-        return `
-            <div class="menu-dots-overlay" onclick="homePageInstance.closeMenuDots()">
-                <div class="menu-dots-content" onclick="event.stopPropagation()">
-                    <div class="menu-dots-item" onclick="homePageInstance.menuAction('new-product')">
-                        <div class="menu-dots-icon">
-                            <i class="ph ph-package"></i>
-                        </div>
-                        <div class="menu-dots-text">新建产品</div>
-                    </div>
-                    <div class="menu-dots-item" onclick="homePageInstance.menuAction('import-data')">
-                        <div class="menu-dots-icon">
-                            <i class="ph ph-download"></i>
-                        </div>
-                        <div class="menu-dots-text">导入数据</div>
-                    </div>
-                    <div class="menu-dots-item" onclick="homePageInstance.menuAction('export-data')">
-                        <div class="menu-dots-icon">
-                            <i class="ph ph-upload"></i>
-                        </div>
-                        <div class="menu-dots-text">导出数据</div>
-                    </div>
-                    <div class="menu-dots-divider"></div>
-                    <div class="menu-dots-item" onclick="homePageInstance.menuAction('about')">
-                        <div class="menu-dots-icon">
-                            <i class="ph ph-info"></i>
-                        </div>
-                        <div class="menu-dots-text">关于</div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // 绑定3个点菜单事件
-    bindMenuDotsEvents(menu) {
-        // ESC键关闭
-        const handleKeyDown = (e) => {
-            if (e.key === 'Escape') {
-                this.closeMenuDots();
-                document.removeEventListener('keydown', handleKeyDown);
-            }
-        };
-        document.addEventListener('keydown', handleKeyDown);
-    }
-
-    // 定位3个点菜单
-    positionMenuDots(menu) {
-        const menuDots = document.getElementById('menu-dots');
-        const rect = menuDots.getBoundingClientRect();
-        const menuContent = menu.querySelector('.menu-dots-content');
-        
-        // 计算位置
-        const top = rect.bottom + 8;
-        const right = window.innerWidth - rect.right;
-        
-        menuContent.style.top = `${top}px`;
-        menuContent.style.right = `${right}px`;
-    }
-
-    // 关闭3个点菜单
-    closeMenuDots() {
-        const menu = document.querySelector('.menu-dots-dropdown');
-        if (menu) {
-            menu.remove();
-        }
-    }
-
-    // 菜单项点击处理
-    menuAction(action) {
-        console.log('菜单项点击:', action);
-        
-        switch (action) {
-            case 'new-product':
-                this.showToast('新建产品功能');
-                break;
-            case 'import-data':
-                this.showToast('导入数据功能');
-                break;
-            case 'export-data':
-                this.showToast('导出数据功能');
-                break;
-            case 'about':
-                this.showToast('关于Hanli');
-                break;
-        }
-        
-        this.closeMenuDots();
     }
 
     // 打开系统设置弹窗
