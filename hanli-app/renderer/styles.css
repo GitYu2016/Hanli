@@ -18,6 +18,7 @@ body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     overflow: hidden;
+    padding-top: 8px; /* 为窗口控制按钮留出空间 */
 }
 
 /* 主容器布局 */

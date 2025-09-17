@@ -44,12 +44,12 @@ function createWindow() {
             enableRemoteModule: false,
             preload: path.join(__dirname, 'preload.js')
         },
-        titleBarStyle: 'hiddenInset', // macOS默认样式
+        titleBarStyle: 'hidden', // 完全隐藏标题栏
         titleBarOverlay: {
             color: 'transparent',
             symbolColor: '#000000',
-            height: 36, // 增加高度来向下移动按钮
-            y: 24 // 向下偏移16px
+            height: 36,
+            y: 20 // 向下偏移20px
         },
         show: false, // 先不显示，等加载完成后再显示
         icon: path.join(__dirname, 'assets/icon.png'), // 应用图标
