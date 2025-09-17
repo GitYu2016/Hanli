@@ -297,7 +297,7 @@ class HanliPlugin {
             background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
             color: white;
             padding: 12px 20px;
-            border-radius: 8px;
+            border-radius: var(--radius-medium);
             margin-bottom: 10px;
             font-size: 14px;
             font-weight: 500;

@@ -127,6 +127,10 @@ class HomePage {
     loadTheme() {
         const savedTheme = localStorage.getItem('app-theme') || 'auto';
         this.setTheme(savedTheme);
+        
+        // 应用存储的背景色
+        const savedBgColor = localStorage.getItem('app-background-color') || 'default';
+        this.setBackgroundColor(savedBgColor);
     }
 
     // 设置主题
@@ -154,6 +158,22 @@ class HomePage {
         }
         
         localStorage.setItem('app-theme', theme);
+    }
+
+    // 设置背景色
+    setBackgroundColor(bgColor) {
+        const body = document.body;
+        
+        // 移除现有背景色类
+        body.classList.remove('bg-default', 'bg-blue', 'bg-green', 'bg-purple', 'bg-orange', 'bg-pink', 'bg-gray', 'bg-indigo');
+        
+        // 添加新背景色类
+        body.classList.add(`bg-${bgColor}`);
+        
+        // 保存到localStorage
+        localStorage.setItem('app-background-color', bgColor);
+        
+        console.log('背景色已切换为:', bgColor);
     }
 
     // 设置系统主题监听器
@@ -317,6 +337,9 @@ class HomePage {
         if (tab.pageType === 'home') {
             // 切换到首页，启动定时刷新
             this.startProductCountRefresh();
+        } else if (tab.pageType === 'product-library') {
+            // 切换到产品库，触发一次刷新
+            this.loadProductLibrary();
         } else {
             // 离开首页，停止定时刷新
             this.stopProductCountRefresh();
@@ -401,6 +424,10 @@ class HomePage {
             this.renderTabs();
             // 触发Tab切换事件
             this.tabManager.onTabSwitch(existingTab);
+            // 如果是产品库页面，触发一次刷新
+            if (page === 'product-library') {
+                this.loadProductLibrary();
+            }
         } else {
             // 如果不存在，创建新Tab
             const newTabId = this.tabManager.addTab(pageData);
@@ -409,6 +436,10 @@ class HomePage {
             const newTab = this.tabManager.tabs.find(t => t.id === newTabId);
             if (newTab) {
                 this.tabManager.onTabSwitch(newTab);
+                // 如果是产品库页面，触发一次刷新
+                if (page === 'product-library') {
+                    this.loadProductLibrary();
+                }
             }
         }
         
@@ -622,10 +653,6 @@ class HomePage {
                     await this.renderProductLibrary(paginatedProducts, data.products.length);
                     console.log('产品库数据加载成功:', data.products.length, '个产品');
                     
-                    // 只有在产品库页面时才启动自动刷新
-                    if (this.isOnProductLibraryPage()) {
-                        this.startProductLibraryRefresh();
-                    }
                 } else {
                     console.error('获取产品列表失败:', data.error);
                     this.showProductLibraryError('获取产品列表失败');
@@ -660,7 +687,7 @@ class HomePage {
     // 获取昨日销量
     getYesterdaySales(product) {
         if (product.yesterdaySales !== undefined) {
-            return product.yesterdaySales.toLocaleString() + '件';
+            return Math.round(product.yesterdaySales).toLocaleString() + '件';
         }
         return '-';
     }
@@ -818,6 +845,8 @@ class HomePage {
                 } else {
                     this.showToast('获取产品详情失败: ' + data.error);
                 }
+            } else if (response.status === 404) {
+                this.showToast(`商品ID ${goodsId} 不存在，请先采集该商品数据`, 'warning');
             } else {
                 this.showToast('获取产品详情失败: ' + response.status);
             }
@@ -861,6 +890,8 @@ class HomePage {
         // 使用PageContainer组件渲染产品详情
         if (this.pageContainer) {
             await this.pageContainer.renderProductDetail(product);
+            // 初始化附件卡片
+            await this.initAttachmentCard(product.goodsId);
         }
     }
 
@@ -1120,7 +1151,7 @@ class HomePage {
         infoHTML += '<div class="info-section">';
         infoHTML += '<h4>销量信息</h4>';
         infoHTML += '<div class="info-list">';
-        infoHTML += `<div class="info-item"><span class="label">销量:</span><span class="value">${(product.goodsSold || 0).toLocaleString()}</span></div>`;
+        infoHTML += `<div class="info-item"><span class="label">销量:</span><span class="value">${Math.round(product.goodsSold || 0).toLocaleString()}</span></div>`;
         if (product.collectTime) {
             infoHTML += `<div class="info-item"><span class="label">采集时间:</span><span class="value">${this.formatCollectTime(product.collectTime)}</span></div>`;
         }
@@ -1149,7 +1180,7 @@ class HomePage {
                 infoHTML += `<div class="info-item"><span class="label">店铺评分:</span><span class="value">${product.storeData.storeRating}</span></div>`;
             }
             if (product.storeData.storeSold) {
-                infoHTML += `<div class="info-item"><span class="label">店铺销量:</span><span class="value">${product.storeData.storeSold.toLocaleString()}</span></div>`;
+                infoHTML += `<div class="info-item"><span class="label">店铺销量:</span><span class="value">${Math.round(product.storeData.storeSold).toLocaleString()}</span></div>`;
             }
             infoHTML += '</div></div>';
         }
@@ -1215,13 +1246,13 @@ class HomePage {
                 datasets: [{
                     label: '销量',
                     data: chartData.sales,
-                    borderColor: 'var(--color-primary)',
-                    backgroundColor: 'transparent',
+                    borderColor: 'rgba(255, 255, 255, 0.8)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
                     tension: 0.4,
                     pointRadius: 4,
                     pointHoverRadius: 6,
-                    pointBackgroundColor: 'var(--color-primary)',
-                    pointBorderColor: 'var(--color-primary)',
+                    pointBackgroundColor: 'rgba(255, 255, 255, 0.8)',
+                    pointBorderColor: 'rgba(255, 255, 255, 0.8)',
                     borderWidth: 2
                 }]
             },
@@ -1306,25 +1337,25 @@ class HomePage {
                     {
                         label: '促销价',
                         data: chartData.promoPrice,
-                        borderColor: 'var(--color-warning)',
-                        backgroundColor: 'transparent',
+                        borderColor: 'rgba(255, 255, 255, 0.6)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
                         tension: 0.4,
                         pointRadius: 4,
                         pointHoverRadius: 6,
-                        pointBackgroundColor: 'var(--color-warning)',
-                        pointBorderColor: 'var(--color-warning)',
+                        pointBackgroundColor: 'rgba(255, 255, 255, 0.6)',
+                        pointBorderColor: 'rgba(255, 255, 255, 0.6)',
                         borderWidth: 2
                     },
                     {
                         label: '原价',
                         data: chartData.normalPrice,
-                        borderColor: 'var(--color-success)',
-                        backgroundColor: 'transparent',
+                        borderColor: 'rgba(255, 255, 255, 0.4)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.02)',
                         tension: 0.4,
                         pointRadius: 4,
                         pointHoverRadius: 6,
-                        pointBackgroundColor: 'var(--color-success)',
-                        pointBorderColor: 'var(--color-success)',
+                        pointBackgroundColor: 'rgba(255, 255, 255, 0.4)',
+                        pointBorderColor: 'rgba(255, 255, 255, 0.4)',
                         borderWidth: 2
                     }
                 ]
@@ -1406,13 +1437,13 @@ class HomePage {
                 datasets: [{
                     label: '评分',
                     data: chartData.rating,
-                    borderColor: 'var(--color-info)',
-                    backgroundColor: 'transparent',
+                    borderColor: 'rgba(255, 255, 255, 0.5)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.03)',
                     tension: 0.4,
                     pointRadius: 4,
                     pointHoverRadius: 6,
-                    pointBackgroundColor: 'var(--color-info)',
-                    pointBorderColor: 'var(--color-info)',
+                    pointBackgroundColor: 'rgba(255, 255, 255, 0.5)',
+                    pointBorderColor: 'rgba(255, 255, 255, 0.5)',
                     borderWidth: 2
                 }]
             },
@@ -1492,8 +1523,8 @@ class HomePage {
                     {
                         label: '销量',
                         data: chartData.sales,
-                        borderColor: '#e74c3c',
-                        backgroundColor: isSinglePoint ? 'rgba(231, 76, 60, 0.8)' : 'rgba(231, 76, 60, 0.1)',
+                        borderColor: 'rgba(255, 255, 255, 0.8)',
+                        backgroundColor: isSinglePoint ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.1)',
                         tension: 0.4,
                         yAxisID: 'y',
                         pointRadius: isSinglePoint ? 8 : 4,
@@ -1502,8 +1533,8 @@ class HomePage {
                     {
                         label: '促销价',
                         data: chartData.promoPrice,
-                        borderColor: '#3498db',
-                        backgroundColor: isSinglePoint ? 'rgba(52, 152, 219, 0.8)' : 'rgba(52, 152, 219, 0.1)',
+                        borderColor: 'rgba(255, 255, 255, 0.6)',
+                        backgroundColor: isSinglePoint ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 255, 255, 0.05)',
                         tension: 0.4,
                         yAxisID: 'y1',
                         pointRadius: isSinglePoint ? 8 : 4,
@@ -1512,8 +1543,8 @@ class HomePage {
                     {
                         label: '原价',
                         data: chartData.normalPrice,
-                        borderColor: '#2ecc71',
-                        backgroundColor: isSinglePoint ? 'rgba(46, 204, 113, 0.8)' : 'rgba(46, 204, 113, 0.1)',
+                        borderColor: 'rgba(255, 255, 255, 0.4)',
+                        backgroundColor: isSinglePoint ? 'rgba(255, 255, 255, 0.4)' : 'rgba(255, 255, 255, 0.02)',
                         tension: 0.4,
                         yAxisID: 'y1',
                         pointRadius: isSinglePoint ? 8 : 4,
@@ -1522,8 +1553,8 @@ class HomePage {
                     {
                         label: '评分',
                         data: chartData.rating,
-                        borderColor: '#f39c12',
-                        backgroundColor: isSinglePoint ? 'rgba(243, 156, 18, 0.8)' : 'rgba(243, 156, 18, 0.1)',
+                        borderColor: 'rgba(255, 255, 255, 0.5)',
+                        backgroundColor: isSinglePoint ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.03)',
                         tension: 0.4,
                         yAxisID: 'y2',
                         pointRadius: isSinglePoint ? 8 : 4,
@@ -1643,7 +1674,7 @@ class HomePage {
         };
         
         // 获取真实数据
-        const realSales = product.goodsSold || 0;
+        const realSales = Math.round(product.goodsSold || 0);
         const realPromoPrice = this.extractPrice(product.skuList?.[0]?.goodsPromoPrice);
         const realNormalPrice = this.extractPrice(product.skuList?.[0]?.goodsNormalPrice);
         const realRating = product.storeData?.storeRating || 0;
@@ -1714,19 +1745,19 @@ class HomePage {
         ctx.textAlign = 'left';
         
         ctx.fillStyle = '#e74c3c';
-        ctx.fillRect(10, legendY - 10, 15, 10);
+        ctx.fillRect(10, legendY - 2, 15, 2);
         ctx.fillText('销量', 30, legendY);
         
         ctx.fillStyle = '#3498db';
-        ctx.fillRect(80, legendY - 10, 15, 10);
+        ctx.fillRect(80, legendY - 2, 15, 2);
         ctx.fillText('促销价', 100, legendY);
         
         ctx.fillStyle = '#2ecc71';
-        ctx.fillRect(150, legendY - 10, 15, 10);
+        ctx.fillRect(150, legendY - 2, 15, 2);
         ctx.fillText('原价', 170, legendY);
         
         ctx.fillStyle = '#f39c12';
-        ctx.fillRect(200, legendY - 10, 15, 10);
+        ctx.fillRect(200, legendY - 2, 15, 2);
         ctx.fillText('评分', 220, legendY);
         
         // 绘制提示信息
@@ -1848,6 +1879,11 @@ class HomePage {
         // 应用主题设置
         if (settings.theme) {
             this.setTheme(settings.theme);
+        }
+        
+        // 应用背景色设置
+        if (settings.backgroundColor) {
+            this.setBackgroundColor(settings.backgroundColor);
         }
         
         // 应用其他设置
@@ -2221,15 +2257,32 @@ class HomePage {
 
     // 设置IPC监听器
     setupIPCListeners() {
+        console.log('开始设置IPC监听器...');
+        
         // 监听来自主进程的商品详情页打开请求
         if (window.electronAPI) {
+            console.log('electronAPI可用，设置监听器');
+            
             // 监听商品详情页打开请求
             window.addEventListener('navigate-to-product', (event) => {
                 console.log('收到商品详情页打开请求:', event.detail);
                 this.showProductDetailModal(event.detail);
             });
             
-            console.log('IPC监听器已设置');
+            // 监听来自主进程的open-product-detail事件
+            window.electronAPI.onOpenProductDetail((event, data) => {
+                console.log('收到打开产品详情页请求:', data);
+                if (data && data.goodsId) {
+                    console.log('准备打开产品详情页，商品ID:', data.goodsId);
+                    this.viewProductDetail(data.goodsId);
+                } else {
+                    console.warn('收到open-product-detail事件，但数据无效:', data);
+                }
+            });
+            
+            console.log('IPC监听器已设置完成');
+        } else {
+            console.error('electronAPI不可用，无法设置IPC监听器');
         }
     }
 

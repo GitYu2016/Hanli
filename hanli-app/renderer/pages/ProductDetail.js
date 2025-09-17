@@ -37,7 +37,7 @@ class ProductDetailComponent {
                 <div class="product-detail-content">
                     <!-- 第一个卡片：图表 -->
                     <div class="detail-section">
-                        <h3 class="section-title">数据趋势</h3>
+                        <h3 class="section-title">数据监控</h3>
                         
                         <!-- 合并的趋势图表卡片 -->
                         <div class="detail-card chart-card">
@@ -45,7 +45,7 @@ class ProductDetailComponent {
                                 <div class="charts-container">
                                     <!-- 销量图表 -->
                                     <div class="chart-item">
-                                        <h5 class="chart-item-title">销量趋势</h5>
+                                        <h5 class="chart-item-title">销量</h5>
                                         <div class="chart-container">
                                             <canvas id="sales-chart" width="800" height="150"></canvas>
                                         </div>
@@ -53,7 +53,7 @@ class ProductDetailComponent {
                                     
                                     <!-- 价格图表 -->
                                     <div class="chart-item">
-                                        <h5 class="chart-item-title">价格趋势</h5>
+                                        <h5 class="chart-item-title">价格</h5>
                                         <div class="chart-container">
                                             <canvas id="price-chart" width="800" height="150"></canvas>
                                         </div>
@@ -183,7 +183,7 @@ class ProductDetailComponent {
             const attachmentsList = document.getElementById('attachments-list');
             if (attachmentsList && typeof AttachmentCard !== 'undefined') {
                 this.attachmentCard = new AttachmentCard();
-                await this.attachmentCard.init(this.product.goodsInfo.goodsId, attachmentsList);
+                await this.attachmentCard.init(this.product.goodsId, attachmentsList);
             }
         } catch (error) {
             console.error('初始化附件卡片失败:', error);
@@ -321,7 +321,7 @@ class ProductDetailComponent {
         infoHTML += '<div class="info-section">';
         infoHTML += '<h4>销量信息</h4>';
         infoHTML += '<div class="info-list">';
-        infoHTML += `<div class="info-item"><span class="label">销量:</span><span class="value">${(product.goodsSold || 0).toLocaleString()}</span></div>`;
+        infoHTML += `<div class="info-item"><span class="label">销量:</span><span class="value">${Math.round(product.goodsSold || 0).toLocaleString()}</span></div>`;
         if (product.collectTime) {
             infoHTML += `<div class="info-item"><span class="label">采集时间:</span><span class="value">${this.formatCollectTime(product.collectTime)}</span></div>`;
         }

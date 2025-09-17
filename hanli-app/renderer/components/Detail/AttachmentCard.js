@@ -97,9 +97,6 @@ class AttachmentCard {
                         </div>
                     </div>
                     <div class="attachment-actions">
-                        <button class="attachment-btn" onclick="attachmentCardInstance.downloadAttachment('${attachment.name}')" title="下载">
-                            <i class="ph ph-download"></i>
-                        </button>
                         ${attachment.name.endsWith('.json') ? `
                         <button class="attachment-btn" onclick="attachmentCardInstance.viewJsonFile('${attachment.name}')" title="查看">
                             <i class="ph ph-eye"></i>
@@ -138,34 +135,6 @@ class AttachmentCard {
         this.container.innerHTML = '<div class="error-attachments">加载附件失败</div>';
     }
 
-    /**
-     * 下载附件
-     * @param {string} fileName - 文件名
-     */
-    async downloadAttachment(fileName) {
-        if (!this.goodsId) return;
-
-        try {
-            const response = await fetch(`/api/products/${this.goodsId}/download/${encodeURIComponent(fileName)}`);
-            
-            if (response.ok) {
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-            } else {
-                console.error('下载失败');
-                // 可以添加toast通知
-            }
-        } catch (error) {
-            console.error('下载附件失败:', error);
-        }
-    }
 
     /**
      * 查看JSON文件
@@ -175,11 +144,15 @@ class AttachmentCard {
         if (!this.goodsId) return;
 
         try {
-            const response = await fetch(`/api/products/${this.goodsId}/download/${encodeURIComponent(fileName)}`);
+            const response = await fetch(`/api/products/${this.goodsId}/file/${encodeURIComponent(fileName)}`);
             
             if (response.ok) {
-                const jsonText = await response.text();
-                this.showJsonModal(fileName, jsonText);
+                const data = await response.json();
+                if (data.success) {
+                    this.showJsonModal(fileName, data.content);
+                } else {
+                    console.error('查看文件失败:', data.error);
+                }
             } else {
                 console.error('查看文件失败');
             }
@@ -212,136 +185,11 @@ class AttachmentCard {
                     <button class="btn btn-secondary" onclick="attachmentCardInstance.copyJson('${fileName}')">
                         <i class="ph ph-copy"></i> 复制
                     </button>
-                    <button class="btn btn-primary" onclick="attachmentCardInstance.downloadAttachment('${fileName}')">
-                        <i class="ph ph-download"></i> 下载
-                    </button>
                 </div>
             </div>
         `;
 
         document.body.appendChild(modal);
-
-        // 添加样式
-        if (!document.querySelector('#json-modal-styles')) {
-            const style = document.createElement('style');
-            style.id = 'json-modal-styles';
-            style.textContent = `
-                .json-modal-overlay {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background-color: var(--color-modal-overlay);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 1000;
-                }
-                
-                .json-modal {
-                    background-color: var(--color-modal-background);
-                    border-radius: 12px;
-                    box-shadow: var(--shadow-modal);
-                    width: 80%;
-                    max-width: 800px;
-                    max-height: 80%;
-                    display: flex;
-                    flex-direction: column;
-                }
-                
-                .json-modal-header {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    padding: 16px 20px;
-                    border-bottom: 1px solid var(--color-border);
-                }
-                
-                .json-modal-header h3 {
-                    margin: 0;
-                    font-size: 16px;
-                    font-weight: 600;
-                    color: var(--color-text-primary);
-                }
-                
-                .json-modal-close {
-                    background: none;
-                    border: none;
-                    color: var(--color-text-secondary);
-                    cursor: pointer;
-                    padding: 4px;
-                    border-radius: 4px;
-                    transition: all 0.2s ease;
-                }
-                
-                .json-modal-close:hover {
-                    background-color: var(--color-hover);
-                    color: var(--color-text-primary);
-                }
-                
-                .json-modal-content {
-                    flex: 1;
-                    overflow: auto;
-                    padding: 20px;
-                }
-                
-                .json-modal-content pre {
-                    margin: 0;
-                    background-color: var(--color-icon-background);
-                    border-radius: 8px;
-                    padding: 16px;
-                    overflow: auto;
-                    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-                    font-size: 13px;
-                    line-height: 1.5;
-                }
-                
-                .json-modal-content code {
-                    color: var(--color-text-primary);
-                }
-                
-                .json-modal-footer {
-                    display: flex;
-                    gap: 12px;
-                    padding: 16px 20px;
-                    border-top: 1px solid var(--color-border);
-                    justify-content: flex-end;
-                }
-                
-                .btn {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 8px;
-                    padding: 8px 16px;
-                    border: none;
-                    border-radius: 6px;
-                    font-size: 14px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: all 0.2s ease;
-                }
-                
-                .btn-primary {
-                    background-color: var(--color-primary);
-                    color: var(--color-primary-foreground);
-                }
-                
-                .btn-primary:hover {
-                    background-color: var(--color-primary-hover);
-                }
-                
-                .btn-secondary {
-                    background-color: var(--color-secondary);
-                    color: var(--color-secondary-foreground);
-                }
-                
-                .btn-secondary:hover {
-                    background-color: var(--color-secondary-hover);
-                }
-            `;
-            document.head.appendChild(style);
-        }
     }
 
     /**
@@ -366,14 +214,18 @@ class AttachmentCard {
         if (!this.goodsId) return;
 
         try {
-            const response = await fetch(`/api/products/${this.goodsId}/download/${encodeURIComponent(fileName)}`);
-            const jsonText = await response.text();
-            const formattedJson = this.formatJson(jsonText);
+            const response = await fetch(`/api/products/${this.goodsId}/file/${encodeURIComponent(fileName)}`);
+            const data = await response.json();
             
-            await navigator.clipboard.writeText(formattedJson);
-            
-            // 可以添加toast通知
-            console.log('JSON内容已复制到剪贴板');
+            if (data.success) {
+                const formattedJson = this.formatJson(data.content);
+                await navigator.clipboard.writeText(formattedJson);
+                
+                // 可以添加toast通知
+                console.log('JSON内容已复制到剪贴板');
+            } else {
+                console.error('复制JSON失败:', data.error);
+            }
         } catch (error) {
             console.error('复制JSON失败:', error);
         }

@@ -467,7 +467,7 @@ class MediaManager {
             background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#F44336' : '#2196F3'};
             color: white;
             padding: 12px 20px;
-            border-radius: 4px;
+            border-radius: var(--radius-small);
             margin-bottom: 10px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
             opacity: 0;

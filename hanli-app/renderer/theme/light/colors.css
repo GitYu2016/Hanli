@@ -8,10 +8,14 @@
     --color-text-primary: #1a1a1a;
     --color-text-secondary: #666666;
     
+    /* 半透明文本颜色 */
+    --color-text-primary-transparent: rgba(26, 26, 26, 0.8);
+    --color-text-secondary-transparent: rgba(102, 102, 102, 0.7);
+    
     /* 背景颜色 */
     --color-page-container-background: rgba(255, 255, 255, 0.8);
-    --color-card-background: #ffffff;
-    --color-modal-background: #ffffff;
+    --color-card-background: rgb(255 255 255 / 10%);
+    --color-modal-background: rgba(255, 255, 255, 0.95);
     --color-modal-overlay: rgba(0, 0, 0, 0.5);
     --color-input-background: #ffffff;
     
@@ -54,4 +58,66 @@
     /* 阴影 */
     --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
     --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.15);
+    
+    /* 倒角标准 */
+    --radius-small: 6px;    /* 小元素：按钮、输入框、标签等 */
+    --radius-medium: 8px;   /* 中等元素：卡片、容器、弹窗等 */
+    --radius-large: 12px;   /* 大元素：页面容器、侧边栏等 */
+}
+
+/* 背景色主题 - 浅色模式（半透明色） */
+.bg-default {
+    --color-background: rgba(255, 255, 255, 0.95);
+    --color-page-container-background: rgba(255, 255, 255, 0.8);
+    --color-text-primary-transparent: rgba(26, 26, 26, 0.8);
+    --color-text-secondary-transparent: rgba(102, 102, 102, 0.7);
+}
+
+.bg-blue {
+    --color-background: rgba(59, 130, 246, 0.08);
+    --color-page-container-background: rgba(59, 130, 246, 0.12);
+    --color-text-primary-transparent: rgba(26, 26, 26, 0.8);
+    --color-text-secondary-transparent: rgba(102, 102, 102, 0.7);
+}
+
+.bg-green {
+    --color-background: rgba(34, 197, 94, 0.08);
+    --color-page-container-background: rgba(34, 197, 94, 0.12);
+    --color-text-primary-transparent: rgba(26, 26, 26, 0.8);
+    --color-text-secondary-transparent: rgba(102, 102, 102, 0.7);
+}
+
+.bg-purple {
+    --color-background: rgba(147, 51, 234, 0.08);
+    --color-page-container-background: rgba(147, 51, 234, 0.12);
+    --color-text-primary-transparent: rgba(26, 26, 26, 0.8);
+    --color-text-secondary-transparent: rgba(102, 102, 102, 0.7);
+}
+
+.bg-orange {
+    --color-background: rgba(249, 115, 22, 0.08);
+    --color-page-container-background: rgba(249, 115, 22, 0.12);
+    --color-text-primary-transparent: rgba(26, 26, 26, 0.8);
+    --color-text-secondary-transparent: rgba(102, 102, 102, 0.7);
+}
+
+.bg-pink {
+    --color-background: rgba(236, 72, 153, 0.08);
+    --color-page-container-background: rgba(236, 72, 153, 0.12);
+    --color-text-primary-transparent: rgba(26, 26, 26, 0.8);
+    --color-text-secondary-transparent: rgba(102, 102, 102, 0.7);
+}
+
+.bg-gray {
+    --color-background: rgba(107, 114, 128, 0.08);
+    --color-page-container-background: rgba(107, 114, 128, 0.12);
+    --color-text-primary-transparent: rgba(26, 26, 26, 0.8);
+    --color-text-secondary-transparent: rgba(102, 102, 102, 0.7);
+}
+
+.bg-indigo {
+    --color-background: rgba(99, 102, 241, 0.08);
+    --color-page-container-background: rgba(99, 102, 241, 0.12);
+    --color-text-primary-transparent: rgba(26, 26, 26, 0.8);
+    --color-text-secondary-transparent: rgba(102, 102, 102, 0.7);
 }

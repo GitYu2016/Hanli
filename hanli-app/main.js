@@ -72,6 +72,15 @@ function createWindow() {
         if (process.argv.includes('--dev')) {
             mainWindow.webContents.openDevTools();
         }
+        
+        // 处理待处理的goodsId
+        if (global.pendingGoodsId) {
+            console.log('处理待处理的商品ID:', global.pendingGoodsId);
+            setTimeout(() => {
+                mainWindow.webContents.send('open-product-detail', { goodsId: global.pendingGoodsId });
+                global.pendingGoodsId = null;
+            }, 1000);
+        }
     });
 
     // 设置全局窗口引用，供服务器使用
@@ -199,6 +208,10 @@ app.on('open-url', (event, url) => {
     console.log('收到hanliapp协议调用:', url);
     
     if (url.startsWith('hanliapp://open')) {
+        // 解析URL参数
+        const urlObj = new URL(url);
+        const goodsId = urlObj.searchParams.get('goodsId');
+        
         // 将App置于最前窗口
         if (mainWindow) {
             if (mainWindow.isMinimized()) {
@@ -208,9 +221,26 @@ app.on('open-url', (event, url) => {
             mainWindow.maximize();
             mainWindow.focus();
             console.log('App已置于最前窗口');
+            
+            // 如果有goodsId，通知渲染进程打开产品详情页
+            if (goodsId) {
+                console.log('main.js: 收到商品ID，准备打开产品详情页:', goodsId);
+                // 延迟一点时间确保窗口完全加载
+                setTimeout(() => {
+                    console.log('main.js: 发送open-product-detail事件到渲染进程，商品ID:', goodsId);
+                    mainWindow.webContents.send('open-product-detail', { goodsId });
+                }, 1000);
+            } else {
+                console.log('main.js: 没有收到goodsId参数');
+            }
         } else {
             // 如果窗口不存在，创建新窗口
             createWindow();
+            
+            // 如果有goodsId，保存到全局变量，等窗口创建完成后处理
+            if (goodsId) {
+                global.pendingGoodsId = goodsId;
+            }
         }
     }
 });
@@ -321,26 +351,6 @@ ipcMain.on('open-product-detail', (event, data) => {
     }
 });
 
-// 处理自定义协议URL
-app.on('open-url', (event, url) => {
-    console.log('收到自定义协议URL:', url);
-    event.preventDefault();
-    
-    // 如果应用已经运行，显示窗口
-    if (mainWindow) {
-        console.log('App已运行，显示窗口');
-        if (mainWindow.isMinimized()) {
-            mainWindow.restore();
-        }
-        mainWindow.show();
-        mainWindow.maximize();
-        mainWindow.focus();
-    } else {
-        console.log('App未运行，创建新窗口');
-        // 如果应用没有运行，创建新窗口
-        createWindow();
-    }
-});
 
 // 处理Windows上的自定义协议
 app.on('second-instance', (event, commandLine, workingDirectory) => {

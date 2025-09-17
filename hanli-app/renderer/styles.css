@@ -108,6 +108,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     flex: 1;
     overflow: hidden;
     flex-direction: row;
+    gap: 16px;
 }
 
 /* TopBar 样式 */
@@ -119,7 +120,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     padding-left: 84px;
     padding-right: 12px;
     flex-shrink: 0;
-    background-color: transparent;
+    background-color: var(--color-background);
     border: none;
     box-shadow: none;
     position: relative;
@@ -146,7 +147,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 .logo {
     font-size: 20px;
     font-weight: 600;
-    color: var(--color-foreground);
+    color: var(--color-text-primary-transparent);
     letter-spacing: -0.5px;
     user-select: none;
 }
@@ -179,8 +180,8 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
-    border-radius: 12px;
+    padding: 6px 16px 6px 12px;
+    border-radius: var(--radius-small);
     background-color: var(--color-hover);
     cursor: pointer;
     transition: all 2s ease-in-out;
@@ -199,11 +200,11 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 }
 
 .tab.active .tab-icon {
-    color: var(--color-text-primary);
+    color: var(--color-text-primary-transparent);
 }
 
 .tab.active .tab-text {
-    color: var(--color-text-primary);
+    color: var(--color-text-primary-transparent);
 }
 
 .tab-icon {
@@ -213,7 +214,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--color-text-secondary);
+    color: var(--color-text-secondary-transparent);
     transition: color 0.2s ease, opacity 0.2s ease;
 }
 
@@ -260,7 +261,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--color-text-secondary);
+    color: var(--color-text-secondary-transparent);
     transition: color 0.2s ease;
     max-width: 250px;
     min-width: 0;
@@ -323,9 +324,9 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     font-size: 20px;
     cursor: pointer;
     padding: 8px;
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     transition: all 0.2s ease;
-    color: var(--color-text-secondary);
+    color: var(--color-text-secondary-transparent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -341,7 +342,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 
 .settings-icon:hover {
     background-color: var(--color-hover);
-    color: var(--color-text-primary);
+    color: var(--color-text-primary-transparent);
     transform: scale(1.05);
 }
 
@@ -358,7 +359,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 .logo:focus {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
-    border-radius: 4px;
+    border-radius: var(--radius-small);
 }
 
 /* TopBar 整体优化 */
@@ -380,7 +381,9 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     max-width: 320px;
     flex-shrink: 0;
     padding: 10px;
-    background-color: transparent;
+    background-color: none;
+    border-radius: var(--radius-large);
+    margin: 0;
     overflow-y: auto;
     scrollbar-width: thin;
     position: relative;
@@ -426,9 +429,9 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 }
 
 .sidebar-item-content {
-    padding: 12px;
-    border-radius: 6px;
-    background-color: rgba(0, 0, 0, 0);
+    padding: 10px 12px;
+    border-radius: var(--radius-small);
+    background-color: transparent;
     transition: background-color 0.2s ease;
     display: flex;
     align-items: center;
@@ -436,11 +439,11 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 }
 
 .sidebar-item:hover .sidebar-item-content {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: var(--color-hover);
 }
 
 .sidebar-item.active .sidebar-item-content {
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: var(--color-active);
 }
 
 .sidebar-item-icon {
@@ -488,17 +491,15 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 /* PageContainer 样式 */
 .page-container {
     flex: 1;
-    background-color: var(--color-page-container-background);
-    border-radius: 16px;
+    border-radius: var(--radius-large);
     overflow: hidden;
-    margin: 16px;
+    margin: 16px 16px 16px 0;
     padding: 0;
     height: calc(100vh - 48px - 32px); /* 减去顶部栏和边距 */
     box-sizing: border-box;
 }
 
 .page-content {
-    padding: 24px;
     height: 100%;
     overflow-y: auto;
 }
@@ -534,17 +535,15 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 
 .dashboard-card {
     background-color: var(--color-card-background);
-    border-radius: 16px;
+    border-radius: var(--radius-large);
     padding: 32px;
     text-align: center;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease;
     min-width: 200px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .dashboard-card:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
 }
 
 .card-icon {
@@ -599,7 +598,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     padding: 16px;
     background-color: var(--color-card-background);
     border: none;
-    border-radius: 12px;
+    border-radius: var(--radius-large);
     cursor: pointer;
     transition: all 0.2s ease;
 }
@@ -626,7 +625,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 
 .activity-list {
     background-color: var(--color-card-background);
-    border-radius: 12px;
+    border-radius: var(--radius-large);
     padding: 16px;
     border: 1px solid var(--color-border);
 }
@@ -642,7 +641,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     align-items: center;
     gap: 12px;
     padding: 12px;
-    border-radius: 8px;
+    border-radius: var(--radius-medium);
     transition: background-color 0.2s ease;
 }
 
@@ -656,7 +655,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     justify-content: center;
     width: 32px;
     height: 32px;
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     background-color: var(--color-hover);
     flex-shrink: 0;
 }
@@ -745,7 +744,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     background-color: var(--color-primary);
     color: var(--color-primary-foreground);
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     font-size: 14px;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -765,7 +764,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     background: none;
     color: var(--color-text-secondary);
     cursor: pointer;
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     transition: all 0.2s ease;
 }
 
@@ -796,7 +795,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     gap: 12px;
     padding: 12px;
     background-color: var(--color-card-background);
-    border-radius: 8px;
+    border-radius: var(--radius-medium);
     transition: background-color 0.2s ease;
 }
 
@@ -812,7 +811,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     align-items: center;
     justify-content: center;
     background-color: var(--color-icon-background);
-    border-radius: 6px;
+    border-radius: var(--radius-small);
 }
 
 .activity-content {
@@ -850,10 +849,9 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 
 .modal-content {
     background-color: var(--color-modal-background);
-    border-radius: 12px;
+    border-radius: var(--radius-large);
     width: 400px;
     max-width: 90vw;
-    box-shadow: var(--shadow-modal);
 }
 
 .modal-header {
@@ -877,7 +875,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     cursor: pointer;
     color: var(--color-text-secondary);
     padding: 4px;
-    border-radius: 4px;
+    border-radius: var(--radius-small);
     transition: background-color 0.2s ease;
     display: flex;
     align-items: center;
@@ -913,7 +911,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     width: 100%;
     padding: 8px 12px;
     border: 1px solid var(--color-border);
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     background-color: var(--color-input-background);
     color: var(--color-text-primary);
     font-size: 14px;
@@ -930,7 +928,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 .btn {
     padding: 8px 16px;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
@@ -973,6 +971,13 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
         width: 100%;
         height: auto;
         max-height: 200px;
+        margin: 8px;
+        border-radius: var(--radius-medium);
+    }
+    
+    .page-container {
+        margin: 8px;
+        border-radius: var(--radius-medium);
     }
     
     .top-bar {
@@ -1037,9 +1042,6 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
         grid-template-columns: 1fr;
     }
     
-    .page-content {
-        padding: 16px;
-    }
 }
 
 /* 产品库页面样式 */
@@ -1075,7 +1077,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 
 .product-table-container {
     background: var(--color-card-background);
-    border-radius: 8px;
+    border-radius: var(--radius-medium);
     border: 1px solid var(--color-border);
     overflow: auto;
     margin-bottom: 24px;
@@ -1207,8 +1209,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     gap: 24px;
     padding: 16px;
     background: var(--color-muted);
-    border-radius: 8px;
-    border: 1px solid var(--color-border);
+    border-radius: var(--radius-medium);
 }
 
 .summary-item {
@@ -1277,7 +1278,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     gap: 8px;
     padding: 8px 16px;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
@@ -1337,7 +1338,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 
 .detail-card {
     background: var(--color-card-background);
-    border-radius: 8px;
+    border-radius: var(--radius-medium);
     border: 1px solid var(--color-border);
     overflow: hidden;
 }
@@ -1349,10 +1350,9 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 /* 图表卡片样式 */
 /* 图表卡片简化样式 */
 .chart-card {
-    margin-bottom: 20px;
-    background: var(--color-card-bg);
+    background: var(--color-card-background);
+    border-radius: var(--radius-medium);
     border: 1px solid var(--color-border);
-    border-radius: 8px;
     overflow: hidden;
 }
 
@@ -1366,7 +1366,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 
 .chart-item {
     padding: 20px;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     background: var(--color-card-bg);
 }
 
@@ -1389,7 +1389,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     width: 3px;
     height: 14px;
     background: var(--color-primary);
-    border-radius: 2px;
+    border-radius: var(--radius-small);
 }
 
 /* 图表项图标 */
@@ -1415,7 +1415,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     background: var(--color-primary);
     color: white;
     padding: 2px 6px;
-    border-radius: 8px;
+    border-radius: var(--radius-medium);
     font-size: 11px;
     font-weight: 500;
     opacity: 0;
@@ -1431,10 +1431,6 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 16px;
-    background-color: var(--color-card-background);
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
     font-size: 14px;
     color: var(--color-text-secondary);
     flex-wrap: wrap;
@@ -1468,7 +1464,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     color: var(--color-text-secondary);
     cursor: pointer;
     padding: 4px;
-    border-radius: 4px;
+    border-radius: var(--radius-small);
     transition: all 0.2s ease;
     display: inline-flex;
     align-items: center;
@@ -1502,13 +1498,12 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     padding: 12px;
     background-color: var(--color-card-background);
     border: 1px solid var(--color-border);
-    border-radius: 8px;
+    border-radius: var(--radius-medium);
     transition: all 0.2s ease;
 }
 
 .attachment-item:hover {
     border-color: var(--color-primary);
-    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
 }
 
 .attachment-icon {
@@ -1517,7 +1512,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     justify-content: center;
     width: 32px;
     height: 32px;
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     background-color: var(--color-hover);
     flex-shrink: 0;
 }
@@ -1579,7 +1574,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     background: none;
     color: var(--color-text-secondary);
     cursor: pointer;
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     transition: all 0.2s ease;
 }
 
@@ -1605,22 +1600,135 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     color: var(--color-destructive);
 }
 
+/* JSON模态框样式 */
+.json-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--color-modal-overlay);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.json-modal {
+    background-color: var(--color-modal-background);
+    border-radius: var(--radius-large);
+    width: 80%;
+    max-width: 800px;
+    max-height: 80%;
+    display: flex;
+    flex-direction: column;
+}
+
+.json-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.json-modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.json-modal-close {
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--radius-small);
+    transition: all 0.2s ease;
+}
+
+.json-modal-close:hover {
+    background-color: var(--color-hover);
+    color: var(--color-text-primary);
+}
+
+.json-modal-content {
+    flex: 1;
+    overflow: auto;
+    padding: 20px;
+}
+
+.json-modal-content pre {
+    margin: 0;
+    background-color: var(--color-icon-background);
+    border-radius: var(--radius-medium);
+    padding: 16px;
+    overflow: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.json-modal-content code {
+    color: var(--color-text-primary);
+}
+
+.json-modal-footer {
+    display: flex;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--color-border);
+    justify-content: flex-end;
+}
+
+.json-modal .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: var(--radius-small);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.json-modal .btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+}
+
+.json-modal .btn-primary:hover {
+    background-color: var(--color-primary-hover);
+}
+
+.json-modal .btn-secondary {
+    background-color: var(--color-secondary);
+    color: var(--color-secondary-foreground);
+}
+
+.json-modal .btn-secondary:hover {
+    background-color: var(--color-secondary-hover);
+}
+
 .chart-container {
     padding: 16px;
-    background: var(--color-bg-primary);
-    border-radius: 6px;
+    background: transparent;
+    border-radius: var(--radius-small);
     margin: 0;
     text-align: center;
     height: 200px;
     position: relative;
-    border: 1px solid var(--color-border);
 }
 
 #sales-chart,
 #price-chart {
     max-width: 100%;
     height: 100%;
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     background: transparent;
 }
 
@@ -1672,7 +1780,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     align-items: center;
     gap: 8px;
     background: var(--color-muted);
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     padding: 8px 12px;
     border: 1px solid var(--color-border);
 }
@@ -1700,7 +1808,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     background: var(--color-secondary);
     color: var(--color-secondary-foreground);
     border: none;
-    border-radius: 4px;
+    border-radius: var(--radius-small);
     padding: 6px 10px;
     font-size: 12px;
     cursor: pointer;
@@ -1744,13 +1852,12 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     font-family: monospace;
     background: var(--color-muted);
     padding: 2px 6px;
-    border-radius: 3px;
+    border-radius: var(--radius-small);
     font-size: 12px;
 }
 
 /* Toast通知样式 */
 .toast {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     border: none;
 }
 
@@ -1793,7 +1900,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 
 .video-item {
     background: var(--color-muted);
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     padding: 12px;
     text-align: center;
 }
@@ -1802,7 +1909,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     width: 100%;
     max-width: 100%;
     height: auto;
-    border-radius: 4px;
+    border-radius: var(--radius-small);
 }
 
 .video-title {
@@ -1820,10 +1927,11 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 .image-item {
     position: relative;
     background: var(--color-muted);
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     overflow: hidden;
     cursor: pointer;
     transition: transform 0.2s ease;
+    aspect-ratio: 1/1;
 }
 
 .image-item:hover {
@@ -1832,7 +1940,8 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 
 .image-item img {
     width: 100%;
-    height: 150px;
+    height: 100%;
+    aspect-ratio: 1/1;
     object-fit: cover;
     display: block;
 }
@@ -1854,7 +1963,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 
 .info-section {
     background: var(--color-muted);
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     padding: 16px;
 }
 
@@ -1935,9 +2044,8 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     max-width: 90%;
     max-height: 90%;
     background: white;
-    border-radius: 8px;
+    border-radius: var(--radius-medium);
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .modal-content img {
@@ -1994,7 +2102,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     /* 移动端图表优化 */
     .chart-card {
         margin-bottom: 16px;
-        border-radius: 8px;
+        border-radius: var(--radius-medium);
     }
     
     .chart-card .card-header {
@@ -2025,6 +2133,63 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     }
 }
 
+/* 背景色选择器样式 */
+.background-color-selector {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.bg-color-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-medium);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--color-card-background);
+}
+
+.bg-color-option:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+}
+
+.bg-color-option.active {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--color-primary-foreground);
+}
+
+.bg-color-option input[type="radio"] {
+    display: none;
+}
+
+.bg-color-preview {
+    display: flex;
+    width: 40px;
+    height: 20px;
+    border-radius: var(--radius-small);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+}
+
+.preview-light,
+.preview-dark {
+    flex: 1;
+    height: 100%;
+}
+
+.bg-color-name {
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+}
+
 /* 系统设置弹窗样式 */
 .settings-modal {
     position: fixed;
@@ -2040,8 +2205,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 
 .settings-modal-content {
     background: var(--color-card-background);
-    border-radius: 12px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius-large);
     max-width: 600px;
     width: 90%;
     max-height: 80vh;
@@ -2073,7 +2237,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     color: var(--color-text-secondary);
     cursor: pointer;
     padding: 4px;
-    border-radius: 4px;
+    border-radius: var(--radius-small);
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
@@ -2167,7 +2331,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     gap: 8px;
     padding: 12px;
     border: 2px solid var(--color-border);
-    border-radius: 8px;
+    border-radius: var(--radius-medium);
     cursor: pointer;
     transition: all 0.2s ease;
     background: var(--color-background);
@@ -2191,7 +2355,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 .theme-preview {
     width: 60px;
     height: 40px;
-    border-radius: 4px;
+    border-radius: var(--radius-small);
     overflow: hidden;
     border: 1px solid var(--color-border);
     position: relative;
@@ -2260,7 +2424,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     bottom: 0;
     background-color: var(--color-border);
     transition: 0.3s;
-    border-radius: 24px;
+    border-radius: var(--radius-large);
 }
 
 .slider:before {
@@ -2287,7 +2451,7 @@ input:checked + .slider:before {
 .setting-select {
     padding: 8px 12px;
     border: 1px solid var(--color-border);
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     background: var(--color-background);
     color: var(--color-text-primary);
     font-size: 14px;
@@ -2304,7 +2468,7 @@ input:checked + .slider:before {
 .setting-input {
     padding: 8px 12px;
     border: 1px solid var(--color-border);
-    border-radius: 6px;
+    border-radius: var(--radius-small);
     background: var(--color-background);
     color: var(--color-text-primary);
     font-size: 14px;

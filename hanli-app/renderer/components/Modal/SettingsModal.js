@@ -9,7 +9,8 @@ class SettingsModal {
             theme: 'auto',
             language: 'zh-CN',
             autoRefresh: true,
-            showCollectTime: true
+            showCollectTime: true,
+            backgroundColor: 'default'
         };
         this.callbacks = {
             onSave: null,
@@ -100,6 +101,34 @@ class SettingsModal {
     }
 
     /**
+     * 渲染背景色选项
+     * @returns {string} HTML字符串
+     */
+    renderBackgroundColorOptions() {
+        const backgroundColors = [
+            { value: 'default', name: '默认', light: 'rgba(255, 255, 255, 0.95)', dark: 'rgba(0, 0, 0, 0.95)' },
+            { value: 'blue', name: '海洋蓝', light: 'rgba(59, 130, 246, 0.08)', dark: 'rgba(12, 18, 32, 0.95)' },
+            { value: 'green', name: '森林绿', light: 'rgba(34, 197, 94, 0.08)', dark: 'rgba(12, 26, 12, 0.95)' },
+            { value: 'purple', name: '紫罗兰', light: 'rgba(147, 51, 234, 0.08)', dark: 'rgba(26, 12, 26, 0.95)' },
+            { value: 'orange', name: '夕阳橙', light: 'rgba(249, 115, 22, 0.08)', dark: 'rgba(26, 12, 12, 0.95)' },
+            { value: 'pink', name: '樱花粉', light: 'rgba(236, 72, 153, 0.08)', dark: 'rgba(26, 12, 20, 0.95)' },
+            { value: 'gray', name: '石墨灰', light: 'rgba(107, 114, 128, 0.08)', dark: 'rgba(10, 10, 10, 0.95)' },
+            { value: 'indigo', name: '靛青', light: 'rgba(99, 102, 241, 0.08)', dark: 'rgba(12, 12, 26, 0.95)' }
+        ];
+
+        return backgroundColors.map(color => `
+            <label class="bg-color-option ${this.settings.backgroundColor === color.value ? 'active' : ''}" data-bg-color="${color.value}">
+                <input type="radio" name="backgroundColor" value="${color.value}" ${this.settings.backgroundColor === color.value ? 'checked' : ''}>
+                <span class="bg-color-preview">
+                    <div class="preview-light" style="background-color: ${color.light}"></div>
+                    <div class="preview-dark" style="background-color: ${color.dark}"></div>
+                </span>
+                <span class="bg-color-name">${color.name}</span>
+            </label>
+        `).join('');
+    }
+
+    /**
      * 渲染设置内容
      * @returns {string} HTML字符串
      */
@@ -149,6 +178,15 @@ class SettingsModal {
                             <option value="zh-CN" ${this.settings.language === 'zh-CN' ? 'selected' : ''}>简体中文</option>
                             <option value="en-US" ${this.settings.language === 'en-US' ? 'selected' : ''}>English</option>
                         </select>
+                    </div>
+                </div>
+                
+                <div class="setting-item">
+                    <label class="setting-label">背景色</label>
+                    <div class="setting-control">
+                        <div class="background-color-selector">
+                            ${this.renderBackgroundColorOptions()}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -237,6 +275,27 @@ class SettingsModal {
             });
         }
 
+        // 背景色选择事件
+        const bgColorOptions = modal.querySelectorAll('.bg-color-option');
+        bgColorOptions.forEach(option => {
+            option.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // 移除其他选项的active类
+                bgColorOptions.forEach(opt => opt.classList.remove('active'));
+                // 添加当前选项的active类
+                option.classList.add('active');
+                // 选中对应的radio
+                const radio = option.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.checked = true;
+                    // 预览背景色效果
+                    this.previewBackgroundColor(radio.value);
+                }
+            });
+        });
+
         // 开关事件
         const switches = modal.querySelectorAll('.switch input[type="checkbox"]');
         switches.forEach(switchEl => {
@@ -262,6 +321,20 @@ class SettingsModal {
             document.removeEventListener('keydown', this.handleKeyDown);
             this.handleKeyDown = null;
         }
+    }
+
+    /**
+     * 预览背景色效果
+     * @param {string} bgColor - 背景色名称
+     */
+    previewBackgroundColor(bgColor) {
+        const body = document.body;
+        
+        // 移除现有背景色类
+        body.classList.remove('bg-default', 'bg-blue', 'bg-green', 'bg-purple', 'bg-orange', 'bg-pink', 'bg-gray', 'bg-indigo');
+        
+        // 添加新背景色类
+        body.classList.add(`bg-${bgColor}`);
     }
 
     /**
@@ -297,12 +370,14 @@ class SettingsModal {
         const savedLanguage = localStorage.getItem('app-language') || 'zh-CN';
         const savedAutoRefresh = localStorage.getItem('app-auto-refresh') !== 'false';
         const savedShowCollectTime = localStorage.getItem('app-show-collect-time') !== 'false';
+        const savedBackgroundColor = localStorage.getItem('app-background-color') || 'default';
 
         this.settings = {
             theme: savedTheme,
             language: savedLanguage,
             autoRefresh: savedAutoRefresh,
-            showCollectTime: savedShowCollectTime
+            showCollectTime: savedShowCollectTime,
+            backgroundColor: savedBackgroundColor
         };
 
         // 更新UI
@@ -338,6 +413,22 @@ class SettingsModal {
             languageSelect.value = this.settings.language;
         }
 
+        // 更新背景色选择
+        const bgColorRadios = modal.querySelectorAll('input[name="backgroundColor"]');
+        bgColorRadios.forEach(radio => {
+            radio.checked = radio.value === this.settings.backgroundColor;
+        });
+
+        // 更新背景色选项样式
+        const bgColorOptions = modal.querySelectorAll('.bg-color-option');
+        bgColorOptions.forEach(option => {
+            option.classList.remove('active');
+            const radio = option.querySelector('input[type="radio"]');
+            if (radio && radio.checked) {
+                option.classList.add('active');
+            }
+        });
+
         // 更新开关状态
         const autoRefreshCheckbox = modal.querySelector('#auto-refresh');
         const showCollectTimeCheckbox = modal.querySelector('#show-collect-time');
@@ -370,6 +461,13 @@ class SettingsModal {
             if (languageSelect) {
                 this.settings.language = languageSelect.value;
                 localStorage.setItem('app-language', this.settings.language);
+            }
+
+            // 获取背景色设置
+            const selectedBgColorRadio = modal.querySelector('input[name="backgroundColor"]:checked');
+            if (selectedBgColorRadio) {
+                this.settings.backgroundColor = selectedBgColorRadio.value;
+                localStorage.setItem('app-background-color', this.settings.backgroundColor);
             }
 
             // 获取功能设置

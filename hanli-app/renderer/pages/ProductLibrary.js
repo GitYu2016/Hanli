@@ -23,7 +23,6 @@ class ProductLibraryComponent {
         this.render();
         await this.loadProductLibrary();
         this.bindEvents();
-        this.startAutoRefresh();
     }
 
     /**
@@ -379,7 +378,7 @@ class ProductLibraryComponent {
      */
     getYesterdaySales(product) {
         if (product.yesterdaySales !== undefined) {
-            return product.yesterdaySales.toLocaleString() + '件';
+            return Math.round(product.yesterdaySales).toLocaleString() + '件';
         }
         return '-';
     }

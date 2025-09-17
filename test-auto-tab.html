@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试自动打开Tab功能</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .test-button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 10px 10px 10px 0;
+            transition: background 0.2s;
+        }
+        .test-button:hover {
+            background: #0056CC;
+        }
+        .test-button.secondary {
+            background: #6c757d;
+        }
+        .test-button.secondary:hover {
+            background: #545b62;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+        }
+        .step {
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border-left: 4px solid #007AFF;
+            border-radius: 0 4px 4px 0;
+        }
+        .step h3 {
+            margin: 0 0 10px 0;
+            color: #007AFF;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 测试插件采集自动打开Tab功能</h1>
+        
+        <div class="test-section">
+            <h2>📋 测试步骤</h2>
+            
+            <div class="step">
+                <h3>步骤1: 启动Hanli App</h3>
+                <p>确保Hanli App正在运行，并且服务器在端口3001上监听。</p>
+                <button class="test-button" onclick="checkAppStatus()">检查App状态</button>
+                <div id="app-status" class="status" style="display: none;"></div>
+            </div>
+            
+            <div class="step">
+                <h3>步骤2: 模拟插件采集</h3>
+                <p>模拟插件采集商品数据并唤起App的过程。</p>
+                <button class="test-button" onclick="simulateCollection()">模拟采集商品</button>
+                <div id="collection-status" class="status" style="display: none;"></div>
+            </div>
+            
+            <div class="step">
+                <h3>步骤3: 测试协议调用</h3>
+                <p>测试hanliapp://协议调用，传递goodsId参数。</p>
+                <button class="test-button" onclick="testProtocolCall()">测试协议调用</button>
+                <div id="protocol-status" class="status" style="display: none;"></div>
+            </div>
+            
+            <div class="step">
+                <h3>步骤4: 验证Tab打开</h3>
+                <p>检查App是否自动打开了对应商品ID的产品详情Tab。</p>
+                <button class="test-button secondary" onclick="checkTabOpened()">检查Tab状态</button>
+                <div id="tab-status" class="status" style="display: none;"></div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🔧 调试信息</h2>
+            <div id="debug-info" class="code-block">
+                等待测试开始...
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📝 实现说明</h2>
+            <p>本次实现包含以下修改：</p>
+            <ul>
+                <li><strong>插件端 (collectionManager.js)</strong>: 修改openApp方法，支持传递goodsId参数</li>
+                <li><strong>App主进程 (main.js)</strong>: 解析hanliapp://协议URL参数，提取goodsId</li>
+                <li><strong>App预加载 (preload.js)</strong>: 添加open-product-detail事件监听器</li>
+                <li><strong>App渲染进程 (app.js)</strong>: 监听open-product-detail事件，自动打开产品详情Tab</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let testGoodsId = '123456789012'; // 测试用的商品ID
+        
+        function log(message, type = 'info') {
+            const debugInfo = document.getElementById('debug-info');
+            const timestamp = new Date().toLocaleTimeString();
+            debugInfo.innerHTML += `[${timestamp}] ${message}\n`;
+            debugInfo.scrollTop = debugInfo.scrollHeight;
+        }
+        
+        function showStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+            element.style.display = 'block';
+        }
+        
+        async function checkAppStatus() {
+            log('检查App状态...');
+            try {
+                const response = await fetch('http://localhost:3001/api/health');
+                if (response.ok) {
+                    showStatus('app-status', '✅ App正在运行，服务器连接正常', 'success');
+                    log('App状态检查成功');
+                } else {
+                    showStatus('app-status', '❌ App服务器响应异常', 'error');
+                    log('App状态检查失败: ' + response.status);
+                }
+            } catch (error) {
+                showStatus('app-status', '❌ 无法连接到App服务器', 'error');
+                log('App状态检查失败: ' + error.message);
+            }
+        }
+        
+        async function simulateCollection() {
+            log('模拟插件采集过程...');
+            showStatus('collection-status', '🔄 正在模拟采集...', 'info');
+            
+            try {
+                // 模拟采集数据
+                const goodsInfoData = {
+                    goodsId: testGoodsId,
+                    goodsTitleEn: 'Test Product',
+                    collectTime: new Date().toISOString(),
+                    collectUrl: window.location.href
+                };
+                
+                const monitoringData = {
+                    goodsId: testGoodsId,
+                    goodsSold: 100,
+                    collectTime: new Date().toISOString()
+                };
+                
+                const mediaData = {
+                    goodsId: testGoodsId,
+                    media: []
+                };
+                
+                // 发送数据到App
+                const response = await fetch('http://localhost:3001/api/save-json-files', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        goodsId: goodsInfoData.goodsId,
+                        collectTime: goodsInfoData.collectTime,
+                        goodsInfo: JSON.stringify(goodsInfoData, null, 2),
+                        monitoring: JSON.stringify(monitoringData, null, 2),
+                        mediaData: JSON.stringify(mediaData, null, 2)
+                    })
+                });
+                
+                if (response.ok) {
+                    showStatus('collection-status', '✅ 模拟采集成功，数据已保存', 'success');
+                    log('模拟采集成功，商品ID: ' + testGoodsId);
+                } else {
+                    showStatus('collection-status', '❌ 模拟采集失败', 'error');
+                    log('模拟采集失败: ' + response.status);
+                }
+            } catch (error) {
+                showStatus('collection-status', '❌ 模拟采集出错', 'error');
+                log('模拟采集出错: ' + error.message);
+            }
+        }
+        
+        function testProtocolCall() {
+            log('测试hanliapp://协议调用...');
+            showStatus('protocol-status', '🔄 正在测试协议调用...', 'info');
+            
+            try {
+                // 创建隐藏的iframe来触发协议
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = `hanliapp://open?goodsId=${encodeURIComponent(testGoodsId)}`;
+                document.body.appendChild(iframe);
+                
+                // 立即移除iframe
+                setTimeout(() => {
+                    if (iframe.parentNode) {
+                        iframe.parentNode.removeChild(iframe);
+                    }
+                }, 100);
+                
+                showStatus('protocol-status', '✅ 协议调用已发送', 'success');
+                log('协议调用已发送: hanliapp://open?goodsId=' + testGoodsId);
+                
+                // 提示用户检查App
+                setTimeout(() => {
+                    showStatus('protocol-status', '✅ 协议调用已发送，请检查App是否自动打开了产品详情Tab', 'success');
+                }, 1000);
+                
+            } catch (error) {
+                showStatus('protocol-status', '❌ 协议调用失败', 'error');
+                log('协议调用失败: ' + error.message);
+            }
+        }
+        
+        function checkTabOpened() {
+            log('检查Tab是否已打开...');
+            showStatus('tab-status', 'ℹ️ 请手动检查App中是否出现了商品ID为 ' + testGoodsId + ' 的产品详情Tab', 'info');
+            log('请检查App中是否出现了产品详情Tab');
+        }
+        
+        // 页面加载完成后的初始化
+        window.addEventListener('load', () => {
+            log('测试页面已加载，准备开始测试');
+            log('测试商品ID: ' + testGoodsId);
+        });
+    </script>
+</body>
+</html>

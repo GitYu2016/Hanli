@@ -15,6 +15,23 @@
         console.log('CollectionManager已加载并实例化');
     }
 
+    // 引入CollectionProgressDialog
+    if (typeof CollectionProgressDialog === 'undefined') {
+        console.warn('CollectionProgressDialog未加载，使用备用方案');
+        // 如果CollectionProgressDialog未加载，创建简单的实现
+        window.collectionProgressDialog = {
+            show: () => {},
+            hide: () => {},
+            updateProgress: () => {},
+            updateFileTypeProgress: () => {},
+            showComplete: () => {}
+        };
+    } else {
+        // 正确实例化CollectionProgressDialog
+        window.collectionProgressDialog = new CollectionProgressDialog();
+        console.log('CollectionProgressDialog已加载并实例化');
+    }
+
     // 媒体管理器
     let mediaManager = null;
     let collectButton = null;
@@ -24,7 +41,7 @@
     // 检测是否为Temu商品详情页
     function isTemuProductPage() {
         const url = window.location.href;
-        // 放宽检测条件：只要是temu.com域名就显示按钮
+        // 严格检测条件：URL中必须包含temu.com
         const isTemu = url.includes('temu.com');
         console.log('页面URL检测:', url);
         console.log('是否为Temu商品页:', isTemu);
@@ -41,35 +58,39 @@
 
         collectButton = document.createElement('div');
         collectButton.id = 'hanli-collect-btn';
-        collectButton.innerHTML = '采集';
+        collectButton.innerHTML = '采集并监控';
         collectButton.style.cssText = `
             position: fixed;
-            top: 20px;
-            left: 20px;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             z-index: 10000;
-            background: #ff6b35;
+            background: #000000;
             color: white;
             padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 16px;
+            border-radius: var(--radius-medium);
+            font-size: 14px;
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             transition: all 0.3s ease;
             user-select: none;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         `;
 
         // 悬停效果
         collectButton.addEventListener('mouseenter', () => {
-            collectButton.style.background = '#e55a2b';
-            collectButton.style.transform = 'translateY(-2px)';
+            collectButton.style.background = '#333333';
+            collectButton.style.transform = 'translateX(-50%) translateY(-2px)';
             collectButton.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.4)';
         });
 
         collectButton.addEventListener('mouseleave', () => {
-            collectButton.style.background = '#ff6b35';
-            collectButton.style.transform = 'translateY(0)';
+            collectButton.style.background = '#000000';
+            collectButton.style.transform = 'translateX(-50%) translateY(0)';
             collectButton.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
         });
 
@@ -81,7 +102,8 @@
             }
             console.log('采集按钮被点击');
             updateCollectButtonStatus('collecting');
-            scrapeRawData();
+            // 显示进度对话框并开始采集
+            showCollectionProgressDialog();
         });
 
         document.body.appendChild(collectButton);
@@ -118,7 +140,7 @@
         switch (status) {
             case 'collecting':
                 collectButton.innerHTML = '采集中...';
-                collectButton.style.background = '#ffa726';
+                collectButton.style.background = '#666666';
                 collectButton.style.cursor = 'not-allowed';
                 collectButton.disabled = true;
                 window.isCollecting = true;
@@ -132,13 +154,46 @@
                 break;
             case 'ready':
             default:
-                collectButton.innerHTML = '采集';
-                collectButton.style.background = '#ff6b35';
+                collectButton.innerHTML = '采集并监控';
+                collectButton.style.background = '#000000';
                 collectButton.style.cursor = 'pointer';
                 collectButton.disabled = false;
                 window.isCollecting = false;
                 break;
         }
+    }
+
+    // 显示采集进度对话框
+    function showCollectionProgressDialog() {
+        // 先获取商品ID（从URL或页面数据中提取）
+        let goodsId = '';
+        try {
+            // 尝试从URL中提取商品ID
+            const urlParams = new URLSearchParams(window.location.search);
+            goodsId = urlParams.get('goods_id') || urlParams.get('id') || '';
+            
+            // 如果URL中没有，尝试从页面数据中获取
+            if (!goodsId) {
+                const scripts = Array.from(document.querySelectorAll("script"));
+                const rawScript = scripts.find(s => s.textContent.includes("window.rawData"));
+                if (rawScript) {
+                    const match = rawScript.textContent.match(/window\.rawData\s*=\s*(\{.*?\});/s);
+                    if (match) {
+                        const rawData = JSON.parse(match[1]);
+                        goodsId = rawData?.store?.goodsId || '';
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn('无法获取商品ID:', error);
+        }
+
+        // 估算总文件数（JSON + 图片 + 视频）
+        const estimatedFiles = 3; // JSON文件 + 预估的图片和视频数量
+        window.collectionProgressDialog.show(goodsId, estimatedFiles);
+        
+        // 开始采集流程
+        scrapeRawDataWithProgress();
     }
     
     // 这些函数已移动到MediaManager中
@@ -323,7 +378,7 @@
         const modalContent = document.createElement('div');
         modalContent.style.cssText = `
             background: #2d2d2d;
-            border-radius: 12px;
+            border-radius: var(--radius-large);
             padding: 32px;
             max-width: 400px;
             width: 90%;
@@ -361,7 +416,7 @@
             width: 40px;
             height: 40px;
             background: linear-gradient(135deg, #ff6b35, #f7931e);
-            border-radius: 8px;
+            border-radius: var(--radius-medium);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -455,7 +510,7 @@
             padding: 12px 24px;
             background: transparent;
             border: 1px solid #555;
-            border-radius: 6px;
+            border-radius: var(--radius-small);
             color: #ffffff;
             cursor: pointer;
             font-size: 14px;
@@ -477,7 +532,7 @@
             padding: 12px 24px;
             background: #4a9eff;
             border: none;
-            border-radius: 6px;
+            border-radius: var(--radius-small);
             color: #ffffff;
             cursor: pointer;
             font-size: 14px;
@@ -963,6 +1018,241 @@
         return imageInfoList;
     }
 
+    // 带进度跟踪的采集函数
+    async function scrapeRawDataWithProgress() {
+        try {
+            // 更新进度：开始JSON处理
+            window.collectionProgressDialog.updateFileTypeProgress('json', 0, 1);
+            
+            // 找到包含 window.rawData 的 <script>
+            let scripts = Array.from(document.querySelectorAll("script"));
+            let rawScript = scripts.find(s => s.textContent.includes("window.rawData"));
+            if (!rawScript) {
+                console.error("未找到 window.rawData");
+                window.collectionProgressDialog.hide();
+                updateCollectButtonStatus('ready');
+                return;
+            }
+
+            // 正则提取 JSON 字符串
+            let match = rawScript.textContent.match(/window\.rawData\s*=\s*(\{.*?\});/s);
+            if (!match) {
+                console.error("无法解析 window.rawData");
+                window.collectionProgressDialog.hide();
+                updateCollectButtonStatus('ready');
+                return;
+            }
+
+            let jsonStr = match[1];
+            let rawData;
+            try {
+                rawData = JSON.parse(jsonStr);
+            } catch (e) {
+                console.error("JSON解析失败: " + e.message);
+                window.collectionProgressDialog.hide();
+                updateCollectButtonStatus('ready');
+                return;
+            }
+
+            // 更新进度：JSON处理完成
+            window.collectionProgressDialog.updateFileTypeProgress('json', 1, 1);
+            window.collectionProgressDialog.updateProgress(1);
+
+            // 提取商品信息
+            const goodsInfo = extractGoodsInfo(rawData);
+            const mediaData = await processMediaWithProgress(rawData, goodsInfo.goodsId);
+            
+            // 更新总文件数
+            const totalFiles = 1 + mediaData.media.length; // JSON + 媒体文件
+            window.collectionProgressDialog.updateProgress(1, totalFiles);
+
+            // 使用CollectionManager执行完整采集流程（不自动打开App）
+            await window.collectionManager.executeCollectionWithProgress(
+                goodsInfo.goodsInfoData, 
+                goodsInfo.monitoringData, 
+                mediaData, 
+                false // 不自动打开App
+            );
+
+            // 显示采集完成
+            window.collectionProgressDialog.showComplete();
+            updateCollectButtonStatus('completed');
+            
+            // 通知采集完成事件
+            document.dispatchEvent(new CustomEvent('hanliCollectionCompleted'));
+
+        } catch (error) {
+            console.error('采集流程失败:', error);
+            window.collectionProgressDialog.hide();
+            updateCollectButtonStatus('ready');
+            alert('采集失败: ' + error.message);
+        }
+    }
+
+    // 处理媒体文件并更新进度
+    async function processMediaWithProgress(rawData, goodsId) {
+        // 使用MediaManager处理媒体文件
+        if (!mediaManager) {
+            console.error('MediaManager未初始化');
+            return { media: [] };
+        }
+        
+        // 获取收集到的图片和视频
+        const pageImages = mediaManager.getAllCollectedImages();
+        const pageVideos = mediaManager.getAllCollectedVideos();
+        
+        // 合并所有图片源
+        let allImages = [...(rawData?.store?.goods?.mainImages || [])];
+        allImages = [...allImages, ...pageImages];
+        allImages = [...new Set(allImages)]; // 去重
+        
+        // 更新图片进度
+        window.collectionProgressDialog.updateFileTypeProgress('images', 0, allImages.length);
+        
+        // 使用MediaManager进行图片筛选
+        const allImageInfo = await mediaManager.detectAndFilterImages(allImages, {
+            minWidth: 800,
+            minHeight: 800,
+            maxWidth: 10000,
+            maxHeight: 10000,
+            targetWidth: 800,
+            targetHeight: 800,
+            tolerance: 50,
+            maxCount: 100
+        });
+        
+        // 筛选出符合尺寸要求的图片
+        const filteredImageInfo = allImageInfo.filter(img => {
+            return img.width >= 800 && img.height >= 800;
+        });
+        
+        // 更新图片进度
+        window.collectionProgressDialog.updateFileTypeProgress('images', filteredImageInfo.length, allImages.length);
+        
+        // 处理视频数据
+        window.collectionProgressDialog.updateFileTypeProgress('videos', 0, pageVideos.length);
+        
+        const allVideoInfo = await mediaManager.detectAndFilterVideos(pageVideos, {
+            minSize: 0,
+            maxSize: 1024 * 1024 * 1024,
+            maxCount: 50
+        });
+        
+        // 更新视频进度
+        window.collectionProgressDialog.updateFileTypeProgress('videos', allVideoInfo.length, pageVideos.length);
+        
+        // 生成媒体数据
+        const mediaData = mediaManager.generateMediaData(goodsId, filteredImageInfo, allVideoInfo);
+        
+        return mediaData;
+    }
+
+    // 提取商品信息
+    function extractGoodsInfo(rawData) {
+        // 取出标题和价格（根据 Temu rawData 结构调整字段）
+        let goodsId = rawData?.store?.goodsId || "";
+        // 遍历 crumbOptList
+        let crumbOptList = rawData?.store?.crumbOptList || [];
+        let goodsCat1 = ''
+        if (crumbOptList.length > 1) {
+            goodsCat1 = crumbOptList[1].optName
+        }
+        let goodsCat2 = ''
+        if (crumbOptList.length > 2) {
+            goodsCat2 = crumbOptList[2].optName
+        }
+
+        let goodsTitleEn = rawData?.store?.goods?.goodsName || "";
+        let itemId = rawData?.store?.goods?.itemId || "";
+        let goodsCat3 = goodsTitleEn
+        let goodsSoldRaw = rawData?.store?.goods?.sideSalesTip || "";
+        let goodsSold = extractSoldNumeric(goodsSoldRaw);
+        let goodsPropertys = rawData?.store?.goods?.goodsProperty || [];
+        let skuInfoList = rawData?.store?.sku || [];
+        let skuList = [];
+        for (let sku of skuInfoList) {
+            let specs = sku?.specs || [];
+            let skuName = joinObjectField(specs, 'specValue', '|');
+
+            skuList.push({
+                skuId: sku.skuId,
+                skuName: skuName,
+                skuPic: sku.thumbUrl,
+                goodsPromoPrice: sku.normalPriceStr,
+                goodsNormalPrice: sku.normalLinePriceStr
+            });
+        }
+
+        let mallData = rawData?.store?.moduleMap?.mallModule?.data?.mallData || {};
+        let storeId = mallData?.mallId || '';
+        let storeName = mallData?.mallName || '';
+        let storeRating = mallData?.mallStar || '';
+        let storeSoldRaw = (mallData?.goodsSalesNumUnit || []).join(' ');
+        let storeFollowersRaw = (mallData?.followerNumUnit || []).join(' ');
+        let storeltemsNumRaw = (mallData?.goodsNumUnit || []).join(' ');
+        let storeStartYearRaw = joinObjectField((mallData?.mallTags || []), 'text', '|');
+        
+        let storeSold = extractStoreSoldNumeric(storeSoldRaw);
+        let storeFollowers = extractStoreFollowersNumeric(storeFollowersRaw);
+        let storeltemsNum = extractStoreItemsNumeric(storeltemsNumRaw);
+        let storeStartYear = extractStoreStartYearNumeric(storeStartYearRaw);
+        let goodsPropertyInfo = {};
+        for (let goodsProperty of goodsPropertys) {
+            let goodsDescKey = goodsProperty?.["key"] || '';
+            let goodsDescValues = (goodsProperty?.["values"] || []).join('|');
+            goodsPropertyInfo[goodsDescKey] = goodsDescValues
+        }
+
+        // 生成当前时间戳（东八区ISO格式）
+        const now = new Date();
+        const collectTime = now.toLocaleString('sv-SE', { 
+            timeZone: 'Asia/Shanghai' 
+        }).replace(' ', 'T');
+
+        // 商品信息数据
+        let goodsInfoData = {
+            goodsId,
+            itemId,
+            goodsCat1,
+            goodsCat2,
+            goodsCat3,
+            goodsTitleEn,
+            goodsTitleCn: "", // 留空，支持用户编辑
+            skuList,
+            goodsPropertyInfo,
+            collectTime,
+            collectUrl: window.location.href // 添加采集链接
+        };
+
+        // 商品监控数据
+        let monitoringData = {
+            goodsId,
+            listingDate: "", // 留空
+            collectTime,
+            goodsSold,
+            goodsCat1,
+            goodsCat2,
+            goodsCat3,
+            skuList: skuList.map(sku => ({
+                skuId: sku.skuId,
+                skuName: sku.skuName,
+                skuPic: sku.skuPic,
+                goodsPromoPrice: sku.goodsPromoPrice
+            })),
+            storeId,
+            storeName,
+            storeData: {
+                storeRating,
+                storeSold,
+                storeFollowers,
+                storeltemsNum,
+                storeStartYear
+            }
+        };
+
+        return { goodsInfoData, monitoringData };
+    }
+
     async function scrapeRawData() {
         // 找到包含 window.rawData 的 <script>
         let scripts = Array.from(document.querySelectorAll("script"));
@@ -1252,6 +1542,17 @@
         updateCollectButtonStatus('ready');
         // 通知popup.js采集失败
         window.dispatchEvent(new CustomEvent('hanliPopupCollectionFailed'));
+    });
+
+    // 监听取消采集事件
+    document.addEventListener('hanliCollectionCancelled', () => {
+        console.log('收到取消采集通知，重置按钮状态');
+        updateCollectButtonStatus('ready');
+        window.isCollecting = false;
+        // 隐藏进度对话框
+        if (window.collectionProgressDialog) {
+            window.collectionProgressDialog.hide();
+        }
     });
 
 })();

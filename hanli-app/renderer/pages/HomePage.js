@@ -7,8 +7,7 @@ class HomePageComponent {
         this.container = null;
         this.dashboardData = {
             productCount: 0,
-            todayCollect: 0,
-            averageRating: 0
+            todayCollect: 0
         };
     }
 
@@ -51,13 +50,6 @@ class HomePageComponent {
                     <div class="card-value" id="today-collect">0</div>
                 </div>
                 
-                <div class="dashboard-card">
-                    <div class="card-icon">
-                        <i class="ph ph-star"></i>
-                    </div>
-                    <div class="card-title">平均评分</div>
-                    <div class="card-value" id="average-rating">0</div>
-                </div>
             </div>
             
             <div class="quick-actions">
@@ -78,10 +70,6 @@ class HomePageComponent {
                         <span class="btn-text">帮助</span>
                     </button>
                     
-                    <button class="action-btn" onclick="homePageComponentInstance.refreshData()">
-                        <i class="ph ph-arrow-clockwise btn-icon"></i>
-                        <span class="btn-text">刷新数据</span>
-                    </button>
                 </div>
             </div>
             
@@ -109,8 +97,6 @@ class HomePageComponent {
             // 获取今日采集数据（这里可以扩展为真实的API）
             this.dashboardData.todayCollect = await this.getTodayCollectCount();
 
-            // 获取平均评分（这里可以扩展为真实的API）
-            this.dashboardData.averageRating = await this.getAverageRating();
 
             // 更新UI
             this.updateDashboardUI();
@@ -130,7 +116,6 @@ class HomePageComponent {
     updateDashboardUI() {
         const productCountEl = document.getElementById('product-count');
         const todayCollectEl = document.getElementById('today-collect');
-        const averageRatingEl = document.getElementById('average-rating');
 
         if (productCountEl) {
             productCountEl.textContent = this.dashboardData.productCount.toLocaleString();
@@ -140,9 +125,6 @@ class HomePageComponent {
             todayCollectEl.textContent = this.dashboardData.todayCollect.toLocaleString();
         }
         
-        if (averageRatingEl) {
-            averageRatingEl.textContent = this.dashboardData.averageRating.toFixed(1);
-        }
     }
 
     /**
@@ -166,25 +148,6 @@ class HomePageComponent {
         }
     }
 
-    /**
-     * 获取平均评分
-     * @returns {Promise<number>}
-     */
-    async getAverageRating() {
-        try {
-            // 这里可以实现真实的评分统计
-            // 暂时返回模拟数据
-            const response = await fetch('/api/products/average-rating');
-            if (response.ok) {
-                const data = await response.json();
-                return data.averageRating || 0;
-            }
-            return 4.5; // 默认评分
-        } catch (error) {
-            console.error('获取平均评分失败:', error);
-            return 4.5;
-        }
-    }
 
     /**
      * 加载最近活动
@@ -311,13 +274,6 @@ class HomePageComponent {
         alert('帮助功能开发中...');
     }
 
-    /**
-     * 刷新数据
-     */
-    async refreshData() {
-        await this.loadDashboardData();
-        this.showToast('数据已刷新', 'success');
-    }
 
     /**
      * 显示错误信息
@@ -353,8 +309,7 @@ class HomePageComponent {
         this.container = null;
         this.dashboardData = {
             productCount: 0,
-            todayCollect: 0,
-            averageRating: 0
+            todayCollect: 0
         };
     }
 

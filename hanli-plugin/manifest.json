@@ -21,7 +21,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["mediaManager.js", "collectionManager.js", "content.js"],
+      "js": ["mediaManager.js", "collectionManager.js", "components/CollectionProgressDialog.js", "content.js"],
       "run_at": "document_end"
     }
   ]

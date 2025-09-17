@@ -125,10 +125,10 @@ async function saveJsonFiles(goodsId, jsonData) {
     return files;
 }
 
-// 生成随机延迟时间（3-10秒）
+// 生成随机延迟时间（2-6秒）
 function getRandomDelay() {
-    const minDelay = 3000; // 3秒
-    const maxDelay = 10000; // 10秒
+    const minDelay = 2000; // 2秒
+    const maxDelay = 6000; // 6秒
     return Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
 }
 
@@ -634,6 +634,60 @@ app.get('/api/products/:goodsId/attachments', async (req, res) => {
         res.status(500).json({ 
             error: '获取附件列表失败',
             attachments: []
+        });
+    }
+});
+
+// 读取文件内容
+app.get('/api/products/:goodsId/file/:fileName', async (req, res) => {
+    try {
+        const { goodsId, fileName } = req.params;
+        const goodsLibraryDir = path.join(dataDir, 'goods-library');
+        const productDir = path.join(goodsLibraryDir, goodsId);
+        const filePath = path.join(productDir, fileName);
+        
+        // 检查产品目录是否存在
+        if (!fs.existsSync(productDir)) {
+            return res.status(404).json({ 
+                error: '产品目录不存在'
+            });
+        }
+        
+        // 检查文件是否存在
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ 
+                error: '文件不存在'
+            });
+        }
+        
+        // 检查文件扩展名，只允许JSON和PDF
+        const ext = path.extname(fileName).toLowerCase();
+        if (ext !== '.json' && ext !== '.pdf') {
+            return res.status(400).json({ 
+                error: '不支持的文件类型'
+            });
+        }
+        
+        // 读取文件内容
+        if (ext === '.json') {
+            const content = await fsPromises.readFile(filePath, 'utf8');
+            res.json({
+                success: true,
+                content: content,
+                fileName: fileName
+            });
+        } else {
+            // PDF文件返回文件流
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+            const fileStream = fs.createReadStream(filePath);
+            fileStream.pipe(res);
+        }
+        
+    } catch (error) {
+        console.error('读取文件失败:', error);
+        res.status(500).json({ 
+            error: '读取文件失败'
         });
     }
 });

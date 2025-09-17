@@ -29,6 +29,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.on('navigate-to-product', callback);
     },
     
+    // 监听打开产品详情页请求
+    onOpenProductDetail: (callback) => {
+        ipcRenderer.on('open-product-detail', callback);
+    },
+    
     // 移除监听器
     removeAllListeners: (channel) => {
         ipcRenderer.removeAllListeners(channel);
@@ -134,5 +139,17 @@ window.addEventListener('DOMContentLoaded', () => {
         // 触发页面上的商品详情页打开功能
         const customEvent = new CustomEvent('navigate-to-product', { detail: data });
         window.dispatchEvent(customEvent);
+    });
+    
+    // 监听打开产品详情页请求
+    window.electronAPI.onOpenProductDetail((event, data) => {
+        console.log('preload.js: 收到打开产品详情页请求:', data);
+        // 直接调用页面上的产品详情页打开功能
+        if (window.homePageInstance && data && data.goodsId) {
+            console.log('preload.js: 调用homePageInstance.viewProductDetail，商品ID:', data.goodsId);
+            window.homePageInstance.viewProductDetail(data.goodsId);
+        } else {
+            console.warn('preload.js: 无法调用viewProductDetail，homePageInstance:', !!window.homePageInstance, 'data:', data);
+        }
     });
 });

@@ -75,8 +75,8 @@ class ProductCharts {
                 date.setDate(date.getDate() - (trendData.length - 1 - index));
                 labels.push(date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }));
 
-                // 销量数据 - 使用goodsSold字段
-                sales.push(item.goodsSold || 0);
+                // 销量数据 - 使用goodsSold字段，确保为整数
+                sales.push(Math.round(item.goodsSold || 0));
 
                 // 价格数据 - 使用goodsPromoPrice和goodsNormalPrice字段
                 promoPrice.push(this.parsePrice(item.goodsPromoPrice) || 0);
@@ -105,8 +105,8 @@ class ProductCharts {
         const today = new Date();
         const labels = [today.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })];
         
-        // 从监控数据中获取销量
-        const sales = monitoringData ? (monitoringData.goodsSold || 0) : 0;
+        // 从监控数据中获取销量，确保为整数
+        const sales = monitoringData ? Math.round(monitoringData.goodsSold || 0) : 0;
         
         // 从产品数据中获取价格
         let promoPrice = 0;
@@ -161,12 +161,13 @@ class ProductCharts {
                 datasets: [{
                     label: '销量',
                     data: this.chartData.sales,
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderColor: 'rgba(255, 255, 255, 0.8)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
                     tension: 0.4,
                     fill: true,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    pointStyle: 'line'
                 }]
             },
             options: {
@@ -188,7 +189,7 @@ class ProductCharts {
                     y: {
                         beginAtZero: true,
                         grid: {
-                            color: 'rgba(0, 0, 0, 0.1)'
+                            color: 'rgba(255, 255, 255, 0.1)'
                         },
                         ticks: {
                             callback: function(value) {
@@ -228,21 +229,23 @@ class ProductCharts {
                 datasets: [{
                     label: '促销价格',
                     data: this.chartData.promoPrice,
-                    borderColor: '#ef4444',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderColor: 'rgba(255, 255, 255, 0.6)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
                     tension: 0.4,
                     fill: true,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    pointStyle: 'line'
                 }, {
                     label: '正常价格',
                     data: this.chartData.normalPrice,
-                    borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderColor: 'rgba(255, 255, 255, 0.4)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
                     tension: 0.4,
                     fill: true,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    pointStyle: 'line'
                 }]
             },
             options: {
@@ -265,7 +268,7 @@ class ProductCharts {
                     y: {
                         beginAtZero: true,
                         grid: {
-                            color: 'rgba(0, 0, 0, 0.1)'
+                            color: 'rgba(255, 255, 255, 0.1)'
                         },
                         ticks: {
                             callback: function(value) {
@@ -317,18 +320,16 @@ class ProductCharts {
     updateDataLabels() {
         if (!this.chartData) return;
         
-        // 更新销量图表标签
+        // 移除销量图表标签的右上角数字
         const salesTitle = document.querySelector('.chart-item:nth-child(1) .chart-item-title');
         if (salesTitle) {
-            const totalSales = this.chartData.sales.reduce((sum, val) => sum + val, 0);
-            salesTitle.setAttribute('data-count', totalSales);
+            salesTitle.removeAttribute('data-count');
         }
         
-        // 更新价格图表标签
+        // 移除价格图表标签的右上角数字
         const priceTitle = document.querySelector('.chart-item:nth-child(2) .chart-item-title');
         if (priceTitle) {
-            const avgPrice = this.chartData.normalPrice.reduce((sum, val) => sum + val, 0) / this.chartData.normalPrice.length;
-            priceTitle.setAttribute('data-count', `¥${Math.round(avgPrice)}`);
+            priceTitle.removeAttribute('data-count');
         }
         
     }
