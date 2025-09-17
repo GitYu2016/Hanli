@@ -125,6 +125,18 @@ async function saveJsonFiles(goodsId, jsonData) {
     return files;
 }
 
+// 生成随机延迟时间（3-10秒）
+function getRandomDelay() {
+    const minDelay = 3000; // 3秒
+    const maxDelay = 10000; // 10秒
+    return Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+}
+
+// 延迟函数
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 // 下载媒体文件
 async function downloadMediaFiles(goodsId, mediaList) {
     const goodsLibraryDir = path.join(dataDir, 'goods-library');
@@ -135,7 +147,8 @@ async function downloadMediaFiles(goodsId, mediaList) {
     
     const downloadedFiles = [];
     
-    for (const media of mediaList) {
+    for (let i = 0; i < mediaList.length; i++) {
+        const media = mediaList[i];
         try {
             // 使用Node.js的https模块下载文件
             const https = require('https');
@@ -176,8 +189,17 @@ async function downloadMediaFiles(goodsId, mediaList) {
             media.path = path.relative(dataDir, filePath);
             downloadedFiles.push(filePath);
             
+            console.log(`成功下载文件: ${filename}`);
+            
         } catch (error) {
             console.error('下载媒体文件失败:', media.url, error.message);
+        }
+        
+        // 如果不是最后一个文件，添加随机延迟
+        if (i < mediaList.length - 1) {
+            const delayTime = getRandomDelay();
+            console.log(`等待 ${delayTime}ms 后下载下一个文件...`);
+            await delay(delayTime);
         }
     }
     
@@ -457,6 +479,108 @@ app.get('/api/products/:goodsId', async (req, res) => {
         });
     }
 });
+
+// 获取产品趋势数据
+app.get('/api/products/:goodsId/trend', async (req, res) => {
+    try {
+        const { goodsId } = req.params;
+        const goodsLibraryDir = path.join(dataDir, 'goods-library');
+        const productDir = path.join(goodsLibraryDir, goodsId);
+        
+        // 读取当前产品数据
+        const productJsonPath = path.join(productDir, 'product.json');
+        const monitoringJsonPath = path.join(productDir, 'monitoring.json');
+        
+        let product = {};
+        let monitoring = {};
+        
+        try {
+            const productData = await fsPromises.readFile(productJsonPath, 'utf8');
+            product = JSON.parse(productData);
+        } catch (error) {
+            console.warn(`读取商品信息失败: ${goodsId}`, error.message);
+        }
+        
+        try {
+            const monitoringData = await fsPromises.readFile(monitoringJsonPath, 'utf8');
+            monitoring = JSON.parse(monitoringData);
+        } catch (error) {
+            console.warn(`读取监控数据失败: ${goodsId}`, error.message);
+        }
+        
+        // 合并数据
+        const combinedData = { ...product, ...monitoring };
+        
+        // 生成趋势数据
+        const trendData = generateTrendData(combinedData);
+        
+        res.json({
+            success: true,
+            trendData: trendData
+        });
+        
+    } catch (error) {
+        console.error('获取产品趋势数据失败:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// 生成基于真实数据的趋势数据
+function generateTrendData(product) {
+    const data = {
+        labels: [],
+        sales: [],
+        promoPrice: [],
+        normalPrice: [],
+        rating: []
+    };
+    
+    // 获取真实数据
+    const realSales = product.goodsSold || 0;
+    const realPromoPrice = extractPrice(product.skuList?.[0]?.goodsPromoPrice);
+    const realNormalPrice = extractPrice(product.skuList?.[0]?.goodsNormalPrice);
+    const realRating = product.storeData?.storeRating || 0;
+    
+    // 获取采集时间
+    const collectTime = product.collectTime;
+    let displayDate;
+    
+    if (collectTime) {
+        // 解析采集时间
+        const collectDate = new Date(collectTime);
+        displayDate = collectDate.toLocaleDateString('zh-CN', { 
+            month: '2-digit', 
+            day: '2-digit',
+            year: '2-digit'
+        });
+    } else {
+        // 如果没有采集时间，使用当前日期
+        displayDate = new Date().toLocaleDateString('zh-CN', { 
+            month: '2-digit', 
+            day: '2-digit',
+            year: '2-digit'
+        });
+    }
+    
+    // 只显示真实的数据点
+    data.labels.push(displayDate);
+    data.sales.push(realSales);
+    data.promoPrice.push(realPromoPrice);
+    data.normalPrice.push(realNormalPrice);
+    data.rating.push(realRating);
+    
+    return data;
+}
+
+// 提取价格数值
+function extractPrice(priceStr) {
+    if (!priceStr) return 0;
+    const match = priceStr.match(/[\d.]+/);
+    return match ? parseFloat(match[0]) : 0;
+}
 
 // 启动服务器
 async function startServer() {

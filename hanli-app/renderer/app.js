@@ -1,16 +1,8 @@
-// 页面图标定义
+// 页面图标定义 - 使用 Phosphor Icons
 const PAGE_ICONS = {
-    home: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M9 22V12H15V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`,
-    goodsDetail: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M21 16V8C21 7.46957 20.7893 6.96086 20.4142 6.58579C20.0391 6.21071 19.5304 6 19 6H5C4.46957 6 3.96086 6.21071 3.58579 6.58579C3.21071 6.96086 3 7.46957 3 8V16C3 16.5304 3.21071 17.0391 3.58579 17.4142C3.96086 17.7893 4.46957 18 5 18H19C19.5304 18 20.0391 17.7893 20.4142 17.4142C20.7893 17.0391 21 16.5304 21 16Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M7 10H17M7 14H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`,
-    goodsList: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M8 6H21M8 12H21M8 18H21M3 6H3.01M3 12H3.01M3 18H3.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`
+    home: `<i class="ph ph-house"></i>`,
+    goodsDetail: `<i class="ph ph-image"></i>`,
+    goodsList: `<i class="ph ph-package"></i>`
 };
 
 // Tab管理类
@@ -129,7 +121,9 @@ class TabManager {
         tabDiv.innerHTML = `
             <div class="tab-icon">${icon}</div>
             <div class="tab-text">${tab.title}</div>
-            <div class="tab-close">×</div>
+                        <div class="tab-close">
+                            <i class="ph ph-x"></i>
+                        </div>
         `;
 
         // 添加点击事件
@@ -193,6 +187,7 @@ class HomePage {
         this.detectEnvironment();
         this.bindEvents();
         this.renderTabs();
+        // 使用HTML中的静态首页，不需要调用renderHomePage()
         this.loadDashboardData();
         this.applyStoredSettings();
         this.setupIPCListeners();
@@ -427,6 +422,8 @@ class HomePage {
             // 如果存在，切换到该Tab
             this.tabManager.setActiveTab(existingTab.id);
             this.tabManager.renderTabs();
+            // 手动触发页面内容渲染
+            this.renderPageContent(pageData.type);
         } else {
             // 如果不存在，创建新Tab
             this.tabManager.addTab(pageData);
@@ -488,7 +485,10 @@ class HomePage {
         
         switch (pageType) {
             case 'home':
-                this.renderHomePage();
+                // 首页使用HTML中的静态内容，恢复原始HTML
+                this.restoreHomePage();
+                // 确保数据加载正确
+                this.loadDashboardData();
                 break;
             case 'goodsList':
                 this.loadProductLibrary();
@@ -503,6 +503,29 @@ class HomePage {
                 console.warn('未知的页面类型:', pageType);
         }
     }
+    
+    // 恢复首页HTML内容
+    restoreHomePage() {
+        const pageContainer = document.getElementById('page-container');
+        pageContainer.innerHTML = `
+            <div class="page-content">
+                <div class="welcome-section">
+                    <h1 class="welcome-title">欢迎使用Hanli</h1>
+                    <p class="welcome-desc">高效管理您的产品信息、图片资源和数据分析</p>
+                </div>
+                
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <div class="card-icon">
+                            <i class="ph ph-package"></i>
+                        </div>
+                        <div class="card-title">产品总数</div>
+                        <div class="card-value" id="product-count">0</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
 
     // 渲染首页
     renderHomePage() {
@@ -516,7 +539,9 @@ class HomePage {
                 
                 <div class="dashboard-stats">
                     <div class="stat-card">
-                        <div class="stat-icon">📦</div>
+                        <div class="stat-icon">
+                            <i class="ph ph-package"></i>
+                        </div>
                         <div class="stat-content">
                             <div class="stat-number" id="product-count">-</div>
                             <div class="stat-label">产品总数</div>
@@ -690,7 +715,7 @@ class HomePage {
                     <h1 class="page-title">产品库</h1>
                     <div class="page-actions">
                         <button class="btn btn-primary" onclick="homePageInstance.refreshProductLibrary()">
-                            <span>🔄</span> 刷新
+                            <i class="ph ph-arrow-clockwise"></i> 刷新
                         </button>
                     </div>
                 </div>
@@ -981,16 +1006,73 @@ class HomePage {
                     <!-- 第一个卡片：图表 -->
                     <div class="detail-section">
                         <h3 class="section-title">数据趋势</h3>
+                        
+                        <!-- 销量图表 -->
                         <div class="detail-card chart-card">
+                            <div class="card-header">
+                                <h4 class="chart-title">销量趋势</h4>
+                            </div>
                             <div class="card-content">
                                 <div class="chart-container">
-                                    <canvas id="product-chart" width="800" height="400"></canvas>
+                                    <canvas id="sales-chart" width="800" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 价格图表 -->
+                        <div class="detail-card chart-card">
+                            <div class="card-header">
+                                <h4 class="chart-title">价格趋势</h4>
+                            </div>
+                            <div class="card-content">
+                                <div class="chart-container">
+                                    <canvas id="price-chart" width="800" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 评分图表 -->
+                        <div class="detail-card chart-card">
+                            <div class="card-header">
+                                <h4 class="chart-title">评分趋势</h4>
+                            </div>
+                            <div class="card-content">
+                                <div class="chart-container">
+                                    <canvas id="rating-chart" width="800" height="200"></canvas>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- 第二个卡片：媒体 -->
+                    <!-- 第二个卡片：采集信息 -->
+                    <div class="detail-section">
+                        <h3 class="section-title">采集信息</h3>
+                        <div class="detail-card">
+                            <div class="card-content">
+                                <div class="url-section">
+                                    <div class="url-label">采集链接：</div>
+                                    <div class="url-container">
+                                        <a href="${product.goodsInfo?.collectUrl || '#'}" 
+                                           class="url-link" 
+                                           target="_blank" 
+                                           rel="noopener noreferrer"
+                                           id="collect-url-link">
+                                            ${product.goodsInfo?.collectUrl || '暂无采集链接'}
+                                        </a>
+                                        <button class="copy-btn" id="copy-url-btn" title="复制链接">
+                                            <i class="ph ph-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="collect-time">
+                                    <span class="time-label">采集时间：</span>
+                                    <span class="time-value">${product.goodsInfo?.collectTime || product.monitoring?.collectTime || '未知'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 第三个卡片：媒体 -->
                     <div class="detail-section">
                         <h3 class="section-title">媒体资源</h3>
                         <div class="detail-card media-card">
@@ -1017,6 +1099,119 @@ class HomePage {
         
         // 渲染图表
         this.renderProductChart(product);
+        
+        // 初始化URL功能
+        this.initUrlFeatures();
+    }
+    
+    // 初始化URL相关功能
+    initUrlFeatures() {
+        const copyBtn = document.getElementById('copy-url-btn');
+        const urlLink = document.getElementById('collect-url-link');
+        
+        if (copyBtn) {
+            copyBtn.addEventListener('click', () => {
+                this.copyUrlToClipboard();
+            });
+        }
+        
+        if (urlLink) {
+            urlLink.addEventListener('click', (e) => {
+                // 如果链接是占位符，阻止默认行为
+                if (urlLink.href === '#' || urlLink.textContent === '暂无采集链接') {
+                    e.preventDefault();
+                    this.showToast('暂无有效的采集链接', 'warning');
+                }
+            });
+        }
+    }
+    
+    // 复制URL到剪贴板
+    async copyUrlToClipboard() {
+        const urlLink = document.getElementById('collect-url-link');
+        if (!urlLink) return;
+        
+        const url = urlLink.href;
+        if (url === '#' || urlLink.textContent === '暂无采集链接') {
+            this.showToast('暂无有效的采集链接', 'warning');
+            return;
+        }
+        
+        try {
+            await navigator.clipboard.writeText(url);
+            this.showToast('链接已复制到剪贴板', 'success');
+            
+            // 更新按钮状态
+            const copyBtn = document.getElementById('copy-url-btn');
+            if (copyBtn) {
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '✅';
+                copyBtn.style.backgroundColor = '#28a745';
+                
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.style.backgroundColor = '';
+                }, 2000);
+            }
+        } catch (error) {
+            console.error('复制失败:', error);
+            this.showToast('复制失败，请手动复制', 'error');
+        }
+    }
+    
+    // 显示Toast通知
+    showToast(message, type = 'info') {
+        // 创建toast元素
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        
+        // 添加样式
+        Object.assign(toast.style, {
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            padding: '12px 20px',
+            borderRadius: '6px',
+            color: 'white',
+            fontSize: '14px',
+            fontWeight: '500',
+            zIndex: '10000',
+            opacity: '0',
+            transform: 'translateX(100%)',
+            transition: 'all 0.3s ease',
+            maxWidth: '300px',
+            wordWrap: 'break-word'
+        });
+        
+        // 根据类型设置背景色
+        const colors = {
+            success: '#28a745',
+            error: '#dc3545',
+            warning: '#ffc107',
+            info: '#17a2b8'
+        };
+        toast.style.backgroundColor = colors[type] || colors.info;
+        
+        // 添加到页面
+        document.body.appendChild(toast);
+        
+        // 显示动画
+        setTimeout(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(0)';
+        }, 100);
+        
+        // 自动隐藏
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 300);
+        }, 3000);
     }
 
     // 渲染媒体内容
@@ -1149,68 +1344,311 @@ class HomePage {
     }
 
     // 渲染产品图表
-    renderProductChart(product) {
-        const ctx = document.getElementById('product-chart');
-        if (!ctx) return;
-        
+    async renderProductChart(product) {
         // 检查Chart.js是否已加载
         if (typeof Chart === 'undefined') {
-            console.warn('Chart.js未加载，使用简单图表');
-            this.renderSimpleChart(ctx, this.generateMockChartData(product));
+            console.warn('Chart.js未加载，无法显示图表');
             return;
         }
         
-        // 生成模拟数据
-        const mockData = this.generateMockChartData(product);
+        try {
+            // 从API获取真实趋势数据
+            const response = await fetch(`http://localhost:3001/api/products/${product.goodsId}/trend`);
+            if (response.ok) {
+                const result = await response.json();
+                const chartData = result.trendData;
+                
+                // 渲染3个独立的图表
+                this.renderSalesChart(chartData);
+                this.renderPriceChart(chartData);
+                this.renderRatingChart(chartData);
+            } else {
+                // 如果API调用失败，使用本地生成的数据
+                console.warn('无法获取真实趋势数据，使用本地数据');
+                const mockData = this.generateMockChartData(product);
+                this.renderSalesChart(mockData);
+                this.renderPriceChart(mockData);
+                this.renderRatingChart(mockData);
+            }
+        } catch (error) {
+            console.error('获取趋势数据失败:', error);
+            // 如果API调用失败，使用本地生成的数据
+            const mockData = this.generateMockChartData(product);
+            this.renderSalesChart(mockData);
+            this.renderPriceChart(mockData);
+            this.renderRatingChart(mockData);
+        }
+    }
+    
+    // 渲染销量图表
+    renderSalesChart(chartData) {
+        const ctx = document.getElementById('sales-chart');
+        if (!ctx) return;
         
         // 销毁现有图表
-        if (this.productChart) {
-            this.productChart.destroy();
+        if (this.salesChart) {
+            this.salesChart.destroy();
         }
         
-        // 创建Chart.js图表
-        this.productChart = new Chart(ctx, {
-            type: 'line',
+        const isSinglePoint = chartData.labels.length === 1;
+        const chartType = isSinglePoint ? 'bar' : 'line';
+        
+        this.salesChart = new Chart(ctx, {
+            type: chartType,
             data: {
-                labels: mockData.labels,
+                labels: chartData.labels,
+                datasets: [{
+                    label: '销量',
+                    data: chartData.sales,
+                    borderColor: '#e74c3c',
+                    backgroundColor: isSinglePoint ? 'rgba(231, 76, 60, 0.8)' : 'rgba(231, 76, 60, 0.1)',
+                    tension: 0.4,
+                    pointRadius: isSinglePoint ? 8 : 4,
+                    pointHoverRadius: isSinglePoint ? 10 : 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                font: {
+                    family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: isSinglePoint ? '当前数据' : '日期',
+                            font: {
+                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
+                            }
+                        }
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: '销量',
+                            font: {
+                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+    
+    // 渲染价格图表
+    renderPriceChart(chartData) {
+        const ctx = document.getElementById('price-chart');
+        if (!ctx) return;
+        
+        // 销毁现有图表
+        if (this.priceChart) {
+            this.priceChart.destroy();
+        }
+        
+        const isSinglePoint = chartData.labels.length === 1;
+        const chartType = isSinglePoint ? 'bar' : 'line';
+        
+        this.priceChart = new Chart(ctx, {
+            type: chartType,
+            data: {
+                labels: chartData.labels,
                 datasets: [
                     {
-                        label: '销量',
-                        data: mockData.sales,
-                        borderColor: '#e74c3c',
-                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                        tension: 0.4,
-                        yAxisID: 'y'
-                    },
-                    {
                         label: '促销价',
-                        data: mockData.promoPrice,
+                        data: chartData.promoPrice,
                         borderColor: '#3498db',
-                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        backgroundColor: isSinglePoint ? 'rgba(52, 152, 219, 0.8)' : 'rgba(52, 152, 219, 0.1)',
                         tension: 0.4,
-                        yAxisID: 'y1'
+                        pointRadius: isSinglePoint ? 8 : 4,
+                        pointHoverRadius: isSinglePoint ? 10 : 6
                     },
                     {
                         label: '原价',
-                        data: mockData.normalPrice,
+                        data: chartData.normalPrice,
                         borderColor: '#2ecc71',
-                        backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                        backgroundColor: isSinglePoint ? 'rgba(46, 204, 113, 0.8)' : 'rgba(46, 204, 113, 0.1)',
                         tension: 0.4,
-                        yAxisID: 'y1'
-                    },
-                    {
-                        label: '评分',
-                        data: mockData.rating,
-                        borderColor: '#f39c12',
-                        backgroundColor: 'rgba(243, 156, 18, 0.1)',
-                        tension: 0.4,
-                        yAxisID: 'y2'
+                        pointRadius: isSinglePoint ? 8 : 4,
+                        pointHoverRadius: isSinglePoint ? 10 : 6
                     }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                font: {
+                    family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: isSinglePoint ? '当前数据' : '日期',
+                            font: {
+                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
+                            }
+                        }
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: '价格 (元)',
+                            font: {
+                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: {
+                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // 渲染评分图表
+    renderRatingChart(chartData) {
+        const ctx = document.getElementById('rating-chart');
+        if (!ctx) return;
+        
+        // 销毁现有图表
+        if (this.ratingChart) {
+            this.ratingChart.destroy();
+        }
+        
+        const isSinglePoint = chartData.labels.length === 1;
+        const chartType = isSinglePoint ? 'bar' : 'line';
+        
+        this.ratingChart = new Chart(ctx, {
+            type: chartType,
+            data: {
+                labels: chartData.labels,
+                datasets: [{
+                    label: '评分',
+                    data: chartData.rating,
+                    borderColor: '#f39c12',
+                    backgroundColor: isSinglePoint ? 'rgba(243, 156, 18, 0.8)' : 'rgba(243, 156, 18, 0.1)',
+                    tension: 0.4,
+                    pointRadius: isSinglePoint ? 8 : 4,
+                    pointHoverRadius: isSinglePoint ? 10 : 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                font: {
+                    family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: isSinglePoint ? '当前数据' : '日期',
+                            font: {
+                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
+                            }
+                        }
+                    },
+                    y: {
+                        display: true,
+                        min: 0,
+                        max: 5,
+                        title: {
+                            display: true,
+                            text: '评分',
+                            font: {
+                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+    
+    // 创建图表的通用方法
+    createChart(ctx, chartData, title) {
+        // 检查数据点数量，决定图表类型
+        const isSinglePoint = chartData.labels.length === 1;
+        const chartType = isSinglePoint ? 'bar' : 'line';
+        
+        this.productChart = new Chart(ctx, {
+            type: chartType,
+            data: {
+                labels: chartData.labels,
+                datasets: [
+                    {
+                        label: '销量',
+                        data: chartData.sales,
+                        borderColor: '#e74c3c',
+                        backgroundColor: isSinglePoint ? 'rgba(231, 76, 60, 0.8)' : 'rgba(231, 76, 60, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y',
+                        pointRadius: isSinglePoint ? 8 : 4,
+                        pointHoverRadius: isSinglePoint ? 10 : 6
+                    },
+                    {
+                        label: '促销价',
+                        data: chartData.promoPrice,
+                        borderColor: '#3498db',
+                        backgroundColor: isSinglePoint ? 'rgba(52, 152, 219, 0.8)' : 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y1',
+                        pointRadius: isSinglePoint ? 8 : 4,
+                        pointHoverRadius: isSinglePoint ? 10 : 6
+                    },
+                    {
+                        label: '原价',
+                        data: chartData.normalPrice,
+                        borderColor: '#2ecc71',
+                        backgroundColor: isSinglePoint ? 'rgba(46, 204, 113, 0.8)' : 'rgba(46, 204, 113, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y1',
+                        pointRadius: isSinglePoint ? 8 : 4,
+                        pointHoverRadius: isSinglePoint ? 10 : 6
+                    },
+                    {
+                        label: '评分',
+                        data: chartData.rating,
+                        borderColor: '#f39c12',
+                        backgroundColor: isSinglePoint ? 'rgba(243, 156, 18, 0.8)' : 'rgba(243, 156, 18, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y2',
+                        pointRadius: isSinglePoint ? 8 : 4,
+                        pointHoverRadius: isSinglePoint ? 10 : 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                font: {
+                    family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                },
                 interaction: {
                     mode: 'index',
                     intersect: false,
@@ -1220,7 +1658,15 @@ class HomePage {
                         display: true,
                         title: {
                             display: true,
-                            text: '日期'
+                            text: isSinglePoint ? '当前数据' : '日期',
+                            font: {
+                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
+                            }
+                        },
+                        ticks: {
+                            font: {
+                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
+                            }
                         }
                     },
                     y: {
@@ -1229,7 +1675,15 @@ class HomePage {
                         position: 'left',
                         title: {
                             display: true,
-                            text: '销量'
+                            text: '销量',
+                            font: {
+                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
+                            }
+                        },
+                        ticks: {
+                            font: {
+                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
+                            }
                         }
                     },
                     y1: {
@@ -1238,7 +1692,15 @@ class HomePage {
                         position: 'right',
                         title: {
                             display: true,
-                            text: '价格 (元)'
+                            text: '价格 (元)',
+                            font: {
+                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
+                            }
+                        },
+                        ticks: {
+                            font: {
+                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
+                            }
                         },
                         grid: {
                             drawOnChartArea: false,
@@ -1254,19 +1716,36 @@ class HomePage {
                 plugins: {
                     legend: {
                         position: 'top',
+                        labels: {
+                            font: {
+                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
+                            }
+                        }
                     },
                     title: {
                         display: true,
-                        text: '产品数据趋势图'
+                        text: title,
+                        font: {
+                            family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                if (isSinglePoint) {
+                                    return '当前数据';
+                                }
+                                return context[0].label;
+                            }
+                        }
                     }
                 }
             }
         });
     }
 
-    // 生成模拟图表数据
+    // 生成基于真实数据的图表数据（备用方案）
     generateMockChartData(product) {
-        const days = 30;
         const data = {
             labels: [],
             sales: [],
@@ -1275,28 +1754,39 @@ class HomePage {
             rating: []
         };
         
-        // 生成过去30天的数据
-        for (let i = days - 1; i >= 0; i--) {
-            const date = new Date();
-            date.setDate(date.getDate() - i);
-            data.labels.push(date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }));
-            
-            // 模拟销量数据（基于当前销量）
-            const baseSales = product.goodsSold || 0;
-            const variation = Math.random() * 0.3 - 0.15; // ±15%变化
-            data.sales.push(Math.max(0, Math.round(baseSales * (1 + variation))));
-            
-            // 模拟价格数据
-            const promoPrice = this.extractPrice(product.skuList?.[0]?.goodsPromoPrice);
-            const normalPrice = this.extractPrice(product.skuList?.[0]?.goodsNormalPrice);
-            data.promoPrice.push(promoPrice);
-            data.normalPrice.push(normalPrice);
-            
-            // 模拟评分数据
-            const baseRating = product.storeData?.storeRating || 4.5;
-            const ratingVariation = (Math.random() - 0.5) * 0.2; // ±0.1变化
-            data.rating.push(Math.max(0, Math.min(5, baseRating + ratingVariation)));
+        // 获取真实数据
+        const realSales = product.goodsSold || 0;
+        const realPromoPrice = this.extractPrice(product.skuList?.[0]?.goodsPromoPrice);
+        const realNormalPrice = this.extractPrice(product.skuList?.[0]?.goodsNormalPrice);
+        const realRating = product.storeData?.storeRating || 0;
+        
+        // 获取采集时间
+        const collectTime = product.collectTime;
+        let displayDate;
+        
+        if (collectTime) {
+            // 解析采集时间
+            const collectDate = new Date(collectTime);
+            displayDate = collectDate.toLocaleDateString('zh-CN', { 
+                month: '2-digit', 
+                day: '2-digit',
+                year: '2-digit'
+            });
+        } else {
+            // 如果没有采集时间，使用当前日期
+            displayDate = new Date().toLocaleDateString('zh-CN', { 
+                month: '2-digit', 
+                day: '2-digit',
+                year: '2-digit'
+            });
         }
+        
+        // 只显示真实的数据点
+        data.labels.push(displayDate);
+        data.sales.push(realSales);
+        data.promoPrice.push(realPromoPrice);
+        data.normalPrice.push(realNormalPrice);
+        data.rating.push(realRating);
         
         return data;
     }
@@ -1367,7 +1857,9 @@ class HomePage {
             <div class="modal-overlay" onclick="this.parentElement.remove()">
                 <div class="modal-content" onclick="event.stopPropagation()">
                     <img src="${imageUrl}" alt="产品图片">
-                    <button class="modal-close" onclick="this.closest('.image-modal').remove()">×</button>
+                    <button class="modal-close" onclick="this.closest('.image-modal').remove()">
+                        <i class="ph ph-x"></i>
+                    </button>
                 </div>
             </div>
         `;
@@ -1389,7 +1881,9 @@ class HomePage {
         const pageContainer = document.getElementById('page-container');
         pageContainer.innerHTML = `
             <div class="error-page">
-                <div class="error-icon">⚠️</div>
+                <div class="error-icon">
+                    <i class="ph ph-warning"></i>
+                </div>
                 <div class="error-message">${message}</div>
                 <button class="btn btn-primary" onclick="homePageInstance.loadProductLibrary()">
                     重试
@@ -1437,20 +1931,28 @@ class HomePage {
             <div class="menu-dots-overlay" onclick="homePageInstance.closeMenuDots()">
                 <div class="menu-dots-content" onclick="event.stopPropagation()">
                     <div class="menu-dots-item" onclick="homePageInstance.menuAction('new-product')">
-                        <div class="menu-dots-icon">📦</div>
+                        <div class="menu-dots-icon">
+                            <i class="ph ph-package"></i>
+                        </div>
                         <div class="menu-dots-text">新建产品</div>
                     </div>
                     <div class="menu-dots-item" onclick="homePageInstance.menuAction('import-data')">
-                        <div class="menu-dots-icon">📥</div>
+                        <div class="menu-dots-icon">
+                            <i class="ph ph-download"></i>
+                        </div>
                         <div class="menu-dots-text">导入数据</div>
                     </div>
                     <div class="menu-dots-item" onclick="homePageInstance.menuAction('export-data')">
-                        <div class="menu-dots-icon">📤</div>
+                        <div class="menu-dots-icon">
+                            <i class="ph ph-upload"></i>
+                        </div>
                         <div class="menu-dots-text">导出数据</div>
                     </div>
                     <div class="menu-dots-divider"></div>
                     <div class="menu-dots-item" onclick="homePageInstance.menuAction('about')">
-                        <div class="menu-dots-icon">ℹ️</div>
+                        <div class="menu-dots-icon">
+                            <i class="ph ph-info"></i>
+                        </div>
                         <div class="menu-dots-text">关于</div>
                     </div>
                 </div>
@@ -1555,7 +2057,9 @@ class HomePage {
                 <div class="modal-content settings-modal-content" onclick="event.stopPropagation()">
                     <div class="modal-header">
                         <h2 class="modal-title">系统设置</h2>
-                        <button class="modal-close" onclick="homePageInstance.closeSettingsModal()">×</button>
+                        <button class="modal-close" onclick="homePageInstance.closeSettingsModal()">
+                            <i class="ph ph-x"></i>
+                        </button>
                     </div>
                     
                     <div class="modal-body">
@@ -1932,7 +2436,7 @@ class HomePage {
             align-items: center;
             justify-content: center;
             z-index: 1000;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         `;
 
         // 创建弹窗内容

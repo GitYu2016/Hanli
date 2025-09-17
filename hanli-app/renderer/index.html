@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="theme/light/colors.css" id="theme-colors">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 本地图标库 -->
+    <link rel="stylesheet" href="icons-fixed.css">
 </head>
 <body>
     <div id="home-page" class="home-page">
@@ -18,15 +20,23 @@
             <div class="top-bar-center">
                 <div id="top-bar-tabs" class="top-bar-tabs">
                     <div class="tab active" data-page="home">
-                        <div class="tab-icon">🏠</div>
+                        <div class="tab-icon">
+                            <i class="ph ph-house"></i>
+                        </div>
                         <div class="tab-text">首页</div>
-                        <div class="tab-close">×</div>
+                        <div class="tab-close">
+                            <i class="ph ph-x"></i>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="top-bar-right">
-                <div class="menu-dots" id="menu-dots">⋯</div>
-                <div class="settings-icon" id="settings-btn">⚙️</div>
+                <div class="menu-dots" id="menu-dots">
+                    <i class="ph ph-dots-three"></i>
+                </div>
+                <div class="settings-icon" id="settings-btn">
+                    <i class="ph ph-gear"></i>
+                </div>
             </div>
         </div>
 
@@ -37,6 +47,9 @@
                 <div class="sidebar-content">
                     <div class="sidebar-item active" data-page="home">
                         <div class="sidebar-item-content">
+                            <div class="sidebar-item-icon">
+                                <i class="ph ph-house"></i>
+                            </div>
                             <div class="sidebar-item-text">首页</div>
                         </div>
                     </div>
@@ -45,6 +58,9 @@
                         <div class="sidebar-group-title">选品</div>
                         <div class="sidebar-item" data-page="product-library">
                             <div class="sidebar-item-content">
+                                <div class="sidebar-item-icon">
+                                    <i class="ph ph-package"></i>
+                                </div>
                                 <div class="sidebar-item-text">产品库</div>
                             </div>
                         </div>
@@ -63,7 +79,9 @@
                     
                     <div class="dashboard-grid">
                         <div class="dashboard-card">
-                            <div class="card-icon">📦</div>
+                            <div class="card-icon">
+                                <i class="ph ph-package"></i>
+                            </div>
                             <div class="card-title">产品总数</div>
                             <div class="card-value" id="product-count">0</div>
                         </div>
