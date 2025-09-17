@@ -44,13 +44,9 @@ function createWindow() {
             enableRemoteModule: false,
             preload: path.join(__dirname, 'preload.js')
         },
+        frame: false, // 完全自定义窗口控制
         titleBarStyle: 'hidden', // 完全隐藏标题栏
-        titleBarOverlay: {
-            color: 'transparent',
-            symbolColor: '#000000',
-            height: 36,
-            y: 20 // 向下偏移20px
-        },
+        trafficLightPosition: { x: -1000, y: -1000 }, // 将原生按钮移到屏幕外
         show: false, // 先不显示，等加载完成后再显示
         icon: path.join(__dirname, 'assets/icon.png'), // 应用图标
         fullscreenable: true, // 允许全屏
@@ -275,6 +271,39 @@ ipcMain.handle('get-app-version', () => {
 
 ipcMain.handle('get-platform', () => {
     return process.platform;
+});
+
+// 处理窗口控制事件
+ipcMain.on('window-minimize', () => {
+    const window = BrowserWindow.getFocusedWindow();
+    if (window) {
+        window.minimize();
+    }
+});
+
+ipcMain.on('window-maximize', () => {
+    const window = BrowserWindow.getFocusedWindow();
+    if (window) {
+        if (window.isMaximized()) {
+            window.unmaximize();
+        } else {
+            window.maximize();
+        }
+    }
+});
+
+ipcMain.on('window-close', () => {
+    const window = BrowserWindow.getFocusedWindow();
+    if (window) {
+        window.close();
+    }
+});
+
+ipcMain.on('window-toggle-fullscreen', () => {
+    const window = BrowserWindow.getFocusedWindow();
+    if (window) {
+        window.setFullScreen(!window.isFullScreen());
+    }
 });
 
 // 处理渲染进程的请求

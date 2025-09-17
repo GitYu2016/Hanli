@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品标题点击测试</title>
+    <link rel="stylesheet" href="../renderer/styles.css">
+    <link rel="stylesheet" href="../renderer/icons-fixed.css">
+    <style>
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            background-color: var(--color-background);
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--color-text-primary);
+        }
+        
+        .test-description {
+            color: var(--color-text-secondary);
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        
+        .mock-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .mock-table th,
+        .mock-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+        }
+        
+        .mock-table th {
+            background-color: var(--color-hover);
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+        
+        .mock-table td {
+            color: var(--color-text-secondary);
+        }
+        
+        .product-name {
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        
+        .product-name:hover {
+            color: var(--color-primary);
+        }
+        
+        .log-area {
+            background-color: var(--color-hover);
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        
+        .log-success {
+            color: #28ca42;
+        }
+        
+        .log-warning {
+            color: #ffbd2e;
+        }
+        
+        .log-error {
+            color: #ff5f57;
+        }
+        
+        .log-info {
+            color: var(--color-text-secondary);
+        }
+        
+        .test-btn {
+            padding: 10px 20px;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .test-btn:hover {
+            background-color: var(--color-hover);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>产品标题点击功能测试</h1>
+        
+        <!-- 测试说明 -->
+        <div class="test-section">
+            <div class="test-title">测试说明</div>
+            <div class="test-description">
+                这个页面用于测试产品库中产品标题的点击功能。点击产品标题应该能够打开产品详情页面。
+            </div>
+        </div>
+        
+        <!-- 模拟产品表格 -->
+        <div class="test-section">
+            <div class="test-title">模拟产品表格</div>
+            <div class="test-description">
+                点击下面的产品标题测试功能
+            </div>
+            
+            <table class="mock-table">
+                <thead>
+                    <tr>
+                        <th>产品标题</th>
+                        <th>昨日销量</th>
+                        <th>价格增长</th>
+                        <th>采集日期</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="product-row" data-goods-id="601099563571188">
+                        <td class="product-name clickable" title="1pc Boundless Voyage纯钛户外锅铲轻量便携野营炒菜铲子饭勺" data-goods-id="601099563571188">
+                            <div class="name-content">1pc Boundless Voyage纯钛户外锅铲轻量便携野营炒菜铲子饭勺</div>
+                        </td>
+                        <td class="product-sales">156</td>
+                        <td class="product-price-growth positive">+5.2%</td>
+                        <td class="product-time">2025-01-14</td>
+                    </tr>
+                    <tr class="product-row" data-goods-id="601099942094517">
+                        <td class="product-name clickable" title="测试产品2" data-goods-id="601099942094517">
+                            <div class="name-content">测试产品2</div>
+                        </td>
+                        <td class="product-sales">89</td>
+                        <td class="product-price-growth negative">-2.1%</td>
+                        <td class="product-time">2025-01-13</td>
+                    </tr>
+                    <tr class="product-row" data-goods-id="601100385710256">
+                        <td class="product-name clickable" title="测试产品3" data-goods-id="601100385710256">
+                            <div class="name-content">测试产品3</div>
+                        </td>
+                        <td class="product-sales">234</td>
+                        <td class="product-price-growth">0%</td>
+                        <td class="product-time">2025-01-12</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 功能测试 -->
+        <div class="test-section">
+            <div class="test-title">功能测试</div>
+            <div class="test-description">
+                测试各种点击场景
+            </div>
+            
+            <button class="test-btn" onclick="testClickEvent()">测试点击事件</button>
+            <button class="test-btn" onclick="testGlobalInstance()">测试全局实例</button>
+            <button class="test-btn" onclick="clearLog()">清除日志</button>
+        </div>
+        
+        <!-- 日志区域 -->
+        <div class="test-section">
+            <div class="test-title">测试日志</div>
+            <div id="test-log" class="log-area">
+                <div class="log-entry log-info">测试日志将显示在这里...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logEntries = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = `[${timestamp}] ${message}`;
+            logEntries.push({ message: entry, type });
+            
+            const logArea = document.getElementById('test-log');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = entry;
+            logArea.appendChild(logEntry);
+            
+            // 滚动到底部
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('test-log').innerHTML = '';
+            logEntries = [];
+            log('日志已清除', 'info');
+        }
+        
+        function testClickEvent() {
+            log('开始测试点击事件...', 'info');
+            
+            // 模拟点击第一个产品标题
+            const firstProductName = document.querySelector('.product-name.clickable');
+            if (firstProductName) {
+                log('找到产品标题元素', 'success');
+                log(`商品ID: ${firstProductName.dataset.goodsId}`, 'info');
+                log('模拟点击事件...', 'info');
+                
+                // 模拟点击
+                firstProductName.click();
+                
+                log('点击事件已触发', 'success');
+            } else {
+                log('未找到产品标题元素', 'error');
+            }
+        }
+        
+        function testGlobalInstance() {
+            log('检查全局实例...', 'info');
+            
+            if (window.homePageInstance) {
+                log('✅ window.homePageInstance 存在', 'success');
+                log(`实例类型: ${typeof window.homePageInstance}`, 'info');
+                
+                if (typeof window.homePageInstance.viewProductDetail === 'function') {
+                    log('✅ viewProductDetail 方法存在', 'success');
+                } else {
+                    log('❌ viewProductDetail 方法不存在', 'error');
+                }
+            } else {
+                log('❌ window.homePageInstance 不存在', 'error');
+            }
+        }
+        
+        // 模拟viewProductDetail方法
+        function mockViewProductDetail(goodsId) {
+            log(`模拟 viewProductDetail 调用，商品ID: ${goodsId}`, 'success');
+            
+            // 检查API是否可用
+            if (window.electronAPI) {
+                log('✅ electronAPI 可用', 'success');
+            } else {
+                log('⚠️ electronAPI 不可用（正常，因为这是测试页面）', 'warning');
+            }
+            
+            // 模拟API调用
+            log('模拟API调用...', 'info');
+            setTimeout(() => {
+                log('模拟API调用完成', 'success');
+                log('模拟创建产品详情Tab', 'info');
+            }, 500);
+        }
+        
+        // 设置全局实例（用于测试）
+        window.homePageInstance = {
+            viewProductDetail: mockViewProductDetail
+        };
+        
+        // 添加点击事件委托
+        document.addEventListener('click', (e) => {
+            const productName = e.target.closest('.product-name.clickable');
+            if (productName) {
+                const goodsId = productName.dataset.goodsId;
+                if (goodsId) {
+                    log(`检测到产品标题点击，商品ID: ${goodsId}`, 'info');
+                    
+                    if (window.homePageInstance && window.homePageInstance.viewProductDetail) {
+                        window.homePageInstance.viewProductDetail(goodsId);
+                    } else {
+                        log('❌ viewProductDetail 方法不可用', 'error');
+                    }
+                }
+            }
+        });
+        
+        // 页面加载完成后自动测试
+        document.addEventListener('DOMContentLoaded', () => {
+            log('页面加载完成，开始自动测试...', 'info');
+            setTimeout(() => {
+                testGlobalInstance();
+                testClickEvent();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

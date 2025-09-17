@@ -1,10 +1,3 @@
-// 页面图标定义 - 使用 Phosphor Icons
-const PAGE_ICONS = {
-    home: `<i class="ph ph-house"></i>`,
-    productDetail: `<i class="ph ph-image"></i>`,
-    goodsList: `<i class="ph ph-package"></i>`
-};
-
 // Tab管理类
 class TabManager {
     constructor() {
@@ -31,7 +24,6 @@ class TabManager {
         
         this.tabs.push(tab);
         this.setActiveTab(tabId);
-        this.renderTabs();
         return tabId;
     }
 
@@ -54,117 +46,19 @@ class TabManager {
         if (tabIndex === -1) return;
 
         const isActiveTab = this.tabs[tabIndex].isActive;
-        
-        // 添加关闭动画
-        const tabElement = document.querySelector(`[data-tab-id="${tabId}"]`);
-        if (tabElement) {
-            tabElement.style.transform = 'scale(0.8)';
-            tabElement.style.opacity = '0';
-            
-            setTimeout(() => {
-                this.tabs.splice(tabIndex, 1);
+        this.tabs.splice(tabIndex, 1);
 
-                // 如果关闭的是活动Tab，需要选择新的活动Tab
-                if (isActiveTab && this.tabs.length > 0) {
-                    // 优先选择左边的Tab，如果左边没有则选择右边的Tab
-                    let newActiveIndex = tabIndex - 1;
-                    if (newActiveIndex < 0) {
-                        newActiveIndex = 0;
-                    }
-                    this.setActiveTab(this.tabs[newActiveIndex].id);
-                } else if (this.tabs.length === 0) {
-                    this.activeTabId = null;
-                }
-
-                this.renderTabs();
-                
-                // 如果关闭的是活动Tab，需要触发页面切换
-                if (isActiveTab && this.tabs.length > 0) {
-                    const newActiveTab = this.tabs[newActiveIndex];
-                    this.onTabSwitch(newActiveTab);
-                    // 通知HomePage实例进行页面切换
-                    if (window.homePageInstance && window.homePageInstance.handleTabSwitch) {
-                        window.homePageInstance.handleTabSwitch(newActiveTab);
-                    }
-                }
-            }, 200);
-        } else {
-            // 如果找不到元素，直接执行关闭逻辑
-            this.tabs.splice(tabIndex, 1);
-
-            if (isActiveTab && this.tabs.length > 0) {
-                let newActiveIndex = tabIndex - 1;
-                if (newActiveIndex < 0) {
-                    newActiveIndex = 0;
-                }
-                this.setActiveTab(this.tabs[newActiveIndex].id);
-            } else if (this.tabs.length === 0) {
-                this.activeTabId = null;
+        if (isActiveTab && this.tabs.length > 0) {
+            let newActiveIndex = tabIndex - 1;
+            if (newActiveIndex < 0) {
+                newActiveIndex = 0;
             }
-
-            this.renderTabs();
-            
-            // 如果关闭的是活动Tab，需要触发页面切换
-            if (isActiveTab && this.tabs.length > 0) {
-                const newActiveTab = this.tabs[newActiveIndex];
-                this.onTabSwitch(newActiveTab);
-                // 通知HomePage实例进行页面切换
-                if (window.homePageInstance && window.homePageInstance.handleTabSwitch) {
-                    window.homePageInstance.handleTabSwitch(newActiveTab);
-                }
-            }
+            this.setActiveTab(this.tabs[newActiveIndex].id);
+        } else if (this.tabs.length === 0) {
+            this.activeTabId = null;
         }
-    }
 
-    // 渲染Tabs
-    renderTabs() {
-        const tabsContainer = document.getElementById('top-bar-tabs');
-        if (!tabsContainer) return;
-
-        tabsContainer.innerHTML = '';
-
-        this.tabs.forEach(tab => {
-            const tabElement = this.createTabElement(tab);
-            tabsContainer.appendChild(tabElement);
-        });
-    }
-
-    // 创建Tab元素
-    createTabElement(tab) {
-        const tabDiv = document.createElement('div');
-        tabDiv.className = `tab ${tab.isActive ? 'active' : ''} ${this.tabs.length === 1 ? 'single-tab' : ''}`;
-        tabDiv.dataset.tabId = tab.id;
-        tabDiv.dataset.pageType = tab.pageType;
-
-        const icon = PAGE_ICONS[tab.pageType] || PAGE_ICONS.home;
-        
-        tabDiv.innerHTML = `
-            <div class="tab-icon">${icon}</div>
-            <div class="tab-text">${tab.title}</div>
-                        <div class="tab-close">
-                            <i class="ph ph-x"></i>
-                        </div>
-        `;
-
-        // 添加点击事件
-        tabDiv.addEventListener('click', (e) => {
-            // 检查是否点击了关闭按钮或其子元素
-            if (e.target.closest('.tab-close')) {
-                e.stopPropagation();
-                this.closeTab(tab.id);
-            } else {
-                this.setActiveTab(tab.id);
-                this.renderTabs();
-                // 触发页面切换事件
-                this.onTabSwitch(tab);
-                // 通知HomePage实例进行页面切换
-                if (window.homePageInstance) {
-                    window.homePageInstance.handleTabSwitch(tab);
-                }
-            }
-        });
-
-        return tabDiv;
+        return isActiveTab;
     }
 
     // Tab切换回调
@@ -203,6 +97,10 @@ class HomePage {
         this.activePage = 'home';
         this.isResizing = false;
         this.tabManager = new TabManager();
+        this.topBar = null; // TopBar组件实例
+        this.sideBar = null; // SideBar组件实例
+        this.pageContainer = null; // PageContainer组件实例
+        this.settingsModal = null; // SettingsModal组件实例
         this.productCountRefreshTimer = null; // 产品总数刷新定时器
         this.productLibraryRefreshTimer = null; // 产品库刷新定时器
         this.currentSortField = 'collectTime';
@@ -212,13 +110,12 @@ class HomePage {
         this.init();
     }
 
-    init() {
+    async init() {
         this.loadTheme();
         this.detectEnvironment();
+        await this.initComponents();
         this.bindEvents();
         this.renderTabs();
-        // 使用HTML中的静态首页，不需要调用renderHomePage()
-        this.loadDashboardData();
         this.applyStoredSettings();
         this.setupIPCListeners();
         
@@ -228,7 +125,7 @@ class HomePage {
 
     // 加载主题
     loadTheme() {
-        const savedTheme = localStorage.getItem('theme') || 'system';
+        const savedTheme = localStorage.getItem('app-theme') || 'auto';
         this.setTheme(savedTheme);
     }
 
@@ -236,59 +133,151 @@ class HomePage {
     setTheme(theme) {
         this.currentTheme = theme;
         const themeColors = document.getElementById('theme-colors');
+        const body = document.body;
         
-        if (theme === 'system') {
+        // 移除现有主题类
+        body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+        
+        if (theme === 'auto') {
+            // 跟随系统主题
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            themeColors.href = prefersDark ? 'theme/dark/colors.css' : 'theme/light/colors.css';
+            const actualTheme = prefersDark ? 'dark' : 'light';
+            themeColors.href = `theme/${actualTheme}/colors.css`;
+            body.classList.add(`theme-${actualTheme}`);
+            
+            // 监听系统主题变化
+            this.setupSystemThemeListener();
         } else {
+            // 使用指定主题
             themeColors.href = `theme/${theme}/colors.css`;
+            body.classList.add(`theme-${theme}`);
         }
         
-        localStorage.setItem('theme', theme);
+        localStorage.setItem('app-theme', theme);
+    }
+
+    // 设置系统主题监听器
+    setupSystemThemeListener() {
+        if (this.systemThemeListener) {
+            this.systemThemeListener.removeEventListener('change', this.handleSystemThemeChange);
+        }
+        
+        this.systemThemeListener = window.matchMedia('(prefers-color-scheme: dark)');
+        this.handleSystemThemeChange = () => {
+            if (this.currentTheme === 'auto') {
+                const prefersDark = this.systemThemeListener.matches;
+                const actualTheme = prefersDark ? 'dark' : 'light';
+                const themeColors = document.getElementById('theme-colors');
+                const body = document.body;
+                
+                body.classList.remove('theme-light', 'theme-dark');
+                body.classList.add(`theme-${actualTheme}`);
+                themeColors.href = `theme/${actualTheme}/colors.css`;
+            }
+        };
+        
+        this.systemThemeListener.addEventListener('change', this.handleSystemThemeChange);
+    }
+
+    // 初始化所有组件
+    async initComponents() {
+        this.initTopBar();
+        this.initSideBar();
+        await this.initPageContainer();
+        this.initSettingsModal();
+    }
+
+    // 初始化TopBar组件
+    initTopBar() {
+        // 创建TopBar组件实例
+        this.topBar = new TopBar();
+        
+        // 设置Tab管理器
+        this.topBar.setTabManager(this.tabManager);
+        
+        // 设置设置按钮回调
+        this.topBar.setSettingsCallback(() => {
+            this.openSettingsModal();
+        });
+        
+        // 设置Tab切换回调
+        this.topBar.setTabSwitchCallback((tab) => {
+            this.handleTabSwitch(tab);
+        });
+    }
+
+    // 初始化SideBar组件
+    initSideBar() {
+        // 创建SideBar组件实例
+        this.sideBar = new SideBar();
+        
+        // 设置导航回调
+        this.sideBar.setNavigationCallback((page) => {
+            this.navigateToPage(page);
+        });
+    }
+
+    // 初始化PageContainer组件
+    async initPageContainer() {
+        // 创建PageContainer组件实例
+        this.pageContainer = new PageContainer();
+        
+        // 先渲染PageContainer的HTML结构
+        this.pageContainer.render();
+        
+        // 然后渲染首页内容
+        await this.pageContainer.renderHomePage();
+    }
+
+    // 初始化SettingsModal组件
+    initSettingsModal() {
+        // 创建SettingsModal组件实例
+        this.settingsModal = new SettingsModal();
+        
+        // 设置回调
+        this.settingsModal.setCallbacks({
+            onSave: (settings) => {
+                this.handleSettingsSave(settings);
+            },
+            onCancel: () => {
+                console.log('设置已取消');
+            },
+            onThemeChange: (theme) => {
+                this.setTheme(theme);
+            }
+        });
     }
 
     // 检测运行环境
     detectEnvironment() {
-        const topBar = document.getElementById('top-bar');
-        
-        // 检测是否为浏览器环境
-        if (window.navigator.userAgent.includes('Electron')) {
-            // Electron环境，保持默认padding
-            topBar.classList.remove('browser-mode');
-        } else {
-            // 浏览器环境，调整padding
-            topBar.classList.add('browser-mode');
-        }
+        // 环境检测现在由TopBar组件处理
     }
 
     // 绑定事件
     bindEvents() {
-        // 侧边栏点击事件
-        document.querySelectorAll('.sidebar-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                const page = e.currentTarget.dataset.page;
-                this.navigateToPage(page);
-            });
-        });
-
-        // 侧边栏拖拽调整宽度
-        this.bindSidebarResizer();
-
         // Tab切换事件监听
         this.bindTabSwitchEvents();
         
         // 键盘快捷键
         this.bindKeyboardShortcuts();
 
-        // 设置按钮点击事件
-        const settingsBtn = document.getElementById('settings-btn');
-        if (settingsBtn) {
-            settingsBtn.addEventListener('click', () => {
-                this.openSettingsModal();
-            });
-        }
+        // 窗口控制按钮事件
+        this.setupWindowControls();
 
-
+        // 产品标题点击事件委托
+        document.addEventListener('click', (e) => {
+            console.log('点击事件触发:', e.target);
+            const productName = e.target.closest('.product-name.clickable');
+            if (productName) {
+                console.log('找到产品标题元素:', productName);
+                const goodsId = productName.dataset.goodsId;
+                console.log('商品ID:', goodsId);
+                if (goodsId) {
+                    console.log('准备打开产品详情:', goodsId);
+                    this.viewProductDetail(goodsId);
+                }
+            }
+        });
 
         // 监听系统主题变化
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
@@ -298,39 +287,6 @@ class HomePage {
         });
     }
 
-    // 绑定侧边栏拖拽调整器
-    bindSidebarResizer() {
-        const resizer = document.getElementById('sidebar-resizer');
-        const sidebar = document.getElementById('sidebar');
-        
-        resizer.addEventListener('mousedown', (e) => {
-            this.isResizing = true;
-            document.addEventListener('mousemove', this.handleResize);
-            document.addEventListener('mouseup', this.stopResize);
-            e.preventDefault();
-        });
-    }
-
-    // 处理侧边栏拖拽调整
-    handleResize = (e) => {
-        if (!this.isResizing) return;
-        
-        const sidebar = document.getElementById('sidebar');
-        const newWidth = e.clientX;
-        const minWidth = 200;
-        const maxWidth = 320;
-        
-        if (newWidth >= minWidth && newWidth <= maxWidth) {
-            sidebar.style.width = newWidth + 'px';
-        }
-    }
-
-    // 停止侧边栏拖拽调整
-    stopResize = () => {
-        this.isResizing = false;
-        document.removeEventListener('mousemove', this.handleResize);
-        document.removeEventListener('mouseup', this.stopResize);
-    }
 
     // 绑定Tab事件
     bindTabSwitchEvents() {
@@ -346,18 +302,16 @@ class HomePage {
     
     // 处理Tab切换
     handleTabSwitch(tab) {
-        // 根据页面类型更新侧边栏状态
-        const pageMap = {
-            'home': 'home',
-            'goodsList': 'product-library', // 暂时映射到产品库
-            'goodsDetail': 'product-library'
-        };
+        console.log('处理Tab切换:', tab);
+        console.log('Tab pageData:', tab.pageData);
         
-        const pageId = pageMap[tab.pageType];
-        if (pageId) {
-            this.activePage = pageId;
-            this.updateSidebarActiveState();
+        // 根据页面类型更新侧边栏状态
+        if (this.sideBar) {
+            this.sideBar.updateSidebarForTab(tab);
         }
+        
+        // 根据Tab类型渲染对应的页面内容
+        this.renderPageContent(tab.pageData.type, tab.pageData);
         
         // 根据Tab类型管理产品总数刷新
         if (tab.pageType === 'home') {
@@ -404,7 +358,7 @@ class HomePage {
         const nextIndex = (currentIndex + 1) % this.tabManager.tabs.length;
         
         this.tabManager.setActiveTab(this.tabManager.tabs[nextIndex].id);
-        this.tabManager.renderTabs();
+        this.renderTabs();
         this.tabManager.onTabSwitch(this.tabManager.tabs[nextIndex]);
     }
     
@@ -417,7 +371,7 @@ class HomePage {
         const prevIndex = currentIndex === 0 ? this.tabManager.tabs.length - 1 : currentIndex - 1;
         
         this.tabManager.setActiveTab(this.tabManager.tabs[prevIndex].id);
-        this.tabManager.renderTabs();
+        this.renderTabs();
         this.tabManager.onTabSwitch(this.tabManager.tabs[prevIndex]);
     }
 
@@ -444,23 +398,27 @@ class HomePage {
         if (existingTab) {
             // 如果存在，切换到该Tab
             this.tabManager.setActiveTab(existingTab.id);
-            this.tabManager.renderTabs();
-            // 手动触发页面内容渲染
-            this.renderPageContent(pageData.type);
+            this.renderTabs();
+            // 触发Tab切换事件
+            this.tabManager.onTabSwitch(existingTab);
         } else {
             // 如果不存在，创建新Tab
-            this.tabManager.addTab(pageData);
+            const newTabId = this.tabManager.addTab(pageData);
+            this.renderTabs();
+            // 触发新Tab的切换事件
+            const newTab = this.tabManager.tabs.find(t => t.id === newTabId);
+            if (newTab) {
+                this.tabManager.onTabSwitch(newTab);
+            }
         }
         
         // 更新侧边栏选中状态
-        document.querySelectorAll('.sidebar-item').forEach(item => {
-            item.classList.remove('active');
-        });
-        document.querySelector(`[data-page="${page}"]`).classList.add('active');
+        if (this.sideBar) {
+            this.sideBar.updateActiveState(page);
+        }
 
         // 更新当前页面
         this.activePage = page;
-        this.updateSidebarActiveState();
         
         // 如果是产品库页面，加载产品数据
         if (page === 'product-library') {
@@ -469,17 +427,26 @@ class HomePage {
     }
 
 
-    // 渲染Tabs（使用TabManager）
+    // 渲染Tabs（使用TopBar组件）
     renderTabs() {
         // 初始化首页Tab
         if (this.tabManager.tabs.length === 0) {
-            this.tabManager.addTab({
+            const homeTab = this.tabManager.addTab({
                 type: 'home',
                 title: '首页',
                 pageData: { type: 'home', title: '首页' }
             });
-        } else {
-            this.tabManager.renderTabs();
+            
+            // 触发首页Tab的切换事件
+            const tab = this.tabManager.tabs.find(t => t.id === homeTab);
+            if (tab) {
+                this.tabManager.onTabSwitch(tab);
+            }
+        }
+        
+        // 使用TopBar组件渲染Tabs
+        if (this.topBar) {
+            this.topBar.renderTabs();
         }
     }
 
@@ -503,25 +470,34 @@ class HomePage {
     }
 
     // 渲染页面内容
-    renderPageContent(pageType, pageData = null) {
+    async renderPageContent(pageType, pageData = null) {
         console.log('渲染页面内容:', pageType, pageData);
+        
+        if (!this.pageContainer) {
+            console.error('PageContainer组件未初始化');
+            return;
+        }
         
         switch (pageType) {
             case 'home':
-                // 首页使用HTML中的静态内容，恢复原始HTML
-                this.restoreHomePage();
-                // 确保数据加载正确
-                this.loadDashboardData();
+                console.log('渲染首页');
+                await this.pageContainer.renderHomePage();
                 break;
             case 'goodsList':
+                console.log('渲染产品库');
                 this.loadProductLibrary();
                 break;
             case 'productDetail':
+                console.log('渲染产品详情页, pageData:', pageData);
                 // 产品详情页需要根据productId重新加载数据
                 if (pageData && pageData.productId) {
+                    console.log('根据productId加载产品详情:', pageData.productId);
                     this.loadProductDetailByGoodsId(pageData.productId);
                 } else if (this.currentProductDetail) {
-                    this.renderProductDetailPage(this.currentProductDetail);
+                    console.log('使用当前产品详情数据');
+                    await this.pageContainer.renderProductDetail(this.currentProductDetail);
+                } else {
+                    console.warn('没有产品详情数据');
                 }
                 break;
             default:
@@ -529,72 +505,7 @@ class HomePage {
         }
     }
     
-    // 恢复首页HTML内容
-    restoreHomePage() {
-        const pageContainer = document.getElementById('page-container');
-        pageContainer.innerHTML = `
-            <div class="page-content">
-                <div class="welcome-section">
-                    <h1 class="welcome-title">欢迎使用Hanli</h1>
-                    <p class="welcome-desc">高效管理您的产品信息、图片资源和数据分析</p>
-                </div>
-                
-                <div class="dashboard-grid">
-                    <div class="dashboard-card">
-                        <div class="card-icon">
-                            <i class="ph ph-package"></i>
-                        </div>
-                        <div class="card-title">产品总数</div>
-                        <div class="card-value" id="product-count">0</div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
 
-    // 渲染首页
-    renderHomePage() {
-        const pageContainer = document.getElementById('page-container');
-        pageContainer.innerHTML = `
-            <div class="page-content">
-                <div class="welcome-section">
-                    <h1 class="welcome-title">欢迎使用Hanli</h1>
-                    <p class="welcome-subtitle">产品管理系统</p>
-                </div>
-                
-                <div class="dashboard-stats">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="ph ph-package"></i>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-number" id="product-count">-</div>
-                            <div class="stat-label">产品总数</div>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">📊</div>
-                        <div class="stat-content">
-                            <div class="stat-number">-</div>
-                            <div class="stat-label">今日采集</div>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">⭐</div>
-                        <div class="stat-content">
-                            <div class="stat-number">-</div>
-                            <div class="stat-label">平均评分</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // 加载首页数据
-        this.loadDashboardData();
-    }
 
     // 根据Tab更新侧边栏状态
     updateSidebarForTab(tab) {
@@ -708,7 +619,7 @@ class HomePage {
                     // 分页处理
                     const paginatedProducts = this.paginateProducts(sortedProducts);
                     
-                    this.renderProductLibrary(paginatedProducts, data.products.length);
+                    await this.renderProductLibrary(paginatedProducts, data.products.length);
                     console.log('产品库数据加载成功:', data.products.length, '个产品');
                     
                     // 只有在产品库页面时才启动自动刷新
@@ -730,70 +641,12 @@ class HomePage {
     }
 
     // 渲染产品库表格
-    renderProductLibrary(products, totalCount = 0) {
-        const pageContainer = document.getElementById('page-container');
-        
-        // 创建产品库页面内容
-        const productLibraryHTML = `
-            <div class="product-library-page">
-                <div class="page-header">
-                    <h1 class="page-title">产品库</h1>
-                </div>
-                
-                <div class="product-table-container">
-                    <table class="product-table">
-                        <thead>
-                            <tr>
-                                <th class="sortable" data-sort="goodsCat3">产品标题</th>
-                                <th class="sortable" data-sort="yesterdaySales">昨日销量</th>
-                                <th class="sortable" data-sort="priceGrowthPercent">价格增长</th>
-                                <th class="sortable" data-sort="collectTime">采集日期</th>
-                            </tr>
-                        </thead>
-                        <tbody id="product-table-body">
-                            ${this.generateProductTableRows(products)}
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="product-summary">
-                    <div class="summary-item">
-                        <span class="summary-label">总产品数:</span>
-                        <span class="summary-value">${totalCount}</span>
-                    </div>
-                    <div class="pagination-info">
-                        <span>第 <strong>${this.currentPage}</strong> 页，共 <strong>${Math.ceil(totalCount / this.itemsPerPage)}</strong> 页</span>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        pageContainer.innerHTML = productLibraryHTML;
-        
-        // 绑定排序事件
-        this.bindSortEvents();
+    async renderProductLibrary(products, totalCount = 0) {
+        if (this.pageContainer) {
+            await this.pageContainer.renderProductLibrary(products, totalCount);
+        }
     }
 
-    // 生成产品表格行
-    generateProductTableRows(products) {
-        return products.map(product => {
-            const goodsCat3 = product.goodsCat3 || product.goodsTitleEn || '未知商品';
-            const yesterdaySales = this.getYesterdaySales(product);
-            const priceGrowthPercent = this.getPriceGrowthPercent(product);
-            const collectTime = this.formatCollectTime(product.collectTime);
-            
-            return `
-                <tr class="product-row" data-goods-id="${product.goodsId}">
-                    <td class="product-name clickable" title="${goodsCat3}" onclick="homePageInstance.viewProductDetail('${product.goodsId}')">
-                        <div class="name-content">${this.truncateText(goodsCat3, 50)}</div>
-                    </td>
-                    <td class="product-sales">${yesterdaySales}</td>
-                    <td class="product-price-growth ${priceGrowthPercent.startsWith('+') ? 'positive' : priceGrowthPercent.startsWith('-') ? 'negative' : ''}">${priceGrowthPercent}</td>
-                    <td class="product-time">${collectTime}</td>
-                </tr>
-            `;
-        }).join('');
-    }
 
     // 获取产品价格
     getProductPrice(product) {
@@ -961,7 +814,7 @@ class HomePage {
                 const data = await response.json();
                 if (data.success) {
                     // 创建产品详情Tab
-                    this.openProductDetailTab(data.product);
+                    await this.openProductDetailTab(data.product);
                 } else {
                     this.showToast('获取产品详情失败: ' + data.error);
                 }
@@ -975,14 +828,15 @@ class HomePage {
     }
 
     // 打开产品详情Tab
-    openProductDetailTab(product) {
+    async openProductDetailTab(product) {
         // 检查是否已存在该产品的详情Tab（根据商品ID查找）
         const existingTab = this.tabManager.findTabByPageTypeAndParam('productDetail', 'productId', product.goodsId);
         if (existingTab) {
             // 如果存在，切换到该Tab并更新数据
             this.tabManager.setActiveTab(existingTab.id);
-            this.tabManager.renderTabs();
-            this.loadProductDetailData(product);
+            this.renderTabs();
+            this.tabManager.onTabSwitch(existingTab);
+            await this.loadProductDetailData(product);
         } else {
             // 如果不存在，创建新Tab
             const pageData = {
@@ -990,15 +844,24 @@ class HomePage {
                 title: `产品详情 - ${product.goodsCat3 || product.goodsTitleEn || product.goodsId}`,
                 productId: product.goodsId
             };
-            this.tabManager.addTab(pageData);
-            this.loadProductDetailData(product);
+            const newTabId = this.tabManager.addTab(pageData);
+            this.renderTabs();
+            // 触发新Tab的切换事件
+            const newTab = this.tabManager.tabs.find(t => t.id === newTabId);
+            if (newTab) {
+                this.tabManager.onTabSwitch(newTab);
+            }
+            await this.loadProductDetailData(product);
         }
     }
 
     // 加载产品详情数据
-    loadProductDetailData(product) {
+    async loadProductDetailData(product) {
         this.currentProductDetail = product;
-        this.renderProductDetailPage(product);
+        // 使用PageContainer组件渲染产品详情
+        if (this.pageContainer) {
+            await this.pageContainer.renderProductDetail(product);
+        }
     }
 
     // 根据商品ID加载产品详情
@@ -1010,7 +873,7 @@ class HomePage {
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
-                    this.loadProductDetailData(data.product);
+                    await this.loadProductDetailData(data.product);
                 } else {
                     this.showToast('获取产品详情失败: ' + data.error);
                 }
@@ -1023,195 +886,24 @@ class HomePage {
         }
     }
 
-    // 渲染产品详情页面
-    renderProductDetailPage(product) {
-        const pageContainer = document.getElementById('page-container');
-        
-        const productDetailHTML = `
-            <div class="product-detail-page">
-                <div class="page-header">
-                    <h1 class="page-title">产品详情</h1>
-                </div>
-                
-                <div class="product-detail-content">
-                    <!-- 第一个卡片：图表 -->
-                    <div class="detail-section">
-                        <h3 class="section-title">数据趋势</h3>
-                        
-                        <!-- 合并的趋势图表卡片 -->
-                        <div class="detail-card chart-card">
-                            <div class="card-header">
-                                <h4 class="chart-title">销量、价格、评分趋势</h4>
-                            </div>
-                            <div class="card-content">
-                                <div class="charts-container">
-                                    <!-- 销量图表 -->
-                                    <div class="chart-item">
-                                        <h5 class="chart-item-title">销量趋势</h5>
-                                <div class="chart-container">
-                                            <canvas id="sales-chart" width="800" height="150"></canvas>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- 价格图表 -->
-                                    <div class="chart-item">
-                                        <h5 class="chart-item-title">价格趋势</h5>
-                                        <div class="chart-container">
-                                            <canvas id="price-chart" width="800" height="150"></canvas>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- 评分图表 -->
-                                    <div class="chart-item">
-                                        <h5 class="chart-item-title">评分趋势</h5>
-                                        <div class="chart-container">
-                                            <canvas id="rating-chart" width="800" height="150"></canvas>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- 第二个卡片：媒体 -->
-                    <div class="detail-section">
-                        <h3 class="section-title">媒体资源</h3>
-                        <div class="detail-card media-card">
-                            <div class="card-content">
-                                ${this.renderMediaContent(product)}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- 第三个卡片：产品信息 -->
-                    <div class="detail-section">
-                        <h3 class="section-title">产品信息</h3>
-                        <div class="detail-card info-card">
-                            <div class="card-content">
-                                ${this.renderProductInfo(product)}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- 第四个卡片：附件 -->
-                    <div class="detail-section">
-                        <h3 class="section-title">附件</h3>
-                        <div class="detail-card attachments-card">
-                            <div class="card-content">
-                                <div id="attachments-list">
-                                    <div class="loading-attachments">正在加载附件...</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- 最后一个卡片：采集信息（简化版） -->
-                    <div class="detail-section">
-                        <div class="collect-info-simple">
-                            <span class="collect-person">采集人：系统</span>
-                            <span class="collect-separator">•</span>
-                            <span class="collect-time">采集时间：${this.formatCollectTime(product.goodsInfo?.collectTime || product.monitoring?.collectTime)}</span>
-                            <span class="collect-separator">•</span>
-                            <span class="collect-link">采集链接：</span>
-                            <a href="${product.goodsInfo?.collectUrl || '#'}" 
-                               class="collect-url-link" 
-                               target="_blank" 
-                               rel="noopener noreferrer"
-                               id="collect-url-link">
-                                ${product.goodsInfo?.collectUrl ? '查看原链接' : '暂无链接'}
-                            </a>
-                            ${product.goodsInfo?.collectUrl ? `
-                            <button class="copy-btn-small" id="copy-url-btn" title="复制链接">
-                                <i class="ph ph-copy"></i>
-                            </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        pageContainer.innerHTML = productDetailHTML;
-        
-        // 渲染图表
-        this.renderProductChart(product);
-        
-        // 初始化URL功能
-        this.initUrlFeatures();
-        
-        // 加载附件列表
-        this.loadAttachments(product.goodsId);
+    // 导航到产品详情（供其他组件调用）
+    async navigateToProductDetail(goodsId) {
+        await this.loadProductDetailByGoodsId(goodsId);
     }
+
     
-    // 加载附件列表
-    async loadAttachments(goodsId) {
+    // 初始化附件卡片组件
+    async initAttachmentCard(goodsId) {
         const attachmentsList = document.getElementById('attachments-list');
         if (!attachmentsList) return;
         
-        try {
-            const response = await fetch(`http://localhost:3001/api/products/${goodsId}/attachments`);
-            const data = await response.json();
-            
-            if (data.success && data.attachments.length > 0) {
-                attachmentsList.innerHTML = this.renderAttachmentsList(data.attachments);
-            } else {
-                attachmentsList.innerHTML = '<div class="no-attachments">暂无附件</div>';
-            }
-        } catch (error) {
-            console.error('加载附件失败:', error);
-            attachmentsList.innerHTML = '<div class="error-attachments">加载附件失败</div>';
+        // 等待AttachmentCard组件加载
+        if (typeof attachmentCardInstance !== 'undefined') {
+            await attachmentCardInstance.init(goodsId, attachmentsList);
+        } else {
+            console.error('AttachmentCard组件未加载');
+            attachmentsList.innerHTML = '<div class="error-attachments">组件加载失败</div>';
         }
-    }
-    
-    // 渲染附件列表
-    renderAttachmentsList(attachments) {
-        let html = '<div class="attachments-list">';
-        
-        attachments.forEach(attachment => {
-            const sizeText = this.formatFileSize(attachment.size);
-            const modifiedText = this.formatDate(attachment.modified);
-            const iconClass = attachment.name.endsWith('.json') ? 'ph-file-json' : 'ph-file-pdf';
-            
-            html += `
-                <div class="attachment-item">
-                    <div class="attachment-icon">
-                        <i class="ph ${iconClass}"></i>
-                    </div>
-                    <div class="attachment-info">
-                        <div class="attachment-name">${attachment.name}</div>
-                        <div class="attachment-meta">
-                            <span class="attachment-type">${attachment.type}</span>
-                            <span class="attachment-separator">•</span>
-                            <span class="attachment-size">${sizeText}</span>
-                            <span class="attachment-separator">•</span>
-                            <span class="attachment-date">${modifiedText}</span>
-                        </div>
-                    </div>
-                    <div class="attachment-actions">
-                        <button class="attachment-btn" onclick="homePageInstance.downloadAttachment('${attachment.name}')" title="下载">
-                            <i class="ph ph-download"></i>
-                        </button>
-                        ${attachment.name.endsWith('.json') ? `
-                        <button class="attachment-btn" onclick="homePageInstance.viewJsonFile('${attachment.name}')" title="查看">
-                            <i class="ph ph-eye"></i>
-                        </button>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-        });
-        
-        html += '</div>';
-        return html;
-    }
-    
-    // 格式化文件大小
-    formatFileSize(bytes) {
-        if (bytes === 0) return '0 B';
-        const k = 1024;
-        const sizes = ['B', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     }
     
     // 格式化日期
@@ -1226,17 +918,6 @@ class HomePage {
         });
     }
     
-    // 下载附件
-    downloadAttachment(filename) {
-        // 这里可以实现下载功能
-        this.showToast(`下载 ${filename}`, 'info');
-    }
-    
-    // 查看JSON文件
-    viewJsonFile(filename) {
-        // 这里可以实现查看JSON文件内容的功能
-        this.showToast(`查看 ${filename}`, 'info');
-    }
     
     // 初始化URL相关功能
     initUrlFeatures() {
@@ -1588,7 +1269,16 @@ class HomePage {
                 },
                 plugins: {
                     legend: {
-                        display: false
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            font: {
+                                family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                            },
+                            color: 'var(--color-text-secondary)',
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
                     }
                 }
             }
@@ -1772,7 +1462,16 @@ class HomePage {
                 },
                 plugins: {
                     legend: {
-                        display: false
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            font: {
+                                family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                            },
+                            color: 'var(--color-text-secondary)',
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
                     }
                 }
             }
@@ -2084,19 +1783,75 @@ class HomePage {
     // 清理资源
     cleanup() {
         this.stopProductCountRefresh();
+        
+        if (this.topBar) {
+            this.topBar.destroy();
+        }
+        
+        if (this.sideBar) {
+            this.sideBar.destroy();
+        }
+        
+        if (this.pageContainer) {
+            this.pageContainer.destroy();
+        }
+        
+        if (this.settingsModal) {
+            this.settingsModal.destroy();
+        }
+    }
+
+    // 设置窗口控制按钮
+    setupWindowControls() {
+        // 关闭按钮
+        const closeBtn = document.getElementById('close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                if (window.electronAPI && window.electronAPI.windowAPI) {
+                    window.electronAPI.windowAPI.close();
+                }
+            });
+        }
+
+        // 最小化按钮
+        const minimizeBtn = document.getElementById('minimize-btn');
+        if (minimizeBtn) {
+            minimizeBtn.addEventListener('click', () => {
+                if (window.electronAPI && window.electronAPI.windowAPI) {
+                    window.electronAPI.windowAPI.minimize();
+                }
+            });
+        }
+
+        // 全屏按钮
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        if (fullscreenBtn) {
+            fullscreenBtn.addEventListener('click', () => {
+                if (window.electronAPI && window.electronAPI.windowAPI) {
+                    window.electronAPI.windowAPI.toggleFullscreen();
+                }
+            });
+        }
     }
 
     // 打开系统设置弹窗
     openSettingsModal() {
-        // 检查是否已经存在设置弹窗
-        const existingModal = document.querySelector('.settings-modal');
-        if (existingModal) {
-            console.log('设置弹窗已存在，不重复打开');
-            return;
+        if (this.settingsModal) {
+            this.settingsModal.open();
         }
+    }
 
-        console.log('打开系统设置弹窗');
-        this.showSettingsModal();
+    // 处理设置保存
+    handleSettingsSave(settings) {
+        console.log('设置已保存:', settings);
+        
+        // 应用主题设置
+        if (settings.theme) {
+            this.setTheme(settings.theme);
+        }
+        
+        // 应用其他设置
+        this.applyStoredSettings();
     }
 
     // 显示系统设置弹窗
@@ -2434,18 +2189,7 @@ class HomePage {
     // 应用存储的主题
     applyStoredTheme() {
         const theme = this.getCurrentTheme();
-        const body = document.body;
-        
-        // 移除现有主题类
-        body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
-        
-        if (theme === 'auto') {
-            // 跟随系统主题
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            body.classList.add(prefersDark ? 'theme-dark' : 'theme-light');
-        } else {
-            body.classList.add(`theme-${theme}`);
-        }
+        this.setTheme(theme);
     }
 
     // 应用存储的设置
@@ -2695,8 +2439,9 @@ class HomePage {
 // 页面加载完成后初始化
 let homePageInstance = null;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     homePageInstance = new HomePage();
+    await homePageInstance.init();
 });
 
 // 页面卸载时清理资源

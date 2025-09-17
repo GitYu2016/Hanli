@@ -9,82 +9,37 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- 本地图标库 -->
     <link rel="stylesheet" href="icons-fixed.css">
+    <!-- 组件库 -->
+    <script src="components/Common/TopBar.js"></script>
+    <script src="components/Common/SideBar.js"></script>
+    <script src="components/Common/PageContainer.js"></script>
+    <script src="components/Detail/ProductCharts.js"></script>
+    <script src="components/Detail/AttachmentCard.js"></script>
+    <script src="pages/HomePage.js"></script>
+    <script src="pages/ProductLibrary.js"></script>
+    <script src="pages/ProductDetail.js"></script>
+    <script src="components/Modal/SettingsModal.js"></script>
 </head>
 <body>
     <div id="home-page" class="home-page">
-        <!-- TopBar 区域 -->
-        <div id="top-bar" class="top-bar">
-            <div class="top-bar-left">
-                <div class="logo">Hanli</div>
-            </div>
-            <div class="top-bar-center">
-                <div id="top-bar-tabs" class="top-bar-tabs">
-                    <div class="tab active" data-page="home">
-                        <div class="tab-icon">
-                            <i class="ph ph-house"></i>
-                        </div>
-                        <div class="tab-text">首页</div>
-                        <div class="tab-close">
-                            <i class="ph ph-x"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="top-bar-right">
-                <div class="settings-icon" id="settings-btn">
-                    <i class="ph ph-sliders"></i>
-                </div>
-            </div>
+        <!-- 自定义窗口控制按钮 -->
+        <div class="window-controls">
+            <button class="window-control-btn close-btn" id="close-btn">
+                <i class="ph ph-x"></i>
+            </button>
+            <button class="window-control-btn minimize-btn" id="minimize-btn">
+                <i class="ph ph-minus"></i>
+            </button>
+            <button class="window-control-btn fullscreen-btn" id="fullscreen-btn">
+                <i class="ph ph-arrows-out"></i>
+            </button>
         </div>
+
+        <!-- TopBar 区域将由 TopBar 组件动态生成 -->
 
         <!-- 主内容区域 -->
         <div class="main-layout">
-            <!-- SideBar 区域 -->
-            <div id="sidebar" class="sidebar">
-                <div class="sidebar-content">
-                    <div class="sidebar-item active" data-page="home">
-                        <div class="sidebar-item-content">
-                            <div class="sidebar-item-icon">
-                                <i class="ph ph-house"></i>
-                            </div>
-                            <div class="sidebar-item-text">首页</div>
-                        </div>
-                    </div>
-                    
-                    <div class="sidebar-group">
-                        <div class="sidebar-group-title">选品</div>
-                        <div class="sidebar-item" data-page="product-library">
-                            <div class="sidebar-item-content">
-                                <div class="sidebar-item-icon">
-                                    <i class="ph ph-package"></i>
-                                </div>
-                                <div class="sidebar-item-text">产品库</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="sidebar-resizer" id="sidebar-resizer"></div>
-            </div>
-
-            <!-- PageContainer 区域 -->
-            <div id="page-container" class="page-container">
-                <div class="page-content">
-                    <div class="welcome-section">
-                        <h1 class="welcome-title">欢迎使用Hanli</h1>
-                        <p class="welcome-desc">高效管理您的产品信息、图片资源和数据分析</p>
-                    </div>
-                    
-                    <div class="dashboard-grid">
-                        <div class="dashboard-card">
-                            <div class="card-icon">
-                                <i class="ph ph-package"></i>
-                            </div>
-                            <div class="card-title">产品总数</div>
-                            <div class="card-value" id="product-count">0</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- SideBar 和 PageContainer 将由组件动态生成 -->
         </div>
     </div>
 

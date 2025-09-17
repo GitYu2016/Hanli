@@ -41,6 +41,13 @@
     --color-warning: #ffc107;
     --color-info: #17a2b8;
     
+    /* 图标颜色 - 浅色主题 */
+    --color-icon-primary: #666666;    /* 普通图标 */
+    --color-icon-secondary: #999999;  /* 次要图标 */
+    --color-icon-hover: #1a1a1a;      /* 悬停状态 */
+    --color-icon-active: #007bff;     /* 激活状态 */
+    --color-icon-disabled: #cccccc;   /* 禁用状态 */
+    
     /* 图标背景 */
     --color-icon-background: #f8f9fa;
     
