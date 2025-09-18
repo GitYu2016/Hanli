@@ -135,12 +135,11 @@ class HomePageComponent {
      */
     async getTodayCollectCount() {
         try {
-            // 这里可以实现真实的今日采集统计
-            // 暂时返回模拟数据
-            const today = new Date().toISOString().split('T')[0];
-            const response = await fetch(`http://localhost:3001/api/products/count?date=${today}`);
+            // 调用新的API获取今日采集数量
+            const response = await fetch('http://localhost:3001/api/products/today-collect');
             if (response.ok) {
                 const data = await response.json();
+                console.log(`今日采集数量: ${data.count}, 日期: ${data.date}`);
                 return data.count || 0;
             }
             return 0;

@@ -250,6 +250,69 @@ app.get('/api/products/count', async (req, res) => {
     }
 });
 
+// 获取今日采集数量
+app.get('/api/products/today-collect', async (req, res) => {
+    try {
+        const goodsLibraryPath = path.join(dataDir, 'goods-library');
+        
+        // 检查goods-library目录是否存在
+        if (!fs.existsSync(goodsLibraryPath)) {
+            return res.json({ 
+                success: true, 
+                count: 0 
+            });
+        }
+        
+        // 获取今天的日期（东八区）
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD格式
+        
+        // 读取所有商品目录
+        const items = await fsPromises.readdir(goodsLibraryPath, { withFileTypes: true });
+        const productDirs = items.filter(item => item.isDirectory());
+        
+        let todayCollectCount = 0;
+        
+        // 遍历每个商品目录，检查product.json中的collectTime
+        for (const productDir of productDirs) {
+            const productPath = path.join(goodsLibraryPath, productDir.name);
+            const productJsonPath = path.join(productPath, 'product.json');
+            
+            if (fs.existsSync(productJsonPath)) {
+                try {
+                    const productContent = await fsPromises.readFile(productJsonPath, 'utf8');
+                    const productData = JSON.parse(productContent);
+                    
+                    // 检查collectTime是否为今天
+                    if (productData.collectTime) {
+                        const collectDate = new Date(productData.collectTime);
+                        const collectDateStr = collectDate.toISOString().split('T')[0];
+                        
+                        if (collectDateStr === todayStr) {
+                            todayCollectCount++;
+                        }
+                    }
+                } catch (error) {
+                    console.warn(`读取商品信息失败 ${productDir.name}:`, error);
+                }
+            }
+        }
+        
+        res.json({ 
+            success: true, 
+            count: todayCollectCount,
+            date: todayStr
+        });
+    } catch (error) {
+        console.error('获取今日采集数量失败:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: '获取今日采集数量失败',
+            count: 0 
+        });
+    }
+});
+
 // 保存JSON文件
 app.post('/api/save-json-files', async (req, res) => {
     try {

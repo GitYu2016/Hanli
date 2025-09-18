@@ -34,7 +34,8 @@ test/
 ├── test-monitoring-json-format.html   # 监控数据格式测试
 ├── test-products-list-api.html        # 商品清单API测试
 ├── test-today-collection-status.html  # 今日采集状态测试
-└── test-auto-refresh.html             # 自动刷新机制测试
+├── test-auto-refresh.html             # 自动刷新机制测试
+└── test-today-collect.html            # 今日采集统计测试
 ```
 
 ## 🚀 快速开始
@@ -91,6 +92,7 @@ test/
 - **test-products-list-api.html**: 商品清单API测试
 - **test-today-collection-status.html**: 今日采集状态检查测试
 - **test-auto-refresh.html**: 自动刷新机制测试
+- **test-today-collect.html**: 今日采集统计测试
 
 ## 🛠️ 使用方法
 
