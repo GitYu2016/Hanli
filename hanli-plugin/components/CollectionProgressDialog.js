@@ -6,6 +6,7 @@ class CollectionProgressDialog {
         this.totalFiles = 0;
         this.completedFiles = 0;
         this.currentGoodsId = null;
+        this.keydownHandler = null;
         this.fileTypes = {
             json: 0,
             images: 0,
@@ -39,6 +40,13 @@ class CollectionProgressDialog {
         if (this.dialog && this.dialog.parentNode) {
             this.dialog.parentNode.removeChild(this.dialog);
         }
+        
+        // 清理事件监听器
+        if (this.keydownHandler) {
+            document.removeEventListener('keydown', this.keydownHandler);
+            this.keydownHandler = null;
+        }
+        
         this.dialog = null;
         this.isVisible = false;
     }
@@ -233,16 +241,26 @@ class CollectionProgressDialog {
         }
 
         // ESC键关闭（仅在采集完成时）
-        const handleKeyDown = (e) => {
+        this.keydownHandler = (e) => {
             if (e.key === 'Escape') {
-                const title = this.dialog.querySelector('#dialog-title');
-                if (title && title.textContent === '采集完成') {
-                    this.hide();
-                    document.removeEventListener('keydown', handleKeyDown);
+                try {
+                    if (this.dialog && this.dialog.querySelector) {
+                        const title = this.dialog.querySelector('#dialog-title');
+                        if (title && title.textContent === '采集完成') {
+                            this.hide();
+                        }
+                    }
+                } catch (error) {
+                    console.warn('处理ESC键事件时出错:', error);
+                    // 如果出错，移除事件监听器
+                    if (this.keydownHandler) {
+                        document.removeEventListener('keydown', this.keydownHandler);
+                        this.keydownHandler = null;
+                    }
                 }
             }
         };
-        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keydown', this.keydownHandler);
     }
 
     // 打开App

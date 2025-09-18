@@ -45,7 +45,7 @@ class ProductDetailComponent {
                                 <div class="charts-container">
                                     <!-- 销量图表 -->
                                     <div class="chart-item">
-                                        <h5 class="chart-item-title">销量</h5>
+                                        <h5 class="section-subtitle">销量</h5>
                                         <div class="chart-container">
                                             <canvas id="sales-chart" width="800" height="150"></canvas>
                                         </div>
@@ -53,7 +53,7 @@ class ProductDetailComponent {
                                     
                                     <!-- 价格图表 -->
                                     <div class="chart-item">
-                                        <h5 class="chart-item-title">价格</h5>
+                                        <h5 class="section-subtitle">价格</h5>
                                         <div class="chart-container">
                                             <canvas id="price-chart" width="800" height="150"></canvas>
                                         </div>
@@ -233,7 +233,7 @@ class ProductDetailComponent {
         // 视频
         if (product.videos && product.videos.length > 0) {
             mediaHTML += '<div class="media-section">';
-            mediaHTML += '<h4>视频</h4>';
+            mediaHTML += '<h4 class="section-subtitle">视频</h4>';
             mediaHTML += '<div class="video-list">';
             product.videos.forEach((video, index) => {
                 mediaHTML += `
@@ -252,7 +252,7 @@ class ProductDetailComponent {
         // 图片
         if (product.images && product.images.length > 0) {
             mediaHTML += '<div class="media-section">';
-            mediaHTML += '<h4>图片</h4>';
+            mediaHTML += '<h4 class="section-subtitle">图片</h4>';
             mediaHTML += '<div class="image-grid">';
             product.images.forEach((image, index) => {
                 mediaHTML += `
@@ -283,7 +283,7 @@ class ProductDetailComponent {
         
         // 基本信息
         infoHTML += '<div class="info-section">';
-        infoHTML += '<h4>基本信息</h4>';
+        infoHTML += '<h4 class="section-subtitle">基本信息</h4>';
         infoHTML += '<div class="info-list">';
         infoHTML += `<div class="info-item"><span class="label">商品ID:</span><span class="value">${product.goodsId}</span></div>`;
         if (product.itemId) {
@@ -303,7 +303,7 @@ class ProductDetailComponent {
         // 价格信息
         if (product.skuList && product.skuList.length > 0) {
             infoHTML += '<div class="info-section">';
-            infoHTML += '<h4>价格信息</h4>';
+            infoHTML += '<h4 class="section-subtitle">价格信息</h4>';
             infoHTML += '<div class="info-list">';
             product.skuList.forEach((sku, index) => {
                 infoHTML += `<div class="info-item"><span class="label">SKU ${index + 1}:</span><span class="value">${sku.skuName || '未知'}</span></div>`;
@@ -319,7 +319,7 @@ class ProductDetailComponent {
         
         // 销量信息
         infoHTML += '<div class="info-section">';
-        infoHTML += '<h4>销量信息</h4>';
+        infoHTML += '<h4 class="section-subtitle">销量信息</h4>';
         infoHTML += '<div class="info-list">';
         infoHTML += `<div class="info-item"><span class="label">销量:</span><span class="value">${Math.round(product.goodsSold || 0).toLocaleString()}</span></div>`;
         if (product.collectTime) {

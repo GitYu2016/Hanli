@@ -3,168 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>测试hanli协议</title>
+    <title>测试hanliapp协议</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             max-width: 600px;
-            margin: 50px auto;
+            margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
+            background: #f5f5f5;
         }
-        .test-section {
+        .container {
             background: white;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        button {
+        .test-button {
             background: #007AFF;
             color: white;
             border: none;
             padding: 12px 24px;
             border-radius: 6px;
             cursor: pointer;
-            margin: 10px 5px;
             font-size: 14px;
+            margin: 10px 10px 10px 0;
+            transition: background 0.2s;
         }
-        button:hover {
+        .test-button:hover {
             background: #0056CC;
         }
-        .log {
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .code-block {
             background: #f8f9fa;
             border: 1px solid #e9ecef;
             border-radius: 4px;
-            padding: 10px;
+            padding: 15px;
             margin: 10px 0;
-            font-family: monospace;
-            font-size: 12px;
-            max-height: 200px;
-            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            overflow-x: auto;
         }
     </style>
 </head>
 <body>
-    <h1>hanli协议测试页面</h1>
-    
-    <div class="test-section">
-        <h2>1. 测试HTTP API连接</h2>
-        <button onclick="testHttpAPI()">测试HTTP API</button>
-        <div id="http-log" class="log"></div>
-    </div>
-    
-    <div class="test-section">
-        <h2>2. 测试自定义协议</h2>
-        <button onclick="testProtocol()">测试hanliapp://open</button>
-        <button onclick="testProtocolWithData()">测试hanliapp://open?data=test</button>
-        <div id="protocol-log" class="log"></div>
-    </div>
-    
-    <div class="test-section">
-        <h2>3. 测试完整流程</h2>
-        <button onclick="testFullFlow()">测试完整采集流程</button>
-        <div id="flow-log" class="log"></div>
+    <div class="container">
+        <h1>🧪 测试hanliapp协议调用</h1>
+        
+        <div class="status info">
+            <strong>测试说明：</strong>点击下面的按钮测试hanliapp://协议调用，检查App是否正确接收goodsId参数。<br>
+            <strong>注意：</strong>只有存在于数据库中的商品ID才能正常打开产品详情页。下面的按钮使用的都是实际存在的商品ID。
+        </div>
+        
+        <h3>测试按钮：</h3>
+        <button class="test-button" onclick="testProtocol('123456789012')">测试商品ID: 123456789012</button>
+        <button class="test-button" onclick="testProtocol('601099537814729')">测试商品ID: 601099537814729</button>
+        <button class="test-button" onclick="testProtocol('601099548611785')">测试商品ID: 601099548611785</button>
+        <button class="test-button" onclick="testProtocol('601099563571188')">测试商品ID: 601099563571188</button>
+        
+        <h3>调试信息：</h3>
+        <div id="debug-info" class="code-block">
+            等待测试开始...
+        </div>
+        
+        <h3>检查步骤：</h3>
+        <ol>
+            <li>确保Hanli App正在运行</li>
+            <li>点击上面的测试按钮</li>
+            <li>检查App的控制台输出（按F12打开开发者工具）</li>
+            <li>查看是否出现以下日志：
+                <ul>
+                    <li><code>main.js: 收到hanliapp协议调用: hanliapp://open?goodsId=xxx</code></li>
+                    <li><code>main.js: 收到商品ID，准备打开产品详情页: xxx</code></li>
+                    <li><code>main.js: 发送open-product-detail事件到渲染进程，商品ID: xxx</code></li>
+                    <li><code>preload.js: 收到打开产品详情页请求: {goodsId: "xxx"}</code></li>
+                    <li><code>app.js: 收到打开产品详情页请求: {goodsId: "xxx"}</code></li>
+                </ul>
+            </li>
+        </ol>
     </div>
 
     <script>
-        function log(elementId, message) {
-            const logElement = document.getElementById(elementId);
+        function log(message) {
+            const debugInfo = document.getElementById('debug-info');
             const timestamp = new Date().toLocaleTimeString();
-            logElement.innerHTML += `[${timestamp}] ${message}\n`;
-            logElement.scrollTop = logElement.scrollHeight;
+            debugInfo.innerHTML += `[${timestamp}] ${message}\n`;
+            debugInfo.scrollTop = debugInfo.scrollHeight;
         }
-
-        async function testHttpAPI() {
-            log('http-log', '开始测试HTTP API...');
-            try {
-                const response = await fetch('http://localhost:3001/api/health');
-                if (response.ok) {
-                    const result = await response.json();
-                    log('http-log', `HTTP API测试成功: ${JSON.stringify(result)}`);
-                } else {
-                    log('http-log', `HTTP API测试失败: ${response.status}`);
-                }
-            } catch (error) {
-                log('http-log', `HTTP API测试错误: ${error.message}`);
-            }
-        }
-
-        function testProtocol() {
-            log('protocol-log', '尝试打开hanliapp://open协议...');
-            log('protocol-log', '当前应用名称应该是: hanli');
-            try {
-                window.open('hanliapp://open', '_blank');
-                log('protocol-log', '协议调用成功，请检查App是否被唤起');
-                log('protocol-log', '如果App没有唤起，请检查:');
-                log('protocol-log', '1. App是否正在运行');
-                log('protocol-log', '2. 系统是否允许hanli协议');
-                log('protocol-log', '3. 查看App控制台是否有"收到自定义协议URL"日志');
-            } catch (error) {
-                log('protocol-log', `协议调用失败: ${error.message}`);
-            }
-        }
-
-        function testProtocolWithData() {
-            log('protocol-log', '尝试打开hanliapp://open?data=test协议...');
-            try {
-                window.open('hanliapp://open?data=test', '_blank');
-                log('protocol-log', '带数据协议调用成功，请检查App是否被唤起');
-            } catch (error) {
-                log('protocol-log', `带数据协议调用失败: ${error.message}`);
-            }
-        }
-
-        async function testFullFlow() {
-            log('flow-log', '开始测试完整采集流程...');
-            
-            // 模拟采集数据
-            const testData = {
-                goodsId: 'test-' + Date.now(),
-                jsonFiles: ['test.json']
-            };
-            
-            log('flow-log', `模拟数据: ${JSON.stringify(testData)}`);
+        
+        function testProtocol(goodsId) {
+            log(`测试协议调用，商品ID: ${goodsId}`);
             
             try {
-                const response = await fetch('http://localhost:3001/api/import-goods-and-open', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(testData)
-                });
+                // 创建隐藏的iframe来触发协议
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = `hanliapp://open?goodsId=${encodeURIComponent(goodsId)}`;
+                document.body.appendChild(iframe);
                 
-                log('flow-log', `HTTP响应状态: ${response.status}`);
+                log(`已发送协议调用: hanliapp://open?goodsId=${goodsId}`);
                 
-                if (response.ok) {
-                    const result = await response.json();
-                    log('flow-log', `HTTP响应成功: ${JSON.stringify(result)}`);
-                    log('flow-log', '请检查App是否显示了采集成功弹窗');
-                } else {
-                    log('flow-log', `HTTP响应失败，尝试协议唤起...`);
-                    try {
-                        window.open('hanliapp://open', '_blank');
-                        log('flow-log', '协议唤起已尝试');
-                    } catch (e) {
-                        log('flow-log', `协议唤起失败: ${e.message}`);
+                // 立即移除iframe
+                setTimeout(() => {
+                    if (iframe.parentNode) {
+                        iframe.parentNode.removeChild(iframe);
                     }
-                }
+                    log('iframe已移除');
+                }, 100);
+                
             } catch (error) {
-                log('flow-log', `完整流程测试失败: ${error.message}`);
-                log('flow-log', '尝试协议唤起...');
-                try {
-                    window.open('hanliapp://open', '_blank');
-                    log('flow-log', '协议唤起已尝试');
-                } catch (e) {
-                    log('flow-log', `协议唤起失败: ${e.message}`);
-                }
+                log(`协议调用失败: ${error.message}`);
             }
         }
-
-        // 页面加载时自动测试HTTP API
+        
+        // 页面加载完成
         window.addEventListener('load', () => {
-            testHttpAPI();
+            log('测试页面已加载');
+            log('请确保Hanli App正在运行，然后点击测试按钮');
         });
     </script>
 </body>

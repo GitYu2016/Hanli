@@ -192,14 +192,15 @@ class ProductCharts {
                             color: 'rgba(255, 255, 255, 0.1)'
                         },
                         ticks: {
+                            stepSize: 1,
                             callback: function(value) {
-                                return value + '件';
+                                return Math.round(value) + '件';
                             }
                         }
                     },
                     x: {
                         grid: {
-                            color: 'rgba(0, 0, 0, 0.1)'
+                            color: 'rgba(255, 255, 255, 0.1)'
                         }
                     }
                 }
@@ -271,14 +272,15 @@ class ProductCharts {
                             color: 'rgba(255, 255, 255, 0.1)'
                         },
                         ticks: {
+                            stepSize: 1,
                             callback: function(value) {
-                                return '¥' + value;
+                                return '¥' + Math.round(value);
                             }
                         }
                     },
                     x: {
                         grid: {
-                            color: 'rgba(0, 0, 0, 0.1)'
+                            color: 'rgba(255, 255, 255, 0.1)'
                         }
                     }
                 }

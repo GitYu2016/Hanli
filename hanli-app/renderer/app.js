@@ -1067,7 +1067,7 @@ class HomePage {
         // 视频
         if (product.videos && product.videos.length > 0) {
             mediaHTML += '<div class="media-section">';
-            mediaHTML += '<h4>视频</h4>';
+            mediaHTML += '<h4 class="section-subtitle">视频</h4>';
             mediaHTML += '<div class="video-list">';
             product.videos.forEach((video, index) => {
                 mediaHTML += `
@@ -1086,7 +1086,7 @@ class HomePage {
         // 图片
         if (product.images && product.images.length > 0) {
             mediaHTML += '<div class="media-section">';
-            mediaHTML += '<h4>图片</h4>';
+            mediaHTML += '<h4 class="section-subtitle">图片</h4>';
             mediaHTML += '<div class="image-grid">';
             product.images.forEach((image, index) => {
                 mediaHTML += `
@@ -1113,7 +1113,7 @@ class HomePage {
         
         // 基本信息
         infoHTML += '<div class="info-section">';
-        infoHTML += '<h4>基本信息</h4>';
+        infoHTML += '<h4 class="section-subtitle">基本信息</h4>';
         infoHTML += '<div class="info-list">';
         infoHTML += `<div class="info-item"><span class="label">商品ID:</span><span class="value">${product.goodsId}</span></div>`;
         if (product.itemId) {
@@ -1133,7 +1133,7 @@ class HomePage {
         // 价格信息
         if (product.skuList && product.skuList.length > 0) {
             infoHTML += '<div class="info-section">';
-            infoHTML += '<h4>价格信息</h4>';
+            infoHTML += '<h4 class="section-subtitle">价格信息</h4>';
             infoHTML += '<div class="info-list">';
             product.skuList.forEach((sku, index) => {
                 infoHTML += `<div class="info-item"><span class="label">SKU ${index + 1}:</span><span class="value">${sku.skuName || '未知'}</span></div>`;
@@ -1149,7 +1149,7 @@ class HomePage {
         
         // 销量信息
         infoHTML += '<div class="info-section">';
-        infoHTML += '<h4>销量信息</h4>';
+        infoHTML += '<h4 class="section-subtitle">销量信息</h4>';
         infoHTML += '<div class="info-list">';
         infoHTML += `<div class="info-item"><span class="label">销量:</span><span class="value">${Math.round(product.goodsSold || 0).toLocaleString()}</span></div>`;
         if (product.collectTime) {
@@ -1277,7 +1277,7 @@ class HomePage {
                             color: 'var(--color-text-secondary)'
                         },
                         grid: {
-                            color: 'var(--color-border)'
+                            color: 'rgba(255, 255, 255, 0.1)'
                         }
                     },
                     y: {
@@ -1291,10 +1291,14 @@ class HomePage {
                             color: 'var(--color-text-secondary)'
                         },
                         ticks: {
-                            color: 'var(--color-text-secondary)'
+                            color: 'var(--color-text-secondary)',
+                            stepSize: 1,
+                            callback: function(value) {
+                                return Math.round(value);
+                            }
                         },
                         grid: {
-                            color: 'var(--color-border)'
+                            color: 'rgba(255, 255, 255, 0.1)'
                         }
                     }
                 },
@@ -1381,7 +1385,7 @@ class HomePage {
                             color: 'var(--color-text-secondary)'
                         },
                         grid: {
-                            color: 'var(--color-border)'
+                            color: 'rgba(255, 255, 255, 0.1)'
                         }
                     },
                     y: {
@@ -1395,10 +1399,14 @@ class HomePage {
                             color: 'var(--color-text-secondary)'
                         },
                         ticks: {
-                            color: 'var(--color-text-secondary)'
+                            color: 'var(--color-text-secondary)',
+                            stepSize: 1,
+                            callback: function(value) {
+                                return Math.round(value);
+                            }
                         },
                         grid: {
-                            color: 'var(--color-border)'
+                            color: 'rgba(255, 255, 255, 0.1)'
                         }
                     }
                 },
@@ -1468,7 +1476,7 @@ class HomePage {
                             color: 'var(--color-text-secondary)'
                         },
                         grid: {
-                            color: 'var(--color-border)'
+                            color: 'rgba(255, 255, 255, 0.1)'
                         }
                     },
                     y: {
@@ -1484,10 +1492,14 @@ class HomePage {
                             color: 'var(--color-text-secondary)'
                         },
                         ticks: {
-                            color: 'var(--color-text-secondary)'
+                            color: 'var(--color-text-secondary)',
+                            stepSize: 1,
+                            callback: function(value) {
+                                return Math.round(value);
+                            }
                         },
                         grid: {
-                            color: 'var(--color-border)'
+                            color: 'rgba(255, 255, 255, 0.1)'
                         }
                     }
                 },
@@ -1717,54 +1729,61 @@ class HomePage {
         return match ? parseFloat(match[0]) : 0;
     }
 
-    // 渲染简单图表（暂时替代Chart.js）
+    // 渲染简化图表
     renderSimpleChart(canvas, data) {
         const ctx = canvas.getContext('2d');
         const width = canvas.width;
         const height = canvas.height;
-        const padding = 40;
-        const chartWidth = width - padding * 2;
-        const chartHeight = height - padding * 2;
         
         // 清空画布
         ctx.clearRect(0, 0, width, height);
         
-        // 绘制背景
-        ctx.fillStyle = '#f8f9fa';
+        // 绘制背景（透明）
+        ctx.fillStyle = 'transparent';
         ctx.fillRect(0, 0, width, height);
         
-        // 绘制标题
-        ctx.fillStyle = '#333';
-        ctx.font = '16px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('产品数据趋势图', width / 2, 25);
+        // 绘制网格线
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 1;
+        
+        // 绘制纵线
+        for (let i = 0; i <= 10; i++) {
+            const x = (width / 10) * i;
+            ctx.beginPath();
+            ctx.moveTo(x, 20);
+            ctx.lineTo(x, height - 20);
+            ctx.stroke();
+        }
+        
+        // 绘制横线
+        for (let i = 0; i <= 5; i++) {
+            const y = 20 + (height - 40) / 5 * i;
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(width, y);
+            ctx.stroke();
+        }
         
         // 绘制图例
-        const legendY = height - 20;
+        const legendY = height - 10;
         ctx.font = '12px Arial';
         ctx.textAlign = 'left';
         
-        ctx.fillStyle = '#e74c3c';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
         ctx.fillRect(10, legendY - 2, 15, 2);
         ctx.fillText('销量', 30, legendY);
         
-        ctx.fillStyle = '#3498db';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
         ctx.fillRect(80, legendY - 2, 15, 2);
         ctx.fillText('促销价', 100, legendY);
         
-        ctx.fillStyle = '#2ecc71';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.fillRect(150, legendY - 2, 15, 2);
         ctx.fillText('原价', 170, legendY);
         
-        ctx.fillStyle = '#f39c12';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
         ctx.fillRect(200, legendY - 2, 15, 2);
         ctx.fillText('评分', 220, legendY);
-        
-        // 绘制提示信息
-        ctx.fillStyle = '#666';
-        ctx.font = '14px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('（模拟数据 - 需要集成Chart.js实现完整图表功能）', width / 2, height - 5);
     }
 
     // 打开图片模态框

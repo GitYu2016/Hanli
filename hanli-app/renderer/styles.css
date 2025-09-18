@@ -157,7 +157,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     display: flex;
     justify-content: center;
     align-items: center;
-    max-width: 50%;
+    max-width: 80%;
     min-width: 0;
     padding: 0 16px;
 }
@@ -578,7 +578,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 }
 
 .section-title {
-    font-size: 20px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--color-text-primary);
     margin-bottom: 16px;
@@ -986,7 +986,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     }
     
     .top-bar-center {
-        max-width: 60%; /* 移动端给Tab更多空间 */
+        max-width: 80%; /* 移动端给Tab更多空间 */
     }
     
     .logo {
@@ -1016,7 +1016,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     }
     
     .top-bar-center {
-        max-width: 70%; /* 小屏幕给Tab更多空间 */
+        max-width: 80%; /* 小屏幕给Tab更多空间 */
     }
     
     .logo {
@@ -1058,13 +1058,12 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     padding-bottom: 16px;
-    border-bottom: 1px solid var(--color-border);
 }
 
 .page-title {
-    font-size: 24px;
+    font-size: 18px;
     font-weight: 600;
     color: var(--color-text-primary);
     margin: 0;
@@ -1344,7 +1343,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 }
 
 .card-content {
-    padding: 16px;
+    /* padding removed */
 }
 
 /* 图表卡片样式 */
@@ -1365,13 +1364,31 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 }
 
 .chart-item {
-    padding: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 20px 20px 0px 20px;
     background: var(--color-card-bg);
 }
 
 .chart-item:last-child {
     border-bottom: none;
+}
+
+/* 统一的小标题样式 */
+.section-subtitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0 0 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-subtitle::before {
+    content: "";
+    width: 3px;
+    height: 14px;
+    background: var(--color-primary);
+    border-radius: var(--radius-small);
 }
 
 .chart-item-title {
@@ -1885,12 +1902,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     gap: 24px;
 }
 
-.media-section h4 {
-    margin: 0 0 16px 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--color-text-primary);
-}
+/* .media-section h4 样式已统一到 .section-subtitle */
 
 .video-list {
     display: grid;
@@ -1967,14 +1979,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     padding: 16px;
 }
 
-.info-section h4 {
-    margin: 0 0 12px 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--color-text-primary);
-    padding-bottom: 6px;
-    border-bottom: 1px solid var(--color-border);
-}
+/* .info-section h4 样式已统一到 .section-subtitle */
 
 .info-list {
     display: flex;
@@ -2087,7 +2092,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
     }
     
     .card-content {
-        padding: 16px;
+        /* padding removed */
     }
     
     .product-info-grid {
@@ -2280,7 +2285,7 @@ button, input, select, textarea, a, .tab, .sidebar-item, .settings-icon, .top-ba
 
 .section-title {
     margin: 0 0 16px 0;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--color-text-primary);
 }

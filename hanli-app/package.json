@@ -40,7 +40,9 @@
     "protocols": [
       {
         "name": "hanliapp",
-        "schemes": ["hanliapp"]
+        "schemes": [
+          "hanliapp"
+        ]
       }
     ],
     "mac": {
@@ -58,6 +60,7 @@
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "multer": "^2.0.2",
-    "uuid": "^13.0.0"
+    "node-cron": "^4.2.1",
+    "uuid": "^8.3.2"
   }
 }
