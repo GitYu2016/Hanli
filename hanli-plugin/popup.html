@@ -13,6 +13,35 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #1a1a1a;
             color: #ffffff;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        /* 浅色主题 */
+        @media (prefers-color-scheme: light) {
+            body {
+                background: #ffffff;
+                color: #333333;
+            }
+            
+            .status {
+                background: #f8f9fa;
+                color: #333333;
+            }
+            
+            .info {
+                background: #f8f9fa;
+                color: #666666;
+            }
+            
+            .btn-secondary {
+                background: transparent;
+                color: #666666;
+                border: 1px solid #ddd;
+            }
+            
+            .btn-secondary:hover {
+                background: #f0f0f0;
+            }
         }
         
         .header {
@@ -142,6 +171,7 @@
         
         <div class="action-buttons">
             <button class="btn btn-primary" id="collectBtn" disabled>开始采集</button>
+            <button class="btn btn-primary" id="monitorCollectBtn" disabled>仅采集监控数据</button>
             <button class="btn btn-secondary" id="refreshBtn">刷新状态</button>
         </div>
         
@@ -149,7 +179,8 @@
             <strong>使用说明：</strong><br>
             1. 确保Hanli客户端正在运行<br>
             2. 访问Temu商品详情页面<br>
-            3. 点击"开始采集"或右键选择"采集"
+            3. 点击"开始采集"或右键选择"采集"<br>
+            4. 点击"仅采集监控数据"批量更新监控数据
         </div>
     </div>
 

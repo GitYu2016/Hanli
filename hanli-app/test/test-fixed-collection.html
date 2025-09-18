@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>修复后的采集测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn.success {
+            background: #28a745;
+        }
+        .btn.warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        .btn.danger {
+            background: #dc3545;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>修复后的采集功能测试</h1>
+        
+        <div>
+            <h3>控制按钮</h3>
+            <button class="btn success" onclick="testStartCollection()">开始采集</button>
+            <button class="btn warning" onclick="testPauseCollection()">暂停采集</button>
+            <button class="btn danger" onclick="testStopCollection()">停止采集</button>
+            <button class="btn" onclick="testResetCollection()">重置任务</button>
+        </div>
+        
+        <div>
+            <h3>状态检查</h3>
+            <div id="status-check"></div>
+        </div>
+        
+        <div>
+            <h3>测试日志</h3>
+            <div class="log" id="test-log"></div>
+        </div>
+        
+        <div>
+            <h3>任务列表</h3>
+            <div id="task-list"></div>
+        </div>
+    </div>
+    
+    <script src="../renderer/components/Collection/collection.js"></script>
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.textContent += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function updateStatus() {
+            const statusDiv = document.getElementById('status-check');
+            const status = {
+                collectionManager: typeof window.collectionManager,
+                startAutoCollection: typeof window.startAutoCollection,
+                pauseCollection: typeof window.pauseCollection,
+                stopCollection: typeof window.stopCollection,
+                resetCollection: typeof window.resetCollection
+            };
+            
+            let html = '';
+            for (const [key, value] of Object.entries(status)) {
+                const statusClass = value === 'function' ? 'success' : 'error';
+                html += `<span class="status ${statusClass}">${key}: ${value}</span> `;
+            }
+            statusDiv.innerHTML = html;
+        }
+        
+        function testStartCollection() {
+            log('测试开始采集...');
+            
+            if (typeof window.startAutoCollection === 'function') {
+                try {
+                    window.startAutoCollection();
+                    log('✓ startAutoCollection 调用成功');
+                } catch (error) {
+                    log('✗ startAutoCollection 调用失败: ' + error.message);
+                }
+            } else {
+                log('✗ startAutoCollection 函数不存在');
+            }
+        }
+        
+        function testPauseCollection() {
+            log('测试暂停采集...');
+            
+            if (typeof window.pauseCollection === 'function') {
+                try {
+                    window.pauseCollection();
+                    log('✓ pauseCollection 调用成功');
+                } catch (error) {
+                    log('✗ pauseCollection 调用失败: ' + error.message);
+                }
+            } else {
+                log('✗ pauseCollection 函数不存在');
+            }
+        }
+        
+        function testStopCollection() {
+            log('测试停止采集...');
+            
+            if (typeof window.stopCollection === 'function') {
+                try {
+                    window.stopCollection();
+                    log('✓ stopCollection 调用成功');
+                } catch (error) {
+                    log('✗ stopCollection 调用失败: ' + error.message);
+                }
+            } else {
+                log('✗ stopCollection 函数不存在');
+            }
+        }
+        
+        function testResetCollection() {
+            log('测试重置采集...');
+            
+            if (typeof window.resetCollection === 'function') {
+                try {
+                    window.resetCollection();
+                    log('✓ resetCollection 调用成功');
+                } catch (error) {
+                    log('✗ resetCollection 调用失败: ' + error.message);
+                }
+            } else {
+                log('✗ resetCollection 函数不存在');
+            }
+        }
+        
+        function generateTaskList() {
+            const taskListDiv = document.getElementById('task-list');
+            const tasks = [
+                { id: 0, title: '测试商品1', status: 'pending' },
+                { id: 1, title: '测试商品2', status: 'pending' },
+                { id: 2, title: '测试商品3', status: 'pending' }
+            ];
+            
+            let html = '';
+            tasks.forEach(task => {
+                html += `
+                    <div style="padding: 10px; margin: 5px 0; background: #f8f9fa; border-radius: 4px; border-left: 4px solid #007bff;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${task.title}</strong>
+                                <span style="margin-left: 10px; font-size: 12px; color: #666;">ID: ${task.id}</span>
+                            </div>
+                            <span class="status warning" id="task-status-${task.id}">待开始</span>
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-top: 5px;" id="task-progress-${task.id}">等待中...</div>
+                    </div>
+                `;
+            });
+            taskListDiv.innerHTML = html;
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            log('页面加载完成');
+            
+            // 延迟检查状态，确保collection.js已加载
+            setTimeout(() => {
+                updateStatus();
+                generateTaskList();
+                
+                // 设置测试任务
+                if (window.collectionManager) {
+                    const testTasks = [
+                        {
+                            id: 0,
+                            goodsId: '123456789012',
+                            title: '测试商品1',
+                            url: 'https://example.com/product1',
+                            status: 'pending',
+                            progress: '等待中...'
+                        },
+                        {
+                            id: 1,
+                            goodsId: '123456789013',
+                            title: '测试商品2',
+                            url: 'https://example.com/product2',
+                            status: 'pending',
+                            progress: '等待中...'
+                        },
+                        {
+                            id: 2,
+                            goodsId: '123456789014',
+                            title: '测试商品3',
+                            url: 'https://example.com/product3',
+                            status: 'pending',
+                            progress: '等待中...'
+                        }
+                    ];
+                    
+                    window.collectionManager.setTasks(testTasks);
+                    log('✓ 测试任务设置完成');
+                } else {
+                    log('✗ CollectionManager 未加载');
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>

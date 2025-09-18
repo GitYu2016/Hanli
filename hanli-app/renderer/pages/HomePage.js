@@ -19,6 +19,7 @@ class HomePageComponent {
         this.container = container;
         this.render();
         await this.loadDashboardData();
+        
     }
 
     /**
@@ -51,6 +52,7 @@ class HomePageComponent {
                 </div>
                 
             </div>
+            
             
             <div class="quick-actions">
                 <h3 class="section-title">快速操作</h3>
@@ -88,7 +90,7 @@ class HomePageComponent {
     async loadDashboardData() {
         try {
             // 获取产品总数
-            const productResponse = await fetch('/api/products/count');
+            const productResponse = await fetch('http://localhost:3001/api/products/count');
             if (productResponse.ok) {
                 const productData = await productResponse.json();
                 this.dashboardData.productCount = productData.count || 0;
@@ -136,7 +138,7 @@ class HomePageComponent {
             // 这里可以实现真实的今日采集统计
             // 暂时返回模拟数据
             const today = new Date().toISOString().split('T')[0];
-            const response = await fetch(`/api/products/count?date=${today}`);
+            const response = await fetch(`http://localhost:3001/api/products/count?date=${today}`);
             if (response.ok) {
                 const data = await response.json();
                 return data.count || 0;
@@ -157,7 +159,7 @@ class HomePageComponent {
         if (!activityListEl) return;
 
         try {
-            const response = await fetch('/api/activities/recent');
+            const response = await fetch('http://localhost:3001/api/activities/recent');
             if (response.ok) {
                 const data = await response.json();
                 this.renderRecentActivities(data.activities || []);
@@ -273,6 +275,7 @@ class HomePageComponent {
         console.log('显示帮助');
         alert('帮助功能开发中...');
     }
+
 
 
     /**

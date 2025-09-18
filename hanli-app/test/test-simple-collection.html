@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简单采集测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>简单采集测试</h1>
+        
+        <div>
+            <button class="btn" onclick="testClick()">测试点击</button>
+            <button class="btn" onclick="testCollection()">测试采集</button>
+        </div>
+        
+        <div class="log" id="log"></div>
+    </div>
+    
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.textContent += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function testClick() {
+            log('按钮点击测试成功');
+        }
+        
+        function testCollection() {
+            log('开始测试采集功能...');
+            
+            // 检查CollectionManager
+            if (window.collectionManager) {
+                log('✓ CollectionManager存在');
+                
+                // 设置测试任务
+                const testTasks = [
+                    {
+                        id: 0,
+                        goodsId: '123456789012',
+                        title: '测试商品',
+                        url: 'https://example.com/product',
+                        status: 'pending',
+                        progress: '等待中...'
+                    }
+                ];
+                
+                window.collectionManager.setTasks(testTasks);
+                log('✓ 任务设置完成');
+                
+                // 尝试开始采集
+                try {
+                    window.collectionManager.startAutoCollection();
+                    log('✓ 采集启动成功');
+                } catch (error) {
+                    log('✗ 采集启动失败: ' + error.message);
+                }
+            } else {
+                log('✗ CollectionManager不存在');
+            }
+            
+            // 检查全局函数
+            if (window.startAutoCollection) {
+                log('✓ startAutoCollection函数存在');
+            } else {
+                log('✗ startAutoCollection函数不存在');
+            }
+        }
+        
+        // 页面加载完成后检查
+        document.addEventListener('DOMContentLoaded', function() {
+            log('页面加载完成');
+            log('CollectionManager状态: ' + typeof window.collectionManager);
+            log('startAutoCollection状态: ' + typeof window.startAutoCollection);
+        });
+    </script>
+    
+    <!-- 尝试加载collection.js -->
+    <script src="../renderer/components/Collection/collection.js"></script>
+    <script>
+        // 文件加载后检查
+        setTimeout(() => {
+            log('文件加载后检查:');
+            log('CollectionManager状态: ' + typeof window.collectionManager);
+            log('startAutoCollection状态: ' + typeof window.startAutoCollection);
+        }, 1000);
+    </script>
+</body>
+</html>

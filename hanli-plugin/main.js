@@ -132,12 +132,15 @@ class HanliPlugin {
             // 生成媒体数据
             const mediaData = this.generateMediaData(data.goodsInfoData);
             
+            // 将监控数据转换为标准数组格式
+            const monitoringDataArray = this.convertToMonitoringArray(data.monitoringData);
+            
             // 发送JSON文件到App
             const jsonData = {
                 goodsId: data.goodsInfoData.goodsId,
                 collectTime: data.goodsInfoData.collectTime,
                 goodsInfo: JSON.stringify(data.goodsInfoData, null, 2),
-                monitoring: JSON.stringify(data.monitoringData, null, 2),
+                monitoring: JSON.stringify(monitoringDataArray, null, 2),
                 mediaData: JSON.stringify(mediaData, null, 2)
             };
             
@@ -168,6 +171,35 @@ class HanliPlugin {
             console.error('发送JSON数据到hanli-app失败:', error);
             alert('无法连接到hanli-app，请确保应用正在运行');
         }
+    }
+
+    // 将监控数据转换为标准数组格式
+    convertToMonitoringArray(monitoringData) {
+        if (!monitoringData) {
+            return [];
+        }
+
+        // 创建标准格式的监控数据条目
+        const monitoringEntry = {
+            id: Date.now().toString(),
+            utcTime: new Date().toISOString().replace('Z', '+08:00'),
+            goodsData: {
+                goodsSold: monitoringData.goodsSold || '',
+                goodsPromoPrice: monitoringData.goodsPromoPrice || '',
+                goodsTitle: monitoringData.goodsTitle || '',
+                goodsRating: monitoringData.goodsRating || '',
+                goodsReviews: monitoringData.goodsReviews || ''
+            },
+            storeData: {
+                storeSold: monitoringData.storeSold || '',
+                storeFollowers: monitoringData.storeFollowers || '',
+                storeItemsNum: monitoringData.storeltemsNum || '',
+                storeRating: monitoringData.storeRating || '',
+                storeName: monitoringData.storeName || ''
+            }
+        };
+
+        return [monitoringEntry];
     }
     
     // 异步下载媒体文件

@@ -103,6 +103,45 @@ contextBridge.exposeInMainWorld('electronAPI', {
         
         // 获取CPU使用情况
         getCPUUsage: () => ipcRenderer.invoke('system-get-cpu-usage')
+    },
+    
+    // 监控采集API
+    monitorAPI: {
+        // 打开系统浏览器
+        openSystemBrowser: (url) => ipcRenderer.invoke('open-system-browser', url),
+        
+        // 请求监控采集
+        requestMonitorCollection: (data) => ipcRenderer.invoke('request-monitor-collection', data),
+        
+        // 发送URL列表给插件
+        sendUrlListToPlugin: (data) => ipcRenderer.invoke('send-url-list-to-plugin', data),
+        // 在浏览器中打开HTML
+        openHTMLInBrowser: (data) => ipcRenderer.invoke('open-html-in-browser', data),
+        
+        // 监听采集完成通知
+        onMonitorCollectionCompleted: (callback) => {
+            ipcRenderer.on('monitor-collection-completed', callback);
+        },
+        
+        // 移除采集完成监听器
+        removeMonitorCollectionCompletedListener: (callback) => {
+            ipcRenderer.removeListener('monitor-collection-completed', callback);
+        }
+    },
+    
+    // 采集结果发送API（用于浏览器窗口中的脚本）
+    sendCollectionResult: (result) => {
+        ipcRenderer.send('collection-result', result);
+    },
+    
+    // 监听文件变化
+    on: (channel, callback) => {
+        ipcRenderer.on(channel, callback);
+    },
+    
+    // 移除文件变化监听器
+    removeListener: (channel, callback) => {
+        ipcRenderer.removeListener(channel, callback);
     }
 });
 

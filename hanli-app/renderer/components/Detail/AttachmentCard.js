@@ -38,7 +38,7 @@ class AttachmentCard {
         }
 
         try {
-            const response = await fetch(`/api/products/${this.goodsId}/attachments`);
+            const response = await fetch(`http://localhost:3001/api/products/${this.goodsId}/attachments`);
             const data = await response.json();
             
             if (data.success && data.attachments) {
@@ -144,7 +144,7 @@ class AttachmentCard {
         if (!this.goodsId) return;
 
         try {
-            const response = await fetch(`/api/products/${this.goodsId}/file/${encodeURIComponent(fileName)}`);
+            const response = await fetch(`http://localhost:3001/api/products/${this.goodsId}/file/${encodeURIComponent(fileName)}`);
             
             if (response.ok) {
                 const data = await response.json();
@@ -214,7 +214,7 @@ class AttachmentCard {
         if (!this.goodsId) return;
 
         try {
-            const response = await fetch(`/api/products/${this.goodsId}/file/${encodeURIComponent(fileName)}`);
+            const response = await fetch(`http://localhost:3001/api/products/${this.goodsId}/file/${encodeURIComponent(fileName)}`);
             const data = await response.json();
             
             if (data.success) {

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>店铺开店年份测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .test-section {
+            margin-bottom: 24px;
+            padding: 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #333;
+        }
+        .test-button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .test-button:hover {
+            background: #0056CC;
+        }
+        .test-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .log-area {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 12px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .status {
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .data-preview {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 12px;
+            margin-top: 12px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .test-case {
+            margin-bottom: 16px;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: #f9f9f9;
+        }
+        .test-case-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        .test-case-input {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            color: #666;
+        }
+        .test-case-result {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            color: #007AFF;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>店铺开店年份测试</h1>
+        <p>测试 storeStartYear 字段的优化，验证年份计算逻辑</p>
+
+        <div class="test-section">
+            <div class="test-title">1. 年份计算测试</div>
+            <button class="test-button" onclick="testYearCalculation()">测试年份计算</button>
+            <div id="year-status" class="status" style="display: none;"></div>
+            <div id="year-results"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">2. 数据生成测试</div>
+            <button class="test-button" onclick="testDataGeneration()">生成测试数据</button>
+            <div id="generation-status" class="status" style="display: none;"></div>
+            <div id="generation-results"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">3. 测试日志</div>
+            <button class="test-button" onclick="clearLog()">清空日志</button>
+            <div id="log-area" class="log-area"></div>
+        </div>
+    </div>
+
+    <script>
+        // 日志函数
+        function log(message, type = 'info') {
+            const logArea = document.getElementById('log-area');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
+            logArea.textContent += logEntry;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log-area').textContent = '';
+        }
+
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+            element.style.display = 'block';
+        }
+
+        // 测试年份计算
+        function testYearCalculation() {
+            log('开始测试年份计算...');
+            showStatus('year-status', '正在测试年份计算...', 'info');
+            
+            const testCases = [
+                { input: '店铺于 1 年前加入 Temu', expected: 2024 },
+                { input: '店铺于 2 年前加入 Temu', expected: 2023 },
+                { input: '店铺于 3 年前加入 Temu', expected: 2022 },
+                { input: '店铺于 5 年前加入 Temu', expected: 2020 },
+                { input: '店铺于 10 年前加入 Temu', expected: 2015 },
+                { input: '店铺于 0 年前加入 Temu', expected: 2025 },
+                { input: '店铺于 15 年前加入 Temu', expected: 2010 },
+                { input: '无效文本', expected: 0 },
+                { input: '', expected: 0 },
+                { input: null, expected: 0 }
+            ];
+
+            let allPassed = true;
+            const currentYear = new Date().getFullYear();
+            
+            const resultsDiv = document.getElementById('year-results');
+            resultsDiv.innerHTML = '<h4>测试结果:</h4>';
+            
+            testCases.forEach((testCase, index) => {
+                const result = extractStoreStartYearNumeric(testCase.input);
+                const passed = result === testCase.expected;
+                allPassed = allPassed && passed;
+                
+                log(`测试 ${index + 1}: "${testCase.input}" -> ${result} (期望: ${testCase.expected}) ${passed ? '✓' : '✗'}`);
+                
+                const testCaseDiv = document.createElement('div');
+                testCaseDiv.className = 'test-case';
+                testCaseDiv.innerHTML = `
+                    <div class="test-case-title">测试 ${index + 1}: ${passed ? '✓ 通过' : '✗ 失败'}</div>
+                    <div class="test-case-input">输入: "${testCase.input}"</div>
+                    <div class="test-case-result">结果: ${result} (期望: ${testCase.expected})</div>
+                `;
+                resultsDiv.appendChild(testCaseDiv);
+            });
+            
+            if (allPassed) {
+                showStatus('year-status', '年份计算测试通过', 'success');
+                log('年份计算测试通过');
+            } else {
+                showStatus('year-status', '年份计算测试失败', 'error');
+                log('年份计算测试失败', 'error');
+            }
+        }
+
+        // 测试数据生成
+        function testDataGeneration() {
+            log('开始测试数据生成...');
+            showStatus('generation-status', '正在生成测试数据...', 'info');
+            
+            try {
+                // 模拟不同的店铺标签数据
+                const testCases = [
+                    { mallTags: [{ text: '店铺于 1 年前加入 Temu' }] },
+                    { mallTags: [{ text: '店铺于 3 年前加入 Temu' }] },
+                    { mallTags: [{ text: '店铺于 5 年前加入 Temu' }] },
+                    { mallTags: [{ text: '店铺于 10 年前加入 Temu' }] },
+                    { mallTags: [] },
+                    { mallTags: [{ text: '其他标签' }] }
+                ];
+                
+                const results = testCases.map((testCase, index) => {
+                    const rawData = {
+                        store: {
+                            moduleMap: {
+                                mallModule: {
+                                    data: {
+                                        mallData: testCase
+                                    }
+                                }
+                            }
+                        }
+                    };
+                    
+                    const monitoringData = generateMonitoringData(rawData);
+                    return {
+                        index: index + 1,
+                        input: testCase.mallTags[0]?.text || '无标签',
+                        result: monitoringData.storeData.storeStartYear
+                    };
+                });
+                
+                showStatus('generation-status', '数据生成测试完成', 'success');
+                log('数据生成测试完成');
+                
+                // 显示生成的数据
+                const resultsDiv = document.getElementById('generation-results');
+                resultsDiv.innerHTML = `
+                    <h4>生成的监控数据:</h4>
+                    <div class="data-preview">
+${JSON.stringify(results, null, 2)}
+                    </div>
+                `;
+                
+            } catch (error) {
+                showStatus('generation-status', `数据生成失败: ${error.message}`, 'error');
+                log(`数据生成失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 提取店铺开始年份数值的函数（复制自插件）
+        function extractStoreStartYearNumeric(startYearText) {
+            if (!startYearText || typeof startYearText !== 'string') {
+                return 0;
+            }
+            
+            // 提取年份数字，如 "店铺于 1 年前加入 Temu" -> 1
+            const yearMatch = startYearText.match(/(\d+)\s*年/);
+            if (yearMatch) {
+                const yearsAgo = parseInt(yearMatch[1]);
+                // 计算实际的开店年份：当前年份 - 几年前
+                const currentYear = new Date().getFullYear();
+                const actualStartYear = currentYear - yearsAgo;
+                return actualStartYear;
+            }
+            
+            // 如果没有找到年份信息，返回0
+            return 0;
+        }
+
+        // 生成监控数据（模拟插件）
+        function generateMonitoringData(rawData) {
+            const mallData = rawData?.store?.moduleMap?.mallModule?.data?.mallData || {};
+            const storeStartYearRaw = (mallData?.mallTags || []).map(tag => tag.text).join('|');
+            const storeStartYear = extractStoreStartYearNumeric(storeStartYearRaw);
+            
+            return {
+                timestamp: new Date().toLocaleString('sv-SE', { 
+                    timeZone: 'Asia/Shanghai' 
+                }).replace(' ', 'T'),
+                goodsData: {
+                    goodsSold: Math.floor(Math.random() * 1000) + 1000,
+                    goodsPromoPrice: `$${(Math.random() * 50 + 1).toFixed(2)}`
+                },
+                storeData: {
+                    storeSold: Math.floor(Math.random() * 1000000) + 10000,
+                    storeFollowers: Math.floor(Math.random() * 10000) + 100,
+                    storeltemsNum: Math.floor(Math.random() * 1000) + 10,
+                    storeRating: Math.round((Math.random() * 2 + 3) * 10) / 10,
+                    storeStartYear: storeStartYear
+                }
+            };
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            log('店铺开店年份测试页面已加载');
+            log(`当前年份: ${new Date().getFullYear()}`);
+        });
+    </script>
+</body>
+</html>

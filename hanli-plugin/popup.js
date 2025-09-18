@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const statusIcon = document.getElementById('statusIcon');
     const statusText = document.getElementById('statusText');
     const collectBtn = document.getElementById('collectBtn');
+    const monitorCollectBtn = document.getElementById('monitorCollectBtn');
     const refreshBtn = document.getElementById('refreshBtn');
     const currentPage = document.getElementById('currentPage');
 
@@ -26,6 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 statusText.textContent = 'Hanli已连接';
                 collectBtn.disabled = false;
                 collectBtn.textContent = '开始采集';
+                monitorCollectBtn.disabled = false;
                 console.log('连接检查成功:', result);
             } else {
                 const errorText = await response.text();
@@ -37,6 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             statusText.textContent = 'Hanli未连接';
             collectBtn.disabled = true;
             collectBtn.textContent = '请先启动Hanli';
+            monitorCollectBtn.disabled = true;
         }
     }
 
@@ -113,6 +116,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+        // 仅采集监控数据 - 打开HTML页面
+        async function openMonitorCollectionPage() {
+            if (monitorCollectBtn.disabled) return;
+
+            try {
+                // 打开监控数据采集页面
+                const url = chrome.runtime.getURL('monitor-collection.html');
+                await chrome.tabs.create({ url: url });
+                
+                // 关闭弹窗
+                window.close();
+            } catch (error) {
+                console.error('打开监控数据采集页面失败:', error);
+                alert('打开监控数据采集页面失败: ' + error.message);
+            }
+        }
+
     // 刷新状态
     async function refreshStatus() {
         refreshBtn.disabled = true;
@@ -126,6 +146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 绑定事件
     collectBtn.addEventListener('click', executeCollection);
+    monitorCollectBtn.addEventListener('click', openMonitorCollectionPage);
     refreshBtn.addEventListener('click', refreshStatus);
 
     // 初始检查

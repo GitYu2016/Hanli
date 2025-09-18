@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品清单API测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn.success {
+            background: #28a745;
+        }
+        .btn.warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        .btn.danger {
+            background: #dc3545;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 5px;
+            display: inline-block;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .product-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #007bff;
+        }
+        .product-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .product-title {
+            font-weight: bold;
+            color: #333;
+        }
+        .product-url {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 14px;
+            word-break: break-all;
+        }
+        .product-url:hover {
+            text-decoration: underline;
+        }
+        .product-meta {
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>商品清单API测试</h1>
+        
+        <div>
+            <h3>API测试</h3>
+            <button class="btn" onclick="testProductsListAPI()">测试商品清单API</button>
+            <button class="btn success" onclick="testProductsAPI()">测试商品列表API</button>
+            <button class="btn warning" onclick="testFileStructure()">检查文件结构</button>
+            <button class="btn danger" onclick="clearLog()">清空日志</button>
+        </div>
+        
+        <div>
+            <h3>测试结果</h3>
+            <div id="test-results"></div>
+        </div>
+        
+        <div>
+            <h3>商品清单</h3>
+            <div id="products-list"></div>
+        </div>
+        
+        <div>
+            <h3>测试日志</h3>
+            <div class="log" id="test-log"></div>
+        </div>
+    </div>
+    
+    <script>
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const typeClass = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            logDiv.innerHTML += `<div class="log-entry"><span class="log-timestamp">[${timestamp}]</span> <span class="log-${typeClass}">${message}</span></div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function showResult(message, isSuccess) {
+            const resultDiv = document.getElementById('test-results');
+            const statusClass = isSuccess ? 'success' : 'error';
+            resultDiv.innerHTML = `<div class="status ${statusClass}">${message}</div>`;
+        }
+
+        async function testProductsListAPI() {
+            log('测试 /api/monitor/get-products-list API...');
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/monitor/get-products-list');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    log(`✅ 商品清单API调用成功`, 'success');
+                    log(`获取到 ${data.products.length} 个商品`, 'info');
+                    
+                    if (data.products.length > 0) {
+                        showResult(`✅ 成功获取 ${data.products.length} 个商品`, true);
+                        renderProductsList(data.products);
+                    } else {
+                        showResult('⚠️ 商品清单为空', false);
+                        log('可能的原因:', 'warning');
+                        log('1. goods-library目录不存在', 'warning');
+                        log('2. 商品目录中没有product.json文件', 'warning');
+                        log('3. product.json文件中没有collectUrl字段', 'warning');
+                    }
+                } else {
+                    throw new Error(data.error || 'API返回失败');
+                }
+                
+            } catch (error) {
+                log(`❌ 商品清单API调用失败: ${error.message}`, 'error');
+                showResult(`❌ API调用失败: ${error.message}`, false);
+            }
+        }
+
+        async function testProductsAPI() {
+            log('测试 /api/products API...');
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/products');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    log(`✅ 商品列表API调用成功`, 'success');
+                    log(`获取到 ${data.products.length} 个商品`, 'info');
+                    
+                    if (data.products.length > 0) {
+                        log('商品列表示例:', 'info');
+                        data.products.slice(0, 3).forEach((product, index) => {
+                            log(`  ${index + 1}. ${product.goodsId}: ${product.goodsTitleEn || product.goodsTitleCn || '无标题'}`, 'info');
+                        });
+                    }
+                } else {
+                    throw new Error(data.error || 'API返回失败');
+                }
+                
+            } catch (error) {
+                log(`❌ 商品列表API调用失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testFileStructure() {
+            log('检查文件结构...');
+            
+            try {
+                // 检查goods-library目录
+                const response = await fetch('http://localhost:3001/api/products');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.success && data.products.length > 0) {
+                        log(`✅ goods-library目录存在，包含 ${data.products.length} 个商品`, 'success');
+                        
+                        // 检查第一个商品的文件结构
+                        const firstProduct = data.products[0];
+                        log(`检查商品 ${firstProduct.goodsId} 的文件结构:`, 'info');
+                        
+                        // 检查product.json
+                        if (firstProduct.collectUrl) {
+                            log(`  ✅ product.json存在，collectUrl: ${firstProduct.collectUrl.substring(0, 50)}...`, 'success');
+                        } else {
+                            log(`  ❌ product.json中缺少collectUrl字段`, 'error');
+                        }
+                        
+                        if (firstProduct.goodsTitleEn || firstProduct.goodsTitleCn) {
+                            log(`  ✅ 商品标题: ${firstProduct.goodsTitleEn || firstProduct.goodsTitleCn}`, 'success');
+                        } else {
+                            log(`  ❌ 商品标题为空`, 'error');
+                        }
+                        
+                    } else {
+                        log(`❌ goods-library目录为空或不存在`, 'error');
+                    }
+                } else {
+                    log(`❌ 无法访问goods-library目录`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ 检查文件结构失败: ${error.message}`, 'error');
+            }
+        }
+
+        function renderProductsList(products) {
+            const productsListDiv = document.getElementById('products-list');
+            
+            if (products.length === 0) {
+                productsListDiv.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">暂无商品数据</div>';
+                return;
+            }
+
+            const html = products.map((product, index) => `
+                <div class="product-item">
+                    <div class="product-header">
+                        <div>
+                            <div class="product-title">${product.title}</div>
+                            <div class="product-meta">商品ID: ${product.goodsId}</div>
+                        </div>
+                        <span class="status status-${product.status}">${product.progress}</span>
+                    </div>
+                    <a href="${product.collectUrl}" class="product-url" target="_blank">${product.collectUrl}</a>
+                </div>
+            `).join('');
+
+            productsListDiv.innerHTML = html;
+        }
+
+        function clearLog() {
+            document.getElementById('test-log').innerHTML = '';
+            document.getElementById('test-results').innerHTML = '';
+            document.getElementById('products-list').innerHTML = '';
+        }
+
+        // 页面加载完成后自动测试
+        document.addEventListener('DOMContentLoaded', function() {
+            log('商品清单API测试工具已加载');
+            log('点击"测试商品清单API"开始测试');
+        });
+    </script>
+</body>
+</html>

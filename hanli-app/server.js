@@ -692,6 +692,526 @@ app.get('/api/products/:goodsId/file/:fileName', async (req, res) => {
     }
 });
 
+// 扫描所有产品的collectUrl
+app.get('/api/monitor/scan-urls', async (req, res) => {
+    try {
+        const goodsLibraryDir = path.join(dataDir, 'goods-library');
+        const urls = [];
+        
+        // 检查goods-library目录是否存在
+        if (!fs.existsSync(goodsLibraryDir)) {
+            return res.json({ 
+                success: true, 
+                urls: [],
+                count: 0,
+                message: '没有找到产品数据'
+            });
+        }
+        
+        // 读取所有产品目录
+        const entries = await fsPromises.readdir(goodsLibraryDir, { withFileTypes: true });
+        
+        for (const entry of entries) {
+            if (entry.isDirectory()) {
+                const productDir = path.join(goodsLibraryDir, entry.name);
+                const productJsonPath = path.join(productDir, 'product.json');
+                
+                try {
+                    // 读取product.json文件
+                    if (fs.existsSync(productJsonPath)) {
+                        const productData = await fsPromises.readFile(productJsonPath, 'utf8');
+                        const product = JSON.parse(productData);
+                        
+                        // 检查是否有collectUrl
+                        if (product.collectUrl) {
+                            urls.push({
+                                goodsId: entry.name,
+                                collectUrl: product.collectUrl,
+                                goodsTitle: product.goodsTitleEn || product.goodsTitleCn || '未知商品'
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.warn(`读取产品数据失败: ${entry.name}`, error.message);
+                }
+            }
+        }
+        
+        res.json({
+            success: true,
+            urls: urls,
+            count: urls.length,
+            message: `成功扫描到 ${urls.length} 个URL`
+        });
+        
+    } catch (error) {
+        console.error('扫描URL失败:', error);
+        res.status(500).json({
+            success: false,
+            error: '扫描URL失败',
+            urls: [],
+            count: 0
+        });
+    }
+});
+
+// 保存监控数据
+app.post('/api/monitor/save-data', async (req, res) => {
+    try {
+        const { goodsId, monitoringData } = req.body;
+        
+        if (!goodsId || !monitoringData) {
+            return res.status(400).json({ 
+                success: false, 
+                error: '商品ID和监控数据不能为空' 
+            });
+        }
+
+        // 验证商品ID格式（12位数字）
+        if (!/^\d{12}$/.test(goodsId)) {
+            return res.status(400).json({
+                success: false,
+                error: '商品ID格式不正确，应为12位数字'
+            });
+        }
+
+        // 验证监控数据格式
+        if (!monitoringData.timestamp || !monitoringData.goodsData || !monitoringData.storeData) {
+            return res.status(400).json({
+                success: false,
+                error: '监控数据格式不正确，缺少必要字段'
+            });
+        }
+
+        // 验证时间戳格式
+        const timestampRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
+        if (!timestampRegex.test(monitoringData.timestamp)) {
+            return res.status(400).json({
+                success: false,
+                error: '时间戳格式不正确，应为YYYY-MM-DDTHH:mm:ss格式'
+            });
+        }
+
+        // 验证商品数据
+        if (typeof monitoringData.goodsData.goodsSold !== 'number' || 
+            typeof monitoringData.goodsData.goodsPromoPrice !== 'number') {
+            return res.status(400).json({
+                success: false,
+                error: '商品数据格式不正确'
+            });
+        }
+
+        // 验证店铺数据
+        const storeData = monitoringData.storeData;
+        if (typeof storeData.storeSold !== 'number' || 
+            typeof storeData.storeFollowers !== 'number' || 
+            typeof storeData.storeltemsNum !== 'number' || 
+            typeof storeData.storeRating !== 'number' ||
+            typeof storeData.storeStartYear !== 'number') {
+            return res.status(400).json({
+                success: false,
+                error: '店铺数据格式不正确'
+            });
+        }
+        
+        const goodsLibraryDir = path.join(dataDir, 'goods-library');
+        const productDir = path.join(goodsLibraryDir, goodsId);
+        
+        // 确保产品目录存在
+        if (!fs.existsSync(productDir)) {
+            await fsPromises.mkdir(productDir, { recursive: true });
+        }
+        
+        // 保存monitoring.json文件 - 时间序列追加模式
+        const monitoringPath = path.join(productDir, 'monitoring.json');
+        
+        // 读取现有数据
+        let existingData = [];
+        if (fs.existsSync(monitoringPath)) {
+            try {
+                const existingContent = await fsPromises.readFile(monitoringPath, 'utf8');
+                existingData = JSON.parse(existingContent);
+                if (!Array.isArray(existingData)) {
+                    existingData = [];
+                }
+            } catch (error) {
+                console.warn(`读取现有监控数据失败: ${goodsId}`, error.message);
+                existingData = [];
+            }
+        }
+        
+        // 追加新数据
+        existingData.push(monitoringData);
+        
+        // 按时间戳排序（最新的在前）
+        existingData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        // 限制历史数据数量（保留最近100条记录）
+        if (existingData.length > 100) {
+            existingData = existingData.slice(0, 100);
+        }
+        
+        await fsPromises.writeFile(monitoringPath, JSON.stringify(existingData, null, 2), 'utf8');
+        
+        console.log(`监控数据已保存: ${goodsId}`);
+        
+        res.json({
+            success: true,
+            message: '监控数据保存成功',
+            filePath: monitoringPath
+        });
+        
+    } catch (error) {
+        console.error('保存监控数据失败:', error);
+        res.status(500).json({
+            success: false,
+            error: '保存监控数据失败: ' + error.message
+        });
+    }
+});
+
+// 更新监控数据
+app.post('/api/monitor/update-data', async (req, res) => {
+    try {
+        console.log('开始更新监控数据...');
+        
+        const goodsLibraryDir = path.join(dataDir, 'goods-library');
+        
+        // 检查商品库目录是否存在
+        if (!fs.existsSync(goodsLibraryDir)) {
+            return res.json({
+                success: true,
+                message: '商品库目录不存在，无需更新',
+                updatedCount: 0
+            });
+        }
+        
+        // 获取所有商品目录
+        const productDirs = await fsPromises.readdir(goodsLibraryDir);
+        const validProductDirs = productDirs.filter(dir => {
+            // 检查是否为12位数字目录
+            return /^\d{12}$/.test(dir) && fs.statSync(path.join(goodsLibraryDir, dir)).isDirectory();
+        });
+        
+        if (validProductDirs.length === 0) {
+            return res.json({
+                success: true,
+                message: '没有找到有效的商品目录',
+                updatedCount: 0
+            });
+        }
+        
+        let updatedCount = 0;
+        const errors = [];
+        
+        // 遍历每个商品目录，更新监控数据
+        for (const goodsId of validProductDirs) {
+            try {
+                const productDir = path.join(goodsLibraryDir, goodsId);
+                const monitoringPath = path.join(productDir, 'monitoring.json');
+                
+                // 检查监控数据文件是否存在
+                if (!fs.existsSync(monitoringPath)) {
+                    console.log(`商品 ${goodsId} 没有监控数据文件，跳过`);
+                    continue;
+                }
+                
+                // 读取现有监控数据
+                const existingContent = await fsPromises.readFile(monitoringPath, 'utf8');
+                let existingData = JSON.parse(existingContent);
+                
+                if (!Array.isArray(existingData) || existingData.length === 0) {
+                    console.log(`商品 ${goodsId} 监控数据为空，跳过`);
+                    continue;
+                }
+                
+                // 获取最新的监控数据
+                const latestData = existingData[0];
+                
+                // 生成新的时间戳（当前时间）
+                const newTimestamp = new Date().toLocaleString('sv-SE', {
+                    timeZone: 'Asia/Shanghai'
+                }).replace(' ', 'T');
+                
+                // 创建新的监控数据（保持相同的数据，只更新时间戳）
+                const newMonitoringData = {
+                    ...latestData,
+                    timestamp: newTimestamp
+                };
+                
+                // 将新数据添加到数组开头
+                existingData.unshift(newMonitoringData);
+                
+                // 限制历史数据数量（保留最近100条记录）
+                if (existingData.length > 100) {
+                    existingData = existingData.slice(0, 100);
+                }
+                
+                // 保存更新后的数据
+                await fsPromises.writeFile(monitoringPath, JSON.stringify(existingData, null, 2), 'utf8');
+                
+                console.log(`商品 ${goodsId} 监控数据已更新`);
+                updatedCount++;
+                
+            } catch (error) {
+                console.error(`更新商品 ${goodsId} 监控数据失败:`, error);
+                errors.push(`商品 ${goodsId}: ${error.message}`);
+            }
+        }
+        
+        console.log(`监控数据更新完成，共更新 ${updatedCount} 个商品`);
+        
+        res.json({
+            success: true,
+            message: `监控数据更新完成`,
+            updatedCount: updatedCount,
+            totalProducts: validProductDirs.length,
+            errors: errors.length > 0 ? errors : undefined
+        });
+        
+    } catch (error) {
+        console.error('更新监控数据失败:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// 处理插件采集完成通知
+app.post('/api/monitor/collection-completed', async (req, res) => {
+    try {
+        const { goodsId, success, monitoringData, error } = req.body;
+        
+        console.log('收到插件采集完成通知:', { goodsId, success, error });
+        
+        if (success && monitoringData) {
+            // 验证商品ID格式
+            if (!/^\d{12}$/.test(goodsId)) {
+                return res.status(400).json({
+                    success: false,
+                    error: '商品ID格式不正确，应为12位数字'
+                });
+            }
+            
+            // 验证监控数据格式
+            if (!monitoringData.timestamp || !monitoringData.goodsData || !monitoringData.storeData) {
+                return res.status(400).json({
+                    success: false,
+                    error: '监控数据格式不正确，缺少必要字段'
+                });
+            }
+            
+            // 保存监控数据
+            const productDir = path.join(dataDir, 'goods-library', goodsId);
+            await fsPromises.mkdir(productDir, { recursive: true });
+            
+            const monitoringPath = path.join(productDir, 'monitoring.json');
+            let existingData = [];
+            
+            // 读取现有数据
+            if (fs.existsSync(monitoringPath)) {
+                try {
+                    const existingContent = await fsPromises.readFile(monitoringPath, 'utf8');
+                    existingData = JSON.parse(existingContent);
+                    if (!Array.isArray(existingData)) {
+                        existingData = [];
+                    }
+                } catch (error) {
+                    console.warn('读取现有监控数据失败，将创建新文件:', error.message);
+                    existingData = [];
+                }
+            }
+            
+            // 追加新数据
+            existingData.push(monitoringData);
+            
+            // 按时间戳排序（最新的在前）
+            existingData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            // 限制历史数据数量（保留最近100条记录）
+            if (existingData.length > 100) {
+                existingData = existingData.slice(0, 100);
+            }
+            
+            // 写入文件
+            await fsPromises.writeFile(monitoringPath, JSON.stringify(existingData, null, 2), 'utf8');
+            
+            console.log(`监控数据已保存: ${goodsId}`);
+        }
+        
+        res.json({ success: true });
+        
+    } catch (error) {
+        console.error('处理插件采集完成通知失败:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// 获取商品清单
+app.get('/api/monitor/get-products-list', async (req, res) => {
+    try {
+        const goodsLibraryDir = path.join(dataDir, 'goods-library');
+        
+        if (!fs.existsSync(goodsLibraryDir)) {
+            return res.json({ success: true, products: [] });
+        }
+        
+        const productDirs = await fsPromises.readdir(goodsLibraryDir);
+        const products = [];
+        
+        for (const productDir of productDirs) {
+            const productPath = path.join(goodsLibraryDir, productDir);
+            const stat = await fsPromises.stat(productPath);
+            
+            if (stat.isDirectory()) {
+                // 读取product.json获取商品信息
+                const productJsonPath = path.join(productPath, 'product.json');
+                if (fs.existsSync(productJsonPath)) {
+                    try {
+                        const productContent = await fsPromises.readFile(productJsonPath, 'utf8');
+                        const productData = JSON.parse(productContent);
+                        
+                        // 提取采集URL
+                        const collectUrl = productData.collectUrl || productData.url || '';
+                        if (collectUrl) {
+                            products.push({
+                                goodsId: productDir,
+                                title: productData.goodsTitleCn || productData.goodsTitleEn || productData.title || '未知商品',
+                                collectUrl: collectUrl,
+                                status: 'pending',
+                                progress: '等待中...'
+                            });
+                        }
+                    } catch (error) {
+                        console.error(`读取商品信息失败 ${productDir}:`, error);
+                    }
+                }
+            }
+        }
+        
+        console.log(`获取到 ${products.length} 个商品`);
+        res.json({ success: true, products: products });
+    } catch (error) {
+        console.error('获取商品清单失败:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// 获取monitoring.json数据
+app.get('/api/monitor/get-monitoring-data', async (req, res) => {
+    try {
+        const { goodsId } = req.query;
+        
+        if (!goodsId) {
+            return res.status(400).json({
+                success: false,
+                error: '缺少goodsId参数'
+            });
+        }
+        
+        const productDir = path.join(dataDir, 'goods-library', goodsId);
+        const monitoringPath = path.join(productDir, 'monitoring.json');
+        
+        if (!fs.existsSync(monitoringPath)) {
+            return res.status(404).json({
+                success: false,
+                error: 'monitoring.json文件不存在'
+            });
+        }
+        
+        const content = await fsPromises.readFile(monitoringPath, 'utf8');
+        const monitoringData = JSON.parse(content);
+        
+        res.json({
+            success: true,
+            monitoringData: monitoringData
+        });
+        
+    } catch (error) {
+        console.error('获取monitoring.json失败:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// 更新monitoring.json数据
+app.post('/api/monitor/update-monitoring-data', async (req, res) => {
+    try {
+        const { goodsId, monitoringData } = req.body;
+        
+        if (!goodsId || !monitoringData) {
+            return res.status(400).json({
+                success: false,
+                error: '缺少必要参数'
+            });
+        }
+        
+        const productDir = path.join(dataDir, 'goods-library', goodsId);
+        
+        // 确保产品目录存在
+        if (!fs.existsSync(productDir)) {
+            await fsPromises.mkdir(productDir, { recursive: true });
+        }
+        
+        const monitoringPath = path.join(productDir, 'monitoring.json');
+        
+        // 读取现有数据
+        let existingData = [];
+        if (fs.existsSync(monitoringPath)) {
+            try {
+                const existingContent = await fsPromises.readFile(monitoringPath, 'utf8');
+                existingData = JSON.parse(existingContent);
+                if (!Array.isArray(existingData)) {
+                    existingData = [];
+                }
+            } catch (error) {
+                console.warn(`读取现有monitoring.json失败，将创建新文件: ${error.message}`);
+                existingData = [];
+            }
+        }
+        
+        // 合并数据
+        let finalData;
+        if (Array.isArray(monitoringData)) {
+            // 如果是数组，追加到现有数据
+            finalData = [...existingData, ...monitoringData];
+        } else {
+            // 如果是单个对象，追加到现有数据
+            finalData = [...existingData, monitoringData];
+        }
+        
+        // 限制历史记录数量（最多100条）
+        if (finalData.length > 100) {
+            finalData = finalData.slice(-100);
+        }
+        
+        // 保存更新后的数据
+        await fsPromises.writeFile(monitoringPath, JSON.stringify(finalData, null, 2), 'utf8');
+        
+        console.log(`monitoring.json已更新: ${goodsId}，新增 ${Array.isArray(monitoringData) ? monitoringData.length : 1} 条记录`);
+        
+        res.json({
+            success: true,
+            message: 'monitoring.json更新成功',
+            goodsId: goodsId,
+            totalRecords: finalData.length
+        });
+        
+    } catch (error) {
+        console.error('更新monitoring.json失败:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 // 启动服务器
 async function startServer() {
     await ensureDataDir();

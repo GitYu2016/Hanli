@@ -35,6 +35,7 @@
     // 媒体管理器
     let mediaManager = null;
     let collectButton = null;
+    let monitorButton = null;
     // 将采集状态设为全局变量，供popup.js访问
     window.isCollecting = false;
     
@@ -48,7 +49,7 @@
         return isTemu;
     }
 
-    // 创建悬浮采集按钮
+    // 创建悬浮按钮容器
     function createCollectButton() {
         console.log('尝试创建采集按钮...');
         if (collectButton) {
@@ -56,16 +57,29 @@
             return; // 按钮已存在
         }
 
-        collectButton = document.createElement('div');
-        collectButton.id = 'hanli-collect-btn';
-        collectButton.innerHTML = '采集并监控';
-        collectButton.style.cssText = `
+        // 创建按钮容器
+        const buttonContainer = document.createElement('div');
+        buttonContainer.id = 'hanli-button-container';
+        buttonContainer.style.cssText = `
             position: fixed;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 10000;
-            background: #000000;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        `;
+
+        // 检测系统主题
+        const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        // 创建"采集并监控"按钮
+        collectButton = document.createElement('div');
+        collectButton.id = 'hanli-collect-btn';
+        collectButton.innerHTML = '采集并监控';
+        collectButton.style.cssText = `
+            background: ${isDarkMode ? '#000000' : '#333333'};
             color: white;
             padding: 12px 24px;
             border-radius: var(--radius-medium);
@@ -79,22 +93,66 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            min-width: 120px;
         `;
 
-        // 悬停效果
+        // 创建"仅采集监控数据"按钮
+        monitorButton = document.createElement('div');
+        monitorButton.id = 'hanli-monitor-btn';
+        monitorButton.innerHTML = '仅采集监控数据';
+        monitorButton.style.cssText = `
+            background: #4a9eff;
+            color: white;
+            padding: 12px 24px;
+            border-radius: var(--radius-medium);
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 140px;
+        `;
+
+        // 采集按钮悬停效果
         collectButton.addEventListener('mouseenter', () => {
-            collectButton.style.background = '#333333';
-            collectButton.style.transform = 'translateX(-50%) translateY(-2px)';
-            collectButton.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.4)';
+            if (!collectButton.disabled) {
+                collectButton.style.background = isDarkMode ? '#333333' : '#555555';
+                collectButton.style.transform = 'translateY(-2px)';
+                collectButton.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.4)';
+            }
         });
 
         collectButton.addEventListener('mouseleave', () => {
-            collectButton.style.background = '#000000';
-            collectButton.style.transform = 'translateX(-50%) translateY(0)';
-            collectButton.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+            if (!collectButton.disabled) {
+                collectButton.style.background = isDarkMode ? '#000000' : '#333333';
+                collectButton.style.transform = 'translateY(0)';
+                collectButton.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+            }
         });
 
-        // 点击事件
+        // 监控按钮悬停效果
+        monitorButton.addEventListener('mouseenter', () => {
+            if (!monitorButton.disabled) {
+                monitorButton.style.background = '#3a8eef';
+                monitorButton.style.transform = 'translateY(-2px)';
+                monitorButton.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.4)';
+            }
+        });
+
+        monitorButton.addEventListener('mouseleave', () => {
+            if (!monitorButton.disabled) {
+                monitorButton.style.background = '#4a9eff';
+                monitorButton.style.transform = 'translateY(0)';
+                monitorButton.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+            }
+        });
+
+        // 采集按钮点击事件
         collectButton.addEventListener('click', () => {
             if (window.isCollecting) {
                 console.log('采集正在进行中，请等待完成');
@@ -106,16 +164,28 @@
             showCollectionProgressDialog();
         });
 
-        document.body.appendChild(collectButton);
-        console.log('采集按钮已创建');
+        // 监控按钮点击事件
+        monitorButton.addEventListener('click', () => {
+            console.log('仅采集监控数据按钮被点击');
+            collectMonitoringDataOnly();
+        });
+
+        // 将按钮添加到容器
+        buttonContainer.appendChild(collectButton);
+        buttonContainer.appendChild(monitorButton);
+        document.body.appendChild(buttonContainer);
+        
+        console.log('采集按钮和监控按钮已创建');
     }
 
     // 移除采集按钮
     function removeCollectButton() {
-        if (collectButton) {
-            collectButton.remove();
+        const buttonContainer = document.getElementById('hanli-button-container');
+        if (buttonContainer) {
+            buttonContainer.remove();
             collectButton = null;
-            console.log('采集按钮已移除');
+            monitorButton = null;
+            console.log('采集按钮和监控按钮已移除');
         }
     }
 
@@ -137,12 +207,21 @@
     function updateCollectButtonStatus(status) {
         if (!collectButton) return;
         
+        // 检测当前主题
+        const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
         switch (status) {
             case 'collecting':
                 collectButton.innerHTML = '采集中...';
                 collectButton.style.background = '#666666';
                 collectButton.style.cursor = 'not-allowed';
                 collectButton.disabled = true;
+                // 同时禁用监控按钮
+                if (monitorButton) {
+                    monitorButton.style.background = '#666666';
+                    monitorButton.style.cursor = 'not-allowed';
+                    monitorButton.disabled = true;
+                }
                 window.isCollecting = true;
                 break;
             case 'completed':
@@ -150,14 +229,26 @@
                 collectButton.style.background = '#4caf50';
                 collectButton.style.cursor = 'default';
                 collectButton.disabled = true;
+                // 重新启用监控按钮
+                if (monitorButton) {
+                    monitorButton.style.background = '#4a9eff';
+                    monitorButton.style.cursor = 'pointer';
+                    monitorButton.disabled = false;
+                }
                 window.isCollecting = false;
                 break;
             case 'ready':
             default:
                 collectButton.innerHTML = '采集并监控';
-                collectButton.style.background = '#000000';
+                collectButton.style.background = isDarkMode ? '#000000' : '#333333';
                 collectButton.style.cursor = 'pointer';
                 collectButton.disabled = false;
+                // 重新启用监控按钮
+                if (monitorButton) {
+                    monitorButton.style.background = '#4a9eff';
+                    monitorButton.style.cursor = 'pointer';
+                    monitorButton.disabled = false;
+                }
                 window.isCollecting = false;
                 break;
         }
@@ -588,6 +679,269 @@
         document.addEventListener('keydown', handleKeyDown);
     }
 
+    // 执行监控采集
+    async function performMonitorCollection(goodsId) {
+        try {
+            console.log(`开始监控采集: ${goodsId}`);
+            
+            // 找到包含 window.rawData 的 <script>
+            let scripts = Array.from(document.querySelectorAll("script"));
+            let rawScript = scripts.find(s => s.textContent.includes("window.rawData"));
+            if (!rawScript) {
+                throw new Error("未找到 window.rawData");
+            }
+
+            // 正则提取 JSON 字符串
+            let match = rawScript.textContent.match(/window\.rawData\s*=\s*(\{.*?\});/s);
+            if (!match) {
+                throw new Error("无法解析 window.rawData");
+            }
+
+            let jsonStr = match[1];
+            let rawData;
+            try {
+                rawData = JSON.parse(jsonStr);
+            } catch (e) {
+                throw new Error("JSON解析失败: " + e.message);
+            }
+
+            // 提取监控数据
+            const monitoringData = extractMonitoringData(rawData);
+            
+            // 通知App采集完成
+            notifyAppCollectionCompleted(goodsId, monitoringData);
+            
+        } catch (error) {
+            console.error('监控采集失败:', error);
+            // 通知App采集失败
+            notifyAppCollectionCompleted(goodsId, null, error.message);
+        }
+    }
+
+    // 提取监控数据
+    function extractMonitoringData(rawData) {
+        // 提取销量数值的函数
+        function extractSoldNumeric(soldText) {
+            if (!soldText || typeof soldText !== 'string') {
+                return 0;
+            }
+            
+            const cleaned = soldText.replace(/[^\d.kKw万]/g, '');
+            if (!cleaned) {
+                return 0;
+            }
+            
+            if (cleaned.includes('万') || cleaned.includes('w') || cleaned.includes('W')) {
+                const match = cleaned.match(/(\d+(?:\.\d+)?)[万wW]/);
+                if (match) {
+                    return Math.round(parseFloat(match[1]) * 10000);
+                }
+            } else if (cleaned.includes('k') || cleaned.includes('K')) {
+                const match = cleaned.match(/(\d+(?:\.\d+)?)[kK]/);
+                if (match) {
+                    return Math.round(parseFloat(match[1]) * 1000);
+                }
+            } else {
+                const match = cleaned.match(/(\d+(?:\.\d+)?)/);
+                if (match) {
+                    return Math.round(parseFloat(match[1]));
+                }
+            }
+            
+            return 0;
+        }
+
+        // 提取店铺销量数值的函数
+        function extractStoreSoldNumeric(storeSoldText) {
+            if (!storeSoldText || typeof storeSoldText !== 'string') {
+                return 0;
+            }
+            
+            const cleaned = storeSoldText.replace(/[^\d.kKw万]/g, '');
+            if (!cleaned) {
+                return 0;
+            }
+            
+            if (cleaned.includes('万') || cleaned.includes('w') || cleaned.includes('W')) {
+                const match = cleaned.match(/(\d+(?:\.\d+)?)[万wW]/);
+                if (match) {
+                    return Math.round(parseFloat(match[1]) * 10000);
+                }
+            } else if (cleaned.includes('k') || cleaned.includes('K')) {
+                const match = cleaned.match(/(\d+(?:\.\d+)?)[kK]/);
+                if (match) {
+                    return Math.round(parseFloat(match[1]) * 1000);
+                }
+            } else {
+                const match = cleaned.match(/(\d+(?:\.\d+)?)/);
+                if (match) {
+                    return Math.round(parseFloat(match[1]));
+                }
+            }
+            
+            return 0;
+        }
+
+        // 提取店铺粉丝数数值的函数
+        function extractStoreFollowersNumeric(followersText) {
+            if (!followersText || typeof followersText !== 'string') {
+                return 0;
+            }
+            
+            const cleaned = followersText.replace(/[^\d.kKw万]/g, '');
+            if (!cleaned) {
+                return 0;
+            }
+            
+            if (cleaned.includes('万') || cleaned.includes('w') || cleaned.includes('W')) {
+                const match = cleaned.match(/(\d+(?:\.\d+)?)[万wW]/);
+                if (match) {
+                    return Math.round(parseFloat(match[1]) * 10000);
+                }
+            } else if (cleaned.includes('k') || cleaned.includes('K')) {
+                const match = cleaned.match(/(\d+(?:\.\d+)?)[kK]/);
+                if (match) {
+                    return Math.round(parseFloat(match[1]) * 1000);
+                }
+            } else {
+                const match = cleaned.match(/(\d+(?:\.\d+)?)/);
+                if (match) {
+                    return Math.round(parseFloat(match[1]));
+                }
+            }
+            
+            return 0;
+        }
+
+        // 提取店铺商品数数值的函数
+        function extractStoreItemsNumeric(itemsText) {
+            if (!itemsText || typeof itemsText !== 'string') {
+                return 0;
+            }
+            
+            const cleaned = itemsText.replace(/[^\d.kKw万]/g, '');
+            if (!cleaned) {
+                return 0;
+            }
+            
+            if (cleaned.includes('万') || cleaned.includes('w') || cleaned.includes('W')) {
+                const match = cleaned.match(/(\d+(?:\.\d+)?)[万wW]/);
+                if (match) {
+                    return Math.round(parseFloat(match[1]) * 10000);
+                }
+            } else if (cleaned.includes('k') || cleaned.includes('K')) {
+                const match = cleaned.match(/(\d+(?:\.\d+)?)[kK]/);
+                if (match) {
+                    return Math.round(parseFloat(match[1]) * 1000);
+                }
+            } else {
+                const match = cleaned.match(/(\d+(?:\.\d+)?)/);
+                if (match) {
+                    return Math.round(parseFloat(match[1]));
+                }
+            }
+            
+            return 0;
+        }
+
+        // 提取店铺开始年份数值的函数
+        function extractStoreStartYearNumeric(startYearText) {
+            if (!startYearText || typeof startYearText !== 'string') {
+                return 0;
+            }
+            
+            // 提取年份数字，如 "店铺于 1 年前加入 Temu" -> 1
+            const yearMatch = startYearText.match(/(\d+)\s*年/);
+            if (yearMatch) {
+                const yearsAgo = parseInt(yearMatch[1]);
+                // 计算实际的开店年份：当前年份 - 几年前
+                const currentYear = new Date().getFullYear();
+                const actualStartYear = currentYear - yearsAgo;
+                return actualStartYear;
+            }
+            
+            // 如果没有找到年份信息，返回0
+            return 0;
+        }
+
+        // 价格转换函数：将美元价格转换为人民币数值
+        function convertPriceToCNY(priceStr) {
+            if (!priceStr || typeof priceStr !== 'string') {
+                return 0;
+            }
+            
+            // 提取价格数字，支持 $1.99, $2, $10.50 等格式
+            const priceMatch = priceStr.match(/\$?(\d+(?:\.\d+)?)/);
+            if (priceMatch) {
+                const usdPrice = parseFloat(priceMatch[1]);
+                // 美元转人民币汇率（可以根据需要调整）
+                const exchangeRate = 7.0; // 1 USD = 7 CNY
+                const cnyPrice = Math.round(usdPrice * exchangeRate * 100) / 100; // 保留两位小数
+                return cnyPrice;
+            }
+            
+            return 0;
+        }
+
+        let goodsSoldRaw = rawData?.store?.goods?.sideSalesTip || "";
+        let goodsSold = extractSoldNumeric(goodsSoldRaw);
+        
+        let mallData = rawData?.store?.moduleMap?.mallModule?.data?.mallData || {};
+        let storeSoldRaw = (mallData?.goodsSalesNumUnit || []).join(' ');
+        let storeFollowersRaw = (mallData?.followerNumUnit || []).join(' ');
+        let storeltemsNumRaw = (mallData?.goodsNumUnit || []).join(' ');
+        let storeStartYearRaw = (mallData?.mallTags || []).map(tag => tag.text).join('|');
+        
+        let storeSold = extractStoreSoldNumeric(storeSoldRaw);
+        let storeFollowers = extractStoreFollowersNumeric(storeFollowersRaw);
+        let storeltemsNum = extractStoreItemsNumeric(storeltemsNumRaw);
+        let storeStartYear = extractStoreStartYearNumeric(storeStartYearRaw);
+
+        // 转换价格：美元转人民币数值
+        let goodsPromoPriceStr = rawData?.store?.sku?.[0]?.normalPriceStr || '';
+        let goodsPromoPrice = convertPriceToCNY(goodsPromoPriceStr);
+
+        return {
+            timestamp: new Date().toLocaleString('sv-SE', { 
+                timeZone: 'Asia/Shanghai' 
+            }).replace(' ', 'T'),
+            goodsData: {
+                goodsSold: goodsSold, // 数字
+                goodsPromoPrice: goodsPromoPrice // 数字（人民币）
+            },
+            storeData: {
+                storeSold: storeSold, // 数字
+                storeFollowers: storeFollowers, // 数字
+                storeltemsNum: storeltemsNum, // 数字
+                storeRating: mallData?.mallStar || 0, // 数字
+                storeStartYear: storeStartYear // 数字
+            }
+        };
+    }
+
+    // 通知App采集完成
+    function notifyAppCollectionCompleted(goodsId, monitoringData, error = null) {
+        const data = {
+            goodsId: goodsId,
+            success: !error,
+            monitoringData: monitoringData,
+            error: error
+        };
+        
+        console.log('通知App采集完成:', data);
+        
+        // 通过fetch发送到App
+        fetch('http://localhost:3001/api/monitor/collection-completed', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        }).catch(err => {
+            console.error('通知App失败:', err);
+        });
+    }
+
     // 暴露采集函数到全局作用域，供右键菜单调用
     window.scrapeRawData = scrapeRawData;
     
@@ -807,7 +1161,11 @@
         // 提取年份数字，如 "店铺于 1 年前加入 Temu" -> 1
         const yearMatch = startYearText.match(/(\d+)\s*年/);
         if (yearMatch) {
-            return parseInt(yearMatch[1]);
+            const yearsAgo = parseInt(yearMatch[1]);
+            // 计算实际的开店年份：当前年份 - 几年前
+            const currentYear = new Date().getFullYear();
+            const actualStartYear = currentYear - yearsAgo;
+            return actualStartYear;
         }
         
         // 如果没有找到年份信息，返回0
@@ -1536,6 +1894,63 @@
         window.dispatchEvent(new CustomEvent('hanliPopupCollectionCompleted'));
     });
 
+    // 监听监控采集请求
+    document.addEventListener('hanliMonitorCollectionRequest', (event) => {
+        console.log('收到监控采集请求:', event.detail);
+        const { goodsId, collectUrl } = event.detail;
+        
+        // 检查当前页面是否匹配请求的URL
+        if (window.location.href === collectUrl) {
+            console.log('页面匹配，开始监控采集');
+            // 执行监控采集
+            performMonitorCollection(goodsId);
+        }
+    });
+
+    // 自动检测URL变化并触发监控采集
+    let lastUrl = window.location.href;
+    const urlCheckInterval = setInterval(() => {
+        if (window.location.href !== lastUrl) {
+            lastUrl = window.location.href;
+            console.log('URL变化检测到:', lastUrl);
+            
+            // 检查是否是Temu商品页面
+            if (isTemuProductPage()) {
+                console.log('检测到Temu商品页面，尝试自动监控采集');
+                // 尝试从URL或页面数据中提取goodsId
+                let goodsId = '';
+                try {
+                    // 尝试从URL中提取商品ID
+                    const urlParams = new URLSearchParams(window.location.search);
+                    goodsId = urlParams.get('goods_id') || urlParams.get('id') || '';
+                    
+                    // 如果URL中没有，尝试从页面数据中获取
+                    if (!goodsId) {
+                        const scripts = Array.from(document.querySelectorAll("script"));
+                        const rawScript = scripts.find(s => s.textContent.includes("window.rawData"));
+                        if (rawScript) {
+                            const match = rawScript.textContent.match(/window\.rawData\s*=\s*(\{.*?\});/s);
+                            if (match) {
+                                const rawData = JSON.parse(match[1]);
+                                goodsId = rawData?.store?.goodsId || '';
+                            }
+                        }
+                    }
+                    
+                    if (goodsId) {
+                        console.log(`自动触发监控采集: ${goodsId}`);
+                        // 延迟执行，确保页面完全加载
+                        setTimeout(() => {
+                            performMonitorCollection(goodsId);
+                        }, 3000);
+                    }
+                } catch (error) {
+                    console.warn('自动监控采集失败:', error);
+                }
+            }
+        }
+    }, 1000); // 每秒检查一次
+
     // 监听采集失败事件
     document.addEventListener('hanliCollectionFailed', () => {
         console.log('收到采集失败通知，重置按钮状态');
@@ -1554,5 +1969,460 @@
             window.collectionProgressDialog.hide();
         }
     });
+
+    // 监听localStorage变化，处理监控数据采集请求
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'collectionRequest') {
+            console.log('收到监控数据采集请求:', e.newValue);
+            
+            try {
+                const request = JSON.parse(e.newValue);
+                if (request.action === 'startCollection') {
+                    handleMonitorCollectionRequest(request);
+                }
+            } catch (error) {
+                console.error('解析采集请求失败:', error);
+                // 返回错误结果
+                localStorage.setItem('collectionResult_' + request.taskId, JSON.stringify({
+                    success: false,
+                    error: '解析采集请求失败: ' + error.message
+                }));
+            }
+        }
+    });
+
+    // 处理监控数据采集请求
+    async function handleMonitorCollectionRequest(request) {
+        const { taskId, goodsId, url } = request;
+        console.log(`开始处理监控数据采集请求: 任务ID=${taskId}, 商品ID=${goodsId}, URL=${url}`);
+        
+        try {
+            // 检查当前页面是否是目标URL
+            if (window.location.href !== url) {
+                console.log('当前页面URL不匹配，跳过采集');
+                localStorage.setItem('collectionResult_' + taskId, JSON.stringify({
+                    success: false,
+                    error: '页面URL不匹配'
+                }));
+                return;
+            }
+            
+            // 执行监控数据采集
+            const monitoringData = await performMonitorDataCollection(goodsId);
+            
+            if (monitoringData) {
+                // 返回成功结果
+                localStorage.setItem('collectionResult_' + taskId, JSON.stringify({
+                    success: true,
+                    collectedData: {
+                        goodsData: monitoringData.goodsData || {},
+                        storeData: monitoringData.storeData || {}
+                    }
+                }));
+                console.log('监控数据采集成功:', taskId);
+            } else {
+                throw new Error('采集数据为空');
+            }
+            
+        } catch (error) {
+            console.error('监控数据采集失败:', error);
+            // 返回错误结果
+            localStorage.setItem('collectionResult_' + taskId, JSON.stringify({
+                success: false,
+                error: error.message
+            }));
+        }
+    }
+
+    // 执行监控数据采集
+    async function performMonitorDataCollection(goodsId) {
+        try {
+            console.log(`开始监控数据采集: ${goodsId}`);
+            
+            // 显示采集提示卡片
+            showCollectionCard();
+            
+            // 等待1秒让用户看到提示
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // 找到包含 window.rawData 的 <script>
+            let scripts = Array.from(document.querySelectorAll("script"));
+            let rawScript = scripts.find(s => s.textContent.includes("window.rawData"));
+            if (!rawScript) {
+                throw new Error("未找到 window.rawData");
+            }
+
+            // 正则提取 JSON 字符串
+            let match = rawScript.textContent.match(/window\.rawData\s*=\s*(\{.*?\});/s);
+            if (!match) {
+                throw new Error("无法解析 window.rawData");
+            }
+
+            let jsonStr = match[1];
+            let rawData;
+            try {
+                rawData = JSON.parse(jsonStr);
+            } catch (e) {
+                throw new Error("JSON解析失败: " + e.message);
+            }
+
+            // 提取监控数据
+            const monitoringData = extractMonitoringData(rawData);
+            
+            // 隐藏采集提示卡片
+            hideCollectionCard();
+            
+            // 转换为监控数据采集页面需要的格式
+            return {
+                goodsData: {
+                    goodsSold: monitoringData.goodsSold,
+                    goodsPromoPrice: monitoringData.goodsPromoPrice,
+                    goodsTitle: monitoringData.goodsTitle,
+                    goodsRating: monitoringData.goodsRating,
+                    goodsReviews: monitoringData.goodsReviews
+                },
+                storeData: {
+                    storeSold: monitoringData.storeSold,
+                    storeFollowers: monitoringData.storeFollowers,
+                    storeItemsNum: monitoringData.storeltemsNum,
+                    storeRating: monitoringData.storeRating,
+                    storeName: monitoringData.storeName
+                }
+            };
+            
+        } catch (error) {
+            console.error('监控数据采集失败:', error);
+            // 确保在出错时也隐藏提示卡片
+            hideCollectionCard();
+            throw error;
+        }
+    }
+
+    // 显示采集提示卡片
+    function showCollectionCard() {
+        // 如果已经存在，先移除
+        hideCollectionCard();
+        
+        // 创建采集提示卡片
+        const card = document.createElement('div');
+        card.id = 'hanli-collection-card';
+        card.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #ff6b35, #f7931e);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 999999;
+            text-align: center;
+            min-width: 400px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            animation: fadeIn 0.3s ease-in-out;
+        `;
+        
+        card.innerHTML = `
+            <div style="font-size: 24px; font-weight: bold; margin-bottom: 15px;">
+                🔄 正在采集数据
+            </div>
+            <div style="font-size: 16px; margin-bottom: 10px;">
+                汉利插件正在自动采集监控数据
+            </div>
+            <div style="display: flex; justify-content: center; align-items: center;">
+                <div style="width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid white; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px;"></div>
+                <span>请稍候，正在处理页面数据...</span>
+            </div>
+            <style>
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+                    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                }
+                @keyframes fadeOut {
+                    from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                    to { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+                }
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+        `;
+        
+        document.body.appendChild(card);
+        console.log('显示采集提示卡片');
+    }
+
+    // 隐藏采集提示卡片
+    function hideCollectionCard() {
+        const card = document.getElementById('hanli-collection-card');
+        if (card) {
+            card.style.animation = 'fadeOut 0.3s ease-in-out';
+            setTimeout(() => {
+                if (card.parentNode) {
+                    card.parentNode.removeChild(card);
+                }
+            }, 300);
+            console.log('隐藏采集提示卡片');
+        }
+    }
+
+    // 仅采集监控数据（不采集图片和商品信息）
+    async function collectMonitoringDataOnly() {
+        try {
+            console.log('开始仅采集监控数据...');
+            
+            // 更新按钮状态为采集中
+            updateMonitorButtonStatus('collecting');
+            
+            // 找到包含 window.rawData 的 <script>
+            let scripts = Array.from(document.querySelectorAll("script"));
+            let rawScript = scripts.find(s => s.textContent.includes("window.rawData"));
+            if (!rawScript) {
+                throw new Error("未找到 window.rawData");
+            }
+
+            // 正则提取 JSON 字符串
+            let match = rawScript.textContent.match(/window\.rawData\s*=\s*(\{.*?\});/s);
+            if (!match) {
+                throw new Error("无法解析 window.rawData");
+            }
+
+            let jsonStr = match[1];
+            let rawData;
+            try {
+                rawData = JSON.parse(jsonStr);
+            } catch (e) {
+                throw new Error("JSON解析失败: " + e.message);
+            }
+
+            // 提取监控数据
+            const monitoringData = extractMonitoringData(rawData);
+            
+            // 获取商品ID
+            const goodsId = rawData?.store?.goodsId || "";
+            if (!goodsId) {
+                throw new Error("无法获取商品ID");
+            }
+
+            // 转换为监控数据格式
+            const monitoringEntry = {
+                id: Date.now().toString(),
+                utcTime: new Date().toISOString().replace('Z', '+08:00'),
+                goodsData: {
+                    goodsSold: monitoringData.goodsData.goodsSold + "件",
+                    goodsPromoPrice: "¥" + monitoringData.goodsData.goodsPromoPrice,
+                    goodsTitle: rawData?.store?.goods?.goodsName || "",
+                    goodsRating: rawData?.store?.goods?.rating || "0",
+                    goodsReviews: (rawData?.store?.goods?.reviewCount || 0) + "条评价"
+                },
+                storeData: {
+                    storeSold: monitoringData.storeData.storeSold + "件",
+                    storeFollowers: monitoringData.storeData.storeFollowers + "人关注",
+                    storeItemsNum: monitoringData.storeData.storeltemsNum + "个商品",
+                    storeRating: monitoringData.storeData.storeRating.toString(),
+                    storeName: rawData?.store?.moduleMap?.mallModule?.data?.mallData?.mallName || ""
+                }
+            };
+
+            console.log('监控数据提取完成:', monitoringEntry);
+
+            // 发送到App后端保存到monitoring.json
+            const response = await fetch('http://localhost:3001/api/monitor/update-monitoring-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    goodsId: goodsId,
+                    monitoringData: [monitoringEntry] // 直接发送单个条目
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`保存monitoring.json失败: ${response.status} - ${errorText}`);
+            }
+
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || '保存monitoring.json失败');
+            }
+
+            console.log('监控数据已保存到monitoring.json');
+            
+            // 更新按钮状态为已完成
+            updateMonitorButtonStatus('completed');
+            
+            // 显示成功消息
+            showSuccessMessage('监控数据采集成功！数据已保存到monitoring.json');
+            
+            // 触发完成事件
+            window.dispatchEvent(new CustomEvent('hanliPopupMonitoringCollectionCompleted', {
+                detail: { monitoringData: monitoringEntry }
+            }));
+
+            // 通知监控数据采集页面更新状态
+            localStorage.setItem('monitoringDataUpdated', Date.now().toString());
+            
+            // 向父窗口发送消息（如果存在）
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'monitoringDataUpdated',
+                    goodsId: goodsId,
+                    timestamp: Date.now()
+                }, '*');
+            }
+
+        } catch (error) {
+            console.error('仅采集监控数据失败:', error);
+            
+            // 更新按钮状态为就绪
+            updateMonitorButtonStatus('ready');
+            
+            // 显示错误消息
+            showErrorMessage('监控数据采集失败: ' + error.message);
+            
+            // 触发失败事件
+            window.dispatchEvent(new CustomEvent('hanliPopupMonitoringCollectionFailed', {
+                detail: { error: error.message }
+            }));
+        }
+    }
+
+    // 显示成功消息
+    function showSuccessMessage(message) {
+        const messageDiv = document.createElement('div');
+        messageDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 999999;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            max-width: 300px;
+            animation: slideIn 0.3s ease-out;
+        `;
+        
+        messageDiv.innerHTML = `
+            <div style="display: flex; align-items: center;">
+                <div style="margin-right: 10px; font-size: 18px;">✅</div>
+                <div>${message}</div>
+            </div>
+            <style>
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            </style>
+        `;
+        
+        document.body.appendChild(messageDiv);
+        
+        // 3秒后自动移除
+        setTimeout(() => {
+            if (messageDiv.parentNode) {
+                messageDiv.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.parentNode.removeChild(messageDiv);
+                    }
+                }, 300);
+            }
+        }, 3000);
+    }
+
+    // 显示错误消息
+    function showErrorMessage(message) {
+        const messageDiv = document.createElement('div');
+        messageDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #dc3545;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 999999;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            max-width: 300px;
+            animation: slideIn 0.3s ease-out;
+        `;
+        
+        messageDiv.innerHTML = `
+            <div style="display: flex; align-items: center;">
+                <div style="margin-right: 10px; font-size: 18px;">❌</div>
+                <div>${message}</div>
+            </div>
+            <style>
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideOut {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
+                }
+            </style>
+        `;
+        
+        document.body.appendChild(messageDiv);
+        
+        // 5秒后自动移除
+        setTimeout(() => {
+            if (messageDiv.parentNode) {
+                messageDiv.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.parentNode.removeChild(messageDiv);
+                    }
+                }, 300);
+            }
+        }, 5000);
+    }
+
+    // 更新监控按钮状态
+    function updateMonitorButtonStatus(status) {
+        if (!monitorButton) return;
+        
+        switch (status) {
+            case 'collecting':
+                monitorButton.innerHTML = '采集中...';
+                monitorButton.style.background = '#666666';
+                monitorButton.style.cursor = 'not-allowed';
+                monitorButton.disabled = true;
+                break;
+            case 'completed':
+                monitorButton.innerHTML = '已采集';
+                monitorButton.style.background = '#4caf50';
+                monitorButton.style.cursor = 'default';
+                monitorButton.disabled = true;
+                // 2秒后恢复
+                setTimeout(() => {
+                    updateMonitorButtonStatus('ready');
+                }, 2000);
+                break;
+            case 'ready':
+            default:
+                monitorButton.innerHTML = '仅采集监控数据';
+                monitorButton.style.background = '#4a9eff';
+                monitorButton.style.cursor = 'pointer';
+                monitorButton.disabled = false;
+                break;
+        }
+    }
+
+    // 将函数暴露到全局作用域
+    window.collectMonitoringDataOnly = collectMonitoringDataOnly;
 
 })();

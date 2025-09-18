@@ -177,6 +177,7 @@ class DataCollector {
         let storeFollowers = (mallData?.followerNumUnit || []).join(' ');
         let storeltemsNum = (mallData?.goodsNumUnit || []).join(' ');
         let storeStartYear = this.joinObjectField((mallData?.mallTags || []), 'text', '|');
+        let storeUrl = rawData?.store?.mallUrl || window.location.origin;
 
         // 生成当前时间戳（东八区ISO格式）
         const now = new Date();
@@ -200,12 +201,14 @@ class DataCollector {
             })),
             storeId,
             storeName,
+            storeStartYear,
+            collectTime,
+            storeUrl,
             storeData: {
-                storeRating,
                 storeSold,
                 storeFollowers,
                 storeltemsNum,
-                storeStartYear
+                storeRating
             }
         };
     }

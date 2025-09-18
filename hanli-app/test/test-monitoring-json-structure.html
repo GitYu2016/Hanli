@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>monitoring.json数据结构说明</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn.success {
+            background: #28a745;
+        }
+        .btn.warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        .btn.danger {
+            background: #dc3545;
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        .structure-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #007bff;
+        }
+        .field-description {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        .field-name {
+            font-weight: bold;
+            color: #007bff;
+        }
+        .field-type {
+            color: #6c757d;
+            font-size: 12px;
+        }
+        .field-example {
+            color: #28a745;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>monitoring.json数据结构说明</h1>
+        
+        <div>
+            <h3>操作</h3>
+            <button class="btn" onclick="showStandardFormat()">显示标准格式</button>
+            <button class="btn success" onclick="showPluginFormat()">显示插件采集格式</button>
+            <button class="btn warning" onclick="showCollectionFormat()">显示批量采集格式</button>
+            <button class="btn danger" onclick="clearLog()">清空日志</button>
+        </div>
+        
+        <div class="structure-section">
+            <h3>monitoring.json 标准数组格式</h3>
+            <p>monitoring.json文件是一个JSON数组，每个元素代表一次采集的监控数据记录。</p>
+            <div class="code-block" id="standard-format"></div>
+        </div>
+        
+        <div class="structure-section">
+            <h3>数据结构字段说明</h3>
+            <div id="field-descriptions"></div>
+        </div>
+        
+        <div class="structure-section">
+            <h3>不同采集方式的数据格式对比</h3>
+            <div id="format-comparison"></div>
+        </div>
+        
+        <div>
+            <h3>测试日志</h3>
+            <div class="log" id="test-log"></div>
+        </div>
+    </div>
+    
+    <script>
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const typeClass = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            logDiv.innerHTML += `<div class="log-entry"><span class="log-timestamp">[${timestamp}]</span> <span class="log-${typeClass}">${message}</span></div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function showStandardFormat() {
+            const standardFormat = [
+                {
+                    "id": "1758177484167",
+                    "utcTime": "2025-01-20T10:30:00+08:00",
+                    "goodsData": {
+                        "goodsSold": "1054件",
+                        "goodsPromoPrice": "¥13.23",
+                        "goodsTitle": "低温通用药芯焊丝家用维修神器焊接铜铁铝不锈钢空调冰箱维修焊丝",
+                        "goodsRating": "4.5",
+                        "goodsReviews": "128条评价"
+                    },
+                    "storeData": {
+                        "storeSold": "600000件",
+                        "storeFollowers": "1019人关注",
+                        "storeItemsNum": "53个商品",
+                        "storeRating": "4.6",
+                        "storeName": "店铺名称"
+                    }
+                },
+                {
+                    "id": "1758177484166",
+                    "utcTime": "2025-01-20T09:15:00+08:00",
+                    "goodsData": {
+                        "goodsSold": "1023件",
+                        "goodsPromoPrice": "¥13.23",
+                        "goodsTitle": "低温通用药芯焊丝家用维修神器焊接铜铁铝不锈钢空调冰箱维修焊丝",
+                        "goodsRating": "4.4",
+                        "goodsReviews": "125条评价"
+                    },
+                    "storeData": {
+                        "storeSold": "598000件",
+                        "storeFollowers": "1018人关注",
+                        "storeItemsNum": "52个商品",
+                        "storeRating": "4.5",
+                        "storeName": "店铺名称"
+                    }
+                }
+            ];
+            
+            document.getElementById('standard-format').textContent = JSON.stringify(standardFormat, null, 2);
+            log('显示标准monitoring.json格式', 'success');
+        }
+
+        function showPluginFormat() {
+            const pluginFormat = {
+                "description": "插件采集并监控生成的数据格式",
+                "data": [
+                    {
+                        "id": "1758177484167",
+                        "utcTime": "2025-01-20T10:30:00+08:00",
+                        "goodsData": {
+                            "goodsSold": "1054件",
+                            "goodsPromoPrice": "¥13.23",
+                            "goodsTitle": "商品标题",
+                            "goodsRating": "4.5",
+                            "goodsReviews": "128条评价"
+                        },
+                        "storeData": {
+                            "storeSold": "600000件",
+                            "storeFollowers": "1019人关注",
+                            "storeItemsNum": "53个商品",
+                            "storeRating": "4.6",
+                            "storeName": "店铺名称"
+                        }
+                    }
+                ],
+                "source": "hanli-plugin/main.js convertToMonitoringArray()",
+                "note": "插件采集时生成单个条目数组"
+            };
+            
+            document.getElementById('standard-format').textContent = JSON.stringify(pluginFormat, null, 2);
+            log('显示插件采集格式', 'success');
+        }
+
+        function showCollectionFormat() {
+            const collectionFormat = {
+                "description": "批量监控数据采集生成的数据格式",
+                "data": [
+                    {
+                        "id": "1758177484167",
+                        "utcTime": "2025-01-20T10:30:00+08:00",
+                        "goodsData": {
+                            "goodsSold": "1054件",
+                            "goodsPromoPrice": "¥13.23",
+                            "goodsTitle": "商品标题",
+                            "goodsRating": "4.5",
+                            "goodsReviews": "128条评价"
+                        },
+                        "storeData": {
+                            "storeSold": "600000件",
+                            "storeFollowers": "1019人关注",
+                            "storeItemsNum": "53个商品",
+                            "storeRating": "4.6",
+                            "storeName": "店铺名称"
+                        }
+                    }
+                ],
+                "source": "hanli-plugin/monitor-collection.js updateMonitoringData()",
+                "note": "批量采集时追加到现有数组"
+            };
+            
+            document.getElementById('standard-format').textContent = JSON.stringify(collectionFormat, null, 2);
+            log('显示批量采集格式', 'success');
+        }
+
+        function renderFieldDescriptions() {
+            const fields = [
+                {
+                    name: "id",
+                    type: "string",
+                    description: "唯一标识符，使用时间戳字符串",
+                    example: '"1758177484167"'
+                },
+                {
+                    name: "utcTime",
+                    type: "string",
+                    description: "采集时间，东八区ISO格式",
+                    example: '"2025-01-20T10:30:00+08:00"'
+                },
+                {
+                    name: "goodsData",
+                    type: "object",
+                    description: "商品相关数据对象",
+                    fields: [
+                        {
+                            name: "goodsSold",
+                            type: "string",
+                            description: "商品销量，包含单位",
+                            example: '"1054件"'
+                        },
+                        {
+                            name: "goodsPromoPrice",
+                            type: "string",
+                            description: "商品促销价格，包含货币符号",
+                            example: '"¥13.23"'
+                        },
+                        {
+                            name: "goodsTitle",
+                            type: "string",
+                            description: "商品标题",
+                            example: '"低温通用药芯焊丝..."'
+                        },
+                        {
+                            name: "goodsRating",
+                            type: "string",
+                            description: "商品评分",
+                            example: '"4.5"'
+                        },
+                        {
+                            name: "goodsReviews",
+                            type: "string",
+                            description: "商品评价数量，包含单位",
+                            example: '"128条评价"'
+                        }
+                    ]
+                },
+                {
+                    name: "storeData",
+                    type: "object",
+                    description: "店铺相关数据对象",
+                    fields: [
+                        {
+                            name: "storeSold",
+                            type: "string",
+                            description: "店铺总销量，包含单位",
+                            example: '"600000件"'
+                        },
+                        {
+                            name: "storeFollowers",
+                            type: "string",
+                            description: "店铺关注者数量，包含单位",
+                            example: '"1019人关注"'
+                        },
+                        {
+                            name: "storeItemsNum",
+                            type: "string",
+                            description: "店铺商品数量，包含单位",
+                            example: '"53个商品"'
+                        },
+                        {
+                            name: "storeRating",
+                            type: "string",
+                            description: "店铺评分",
+                            example: '"4.6"'
+                        },
+                        {
+                            name: "storeName",
+                            type: "string",
+                            description: "店铺名称",
+                            example: '"店铺名称"'
+                        }
+                    ]
+                }
+            ];
+
+            let html = '';
+            fields.forEach(field => {
+                html += `
+                    <div class="field-description">
+                        <div class="field-name">${field.name}</div>
+                        <div class="field-type">类型: ${field.type}</div>
+                        <div>${field.description}</div>
+                        <div class="field-example">示例: ${field.example}</div>
+                `;
+                
+                if (field.fields) {
+                    html += '<div style="margin-top: 10px; margin-left: 20px;">';
+                    field.fields.forEach(subField => {
+                        html += `
+                            <div style="margin: 5px 0; padding: 5px; background: #f8f9fa; border-radius: 3px;">
+                                <div class="field-name">${subField.name}</div>
+                                <div class="field-type">类型: ${subField.type}</div>
+                                <div>${subField.description}</div>
+                                <div class="field-example">示例: ${subField.example}</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+                
+                html += '</div>';
+            });
+
+            document.getElementById('field-descriptions').innerHTML = html;
+        }
+
+        function renderFormatComparison() {
+            const comparison = {
+                "采集方式对比": {
+                    "插件采集并监控": {
+                        "触发方式": "在Temu商品页面点击插件图标",
+                        "数据来源": "extractMonitoringData(rawData)",
+                        "数据格式": "数字类型，需要转换为字符串",
+                        "文件操作": "覆盖整个monitoring.json文件",
+                        "数组结构": "单个条目数组 [entry]"
+                    },
+                    "批量监控数据采集": {
+                        "触发方式": "在插件popup中点击'仅采集监控数据'",
+                        "数据来源": "performMonitorDataCollection()",
+                        "数据格式": "字符串类型，直接使用",
+                        "文件操作": "追加到现有monitoring.json数组",
+                        "数组结构": "追加到现有数组 [existing..., newEntry]"
+                    }
+                },
+                "数据转换过程": {
+                    "插件采集": "rawData → extractMonitoringData() → 数字 → convertToMonitoringArray() → 字符串数组",
+                    "批量采集": "rawData → extractMonitoringData() → 字符串 → updateMonitoringData() → 追加到数组"
+                }
+            };
+
+            document.getElementById('format-comparison').innerHTML = `
+                <div class="code-block">${JSON.stringify(comparison, null, 2)}</div>
+            `;
+        }
+
+        function clearLog() {
+            document.getElementById('test-log').innerHTML = '';
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            log('monitoring.json数据结构说明页面已加载');
+            showStandardFormat();
+            renderFieldDescriptions();
+            renderFormatComparison();
+        });
+    </script>
+</body>
+</html>

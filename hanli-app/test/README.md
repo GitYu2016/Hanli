@@ -26,7 +26,15 @@ test/
 ├── test-simple-fetch.html             # 简单Fetch测试
 ├── test-plugin-modal.html             # 插件弹窗测试
 ├── test-topbar-adjustments.html       # TopBar调整测试
-└── test-window-size.html              # 窗口大小测试
+├── test-window-size.html              # 窗口大小测试
+├── test-monitoring-features.html      # 监控功能完整测试
+├── test-monitor-collection.html       # 监控数据采集测试
+├── test-timeout-mechanism.html        # 超时机制测试
+├── test-theme-adaptation.html         # 主题适配测试
+├── test-monitoring-json-format.html   # 监控数据格式测试
+├── test-products-list-api.html        # 商品清单API测试
+├── test-today-collection-status.html  # 今日采集状态测试
+└── test-auto-refresh.html             # 自动刷新机制测试
 ```
 
 ## 🚀 快速开始
@@ -73,6 +81,16 @@ test/
 
 ### 🔧 协议和通信测试
 - **test-protocol.html**: 测试hanliapp://协议功能
+
+### 📊 监控功能测试
+- **test-monitoring-features.html**: 监控功能完整测试（推荐入口）
+- **test-monitor-collection.html**: 监控数据采集页面测试
+- **test-timeout-mechanism.html**: 超时机制测试（20秒超时，3秒检查）
+- **test-theme-adaptation.html**: 主题适配测试（浅色/深色模式）
+- **test-monitoring-json-format.html**: 监控数据格式验证测试
+- **test-products-list-api.html**: 商品清单API测试
+- **test-today-collection-status.html**: 今日采集状态检查测试
+- **test-auto-refresh.html**: 自动刷新机制测试
 
 ## 🛠️ 使用方法
 

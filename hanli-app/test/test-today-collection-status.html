@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>今日采集状态检查测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .btn.success {
+            background: #28a745;
+        }
+        .btn.warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .product-list {
+            margin: 20px 0;
+        }
+        .product-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #f9f9f9;
+        }
+        .product-info {
+            flex: 1;
+            margin-right: 15px;
+        }
+        .product-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .product-url {
+            font-size: 12px;
+            color: #666;
+            word-break: break-all;
+        }
+        .product-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .product-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-collecting {
+            background: #cce5ff;
+            color: #004085;
+        }
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .collect-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .collect-btn:not(:disabled) {
+            background: #007bff;
+            color: white;
+        }
+        .collect-btn:not(:disabled):hover {
+            background: #0056b3;
+        }
+        .collect-btn:disabled {
+            background: #6c757d;
+            color: white;
+            cursor: not-allowed;
+        }
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+            padding: 15px;
+            background: #e7f3ff;
+            border-radius: 6px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>今日采集状态检查测试</h1>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-number" id="total-products">0</div>
+                <div class="stat-label">总商品数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="completed-products">0</div>
+                <div class="stat-label">今日已采集</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="pending-products">0</div>
+                <div class="stat-label">待采集</div>
+            </div>
+        </div>
+        
+        <div>
+            <h3>测试操作</h3>
+            <button class="btn" onclick="loadProducts()">加载商品清单</button>
+            <button class="btn success" onclick="checkTodayStatus()">检查今日状态</button>
+            <button class="btn warning" onclick="createTestData()">创建测试数据</button>
+            <button class="btn" onclick="clearLog()">清空日志</button>
+        </div>
+        
+        <div>
+            <h3>商品列表</h3>
+            <div class="product-list" id="product-list">
+                <div style="padding: 40px; text-align: center; color: #666;">
+                    点击"加载商品清单"开始
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3>测试日志</h3>
+            <div class="log" id="test-log"></div>
+        </div>
+    </div>
+    
+    <script>
+        let products = [];
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const typeClass = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            logDiv.innerHTML += `<div class="log-entry"><span class="log-timestamp">[${timestamp}]</span> <span class="log-${typeClass}">${message}</span></div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        async function loadProducts() {
+            try {
+                log('开始加载商品清单...');
+                
+                const response = await fetch('http://localhost:3001/api/monitor/get-products-list');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || '获取商品清单失败');
+                }
+
+                products = data.products || [];
+                log(`成功加载 ${products.length} 个商品`);
+                
+                // 检查今日采集状态
+                await checkTodayCollectionStatus();
+                
+                updateUI();
+                renderProductList();
+                
+                if (products.length > 0) {
+                    log('商品清单加载完成，可以直接点击商品进行采集');
+                }
+
+            } catch (error) {
+                log(`加载商品清单失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkTodayCollectionStatus() {
+            log('检查今日采集状态...');
+            
+            const today = new Date().toISOString().split('T')[0]; // 获取今日日期 YYYY-MM-DD
+            let todayCollectedCount = 0;
+            
+            for (let i = 0; i < products.length; i++) {
+                const product = products[i];
+                
+                try {
+                    // 获取商品的monitoring.json数据
+                    const response = await fetch(`http://localhost:3001/api/monitor/get-monitoring-data?goodsId=${product.goodsId}`);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        if (data.success && data.monitoringData && Array.isArray(data.monitoringData)) {
+                            // 检查是否有今日的数据
+                            const hasTodayData = data.monitoringData.some(entry => {
+                                if (entry.utcTime) {
+                                    // 解析时间并比较日期
+                                    const entryDate = new Date(entry.utcTime).toISOString().split('T')[0];
+                                    return entryDate === today;
+                                }
+                                return false;
+                            });
+                            
+                            if (hasTodayData) {
+                                product.status = 'completed';
+                                product.progress = '今日已采集';
+                                todayCollectedCount++;
+                                log(`商品 ${i + 1} (${product.title}) 今日已采集`);
+                            } else {
+                                product.status = 'pending';
+                                product.progress = '等待采集';
+                            }
+                        } else {
+                            product.status = 'pending';
+                            product.progress = '等待采集';
+                        }
+                    } else {
+                        product.status = 'pending';
+                        product.progress = '等待采集';
+                    }
+                } catch (error) {
+                    console.warn(`检查商品 ${product.goodsId} 的采集状态失败:`, error);
+                    product.status = 'pending';
+                    product.progress = '等待采集';
+                }
+            }
+            
+            log(`今日采集状态检查完成，已采集 ${todayCollectedCount}/${products.length} 个商品`);
+        }
+
+        function updateUI() {
+            const totalProducts = products.length;
+            const completedProducts = products.filter(p => p.status === 'completed').length;
+            const pendingProducts = products.filter(p => p.status === 'pending').length;
+            
+            document.getElementById('total-products').textContent = totalProducts;
+            document.getElementById('completed-products').textContent = completedProducts;
+            document.getElementById('pending-products').textContent = pendingProducts;
+        }
+
+        function renderProductList() {
+            const productListEl = document.getElementById('product-list');
+            
+            if (products.length === 0) {
+                productListEl.innerHTML = `
+                    <div style="padding: 40px; text-align: center; color: #666;">
+                        点击"加载商品清单"开始
+                    </div>
+                `;
+                return;
+            }
+
+            const html = products.map((product, index) => `
+                <div class="product-item">
+                    <div class="product-info">
+                        <div class="product-title">${product.title}</div>
+                        <div class="product-url">${product.collectUrl}</div>
+                    </div>
+                    <div class="product-actions">
+                        <div class="product-status status-${product.status}">
+                            ${product.progress}
+                        </div>
+                        <button class="collect-btn" data-index="${index}" 
+                                ${product.status === 'collecting' ? 'disabled' : ''}>
+                            ${product.status === 'collecting' ? '采集中...' : 
+                              product.status === 'completed' ? '今日已采集' : 
+                              product.status === 'failed' ? '重新采集' : '开始采集'}
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            productListEl.innerHTML = html;
+            
+            // 使用事件委托来处理按钮点击
+            productListEl.addEventListener('click', (e) => {
+                if (e.target.classList.contains('collect-btn')) {
+                    const index = parseInt(e.target.getAttribute('data-index'));
+                    log(`点击采集按钮，商品索引: ${index}`);
+                    
+                    const product = products[index];
+                    if (product.status === 'completed') {
+                        log(`商品 ${index + 1} 今日已采集，无需重复采集`, 'warning');
+                        return;
+                    }
+                    
+                    log(`开始采集商品 ${index + 1}: ${product.title}`);
+                }
+            });
+        }
+
+        async function checkTodayStatus() {
+            if (products.length === 0) {
+                log('请先加载商品清单', 'error');
+                return;
+            }
+            
+            await checkTodayCollectionStatus();
+            updateUI();
+            renderProductList();
+        }
+
+        async function createTestData() {
+            log('创建测试数据...');
+            
+            // 创建一些测试的monitoring.json数据
+            const testData = {
+                id: Date.now().toString(),
+                utcTime: new Date().toISOString().replace('Z', '+08:00'),
+                goodsData: {
+                    goodsSold: "1054件",
+                    goodsPromoPrice: "¥13.23",
+                    goodsTitle: "测试商品",
+                    goodsRating: "4.5",
+                    goodsReviews: "128条评价"
+                },
+                storeData: {
+                    storeSold: "600000件",
+                    storeFollowers: "1019人关注",
+                    storeItemsNum: "53个商品",
+                    storeRating: "4.6",
+                    storeName: "测试店铺"
+                }
+            };
+            
+            // 发送到第一个商品的monitoring.json
+            if (products.length > 0) {
+                try {
+                    const response = await fetch('http://localhost:3001/api/monitor/update-monitoring-data', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            goodsId: products[0].goodsId,
+                            monitoringData: [testData]
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        log('测试数据已创建', 'success');
+                        // 重新检查状态
+                        await checkTodayStatus();
+                    } else {
+                        log('创建测试数据失败', 'error');
+                    }
+                } catch (error) {
+                    log(`创建测试数据失败: ${error.message}`, 'error');
+                }
+            } else {
+                log('没有商品可以添加测试数据', 'error');
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('test-log').innerHTML = '';
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            log('今日采集状态检查测试工具已加载');
+        });
+    </script>
+</body>
+</html>

@@ -342,6 +342,150 @@ ipcMain.on('show-settings', () => {
     console.log('显示设置窗口');
 });
 
+// 处理打开系统浏览器的请求
+ipcMain.handle('open-system-browser', async (event, url) => {
+    try {
+        const { shell } = require('electron');
+        await shell.openExternal(url);
+        return { success: true };
+    } catch (error) {
+        console.error('打开系统浏览器失败:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// 处理监控采集请求
+ipcMain.handle('request-monitor-collection', async (event, data) => {
+    try {
+        const { goodsId, collectUrl } = data;
+        console.log(`收到监控采集请求: ${goodsId} - ${collectUrl}`);
+        
+        // 打开系统浏览器
+        const { shell } = require('electron');
+        await shell.openExternal(collectUrl);
+        
+        return { success: true, message: '已打开系统浏览器，请等待插件采集完成' };
+    } catch (error) {
+        console.error('处理监控采集请求失败:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// 处理发送URL列表给插件的请求
+ipcMain.handle('send-url-list-to-plugin', async (event, data) => {
+    try {
+        const { urls, timestamp, taskId } = data;
+        console.log(`收到发送URL列表给插件的请求: 任务ID ${taskId}, URL数量 ${urls.length}`);
+        
+        // 这里可以通过多种方式与插件通信：
+        // 1. 通过本地存储
+        // 2. 通过HTTP请求
+        // 3. 通过文件系统
+        // 4. 通过WebSocket
+        
+        // 方案1: 通过本地存储（推荐）
+        const storage = require('electron-store');
+        const store = new storage();
+        
+        // 保存URL列表到本地存储
+        store.set('collection-task', {
+            taskId: taskId,
+            urls: urls,
+            timestamp: timestamp,
+            status: 'pending'
+        });
+        
+        console.log(`URL列表已保存到本地存储，任务ID: ${taskId}`);
+        
+        // 方案2: 通过HTTP请求通知插件（如果插件有HTTP接口）
+        try {
+            const axios = require('axios');
+            await axios.post('http://localhost:3002/api/collection-task', {
+                taskId: taskId,
+                urls: urls,
+                timestamp: timestamp
+            }, {
+                timeout: 5000
+            });
+            console.log('已通过HTTP通知插件');
+        } catch (httpError) {
+            console.log('HTTP通知插件失败，使用本地存储方案:', httpError.message);
+        }
+        
+        return { 
+            success: true, 
+            message: `URL列表已发送给插件，任务ID: ${taskId}`,
+            taskId: taskId
+        };
+    } catch (error) {
+        console.error('发送URL列表给插件失败:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// 在浏览器中打开HTML
+ipcMain.handle('open-html-in-browser', async (event, data) => {
+    try {
+        const { html, title, taskId } = data;
+        console.log(`收到在浏览器中打开HTML的请求: 任务ID ${taskId}, 标题: ${title}`);
+        
+        // 创建临时HTML文件
+        const fs = require('fs');
+        const path = require('path');
+        const os = require('os');
+        
+        const tempDir = os.tmpdir();
+        const filename = `hanli-collection-task-${taskId}.html`;
+        const filePath = path.join(tempDir, filename);
+        
+        // 写入HTML内容
+        fs.writeFileSync(filePath, html, 'utf8');
+        console.log(`临时HTML文件已创建: ${filePath}`);
+        
+        // 在默认浏览器中打开
+        const { shell } = require('electron');
+        await shell.openPath(filePath);
+        
+        console.log(`HTML文件已在浏览器中打开: ${filePath}`);
+        
+        return { 
+            success: true, 
+            message: `HTML文件已在浏览器中打开`,
+            filePath: filePath,
+            taskId: taskId
+        };
+    } catch (error) {
+        console.error('在浏览器中打开HTML失败:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// 处理插件采集完成通知
+ipcMain.on('monitor-collection-completed', (event, data) => {
+    console.log('收到插件采集完成通知:', data);
+    // 通知渲染进程采集完成
+    mainWindow.webContents.send('monitor-collection-completed', data);
+});
+
+// 监听文件变化来检测采集完成
+const chokidar = require('chokidar');
+const path = require('path');
+
+// 监听monitoring.json文件变化
+const dataDir = path.join(__dirname, 'data', 'goods-library');
+const watcher = chokidar.watch(dataDir, {
+    ignored: /(^|[\/\\])\../, // 忽略隐藏文件
+    persistent: true
+});
+
+watcher.on('change', (filePath) => {
+    if (filePath.endsWith('monitoring.json')) {
+        console.log('检测到monitoring.json文件变化:', filePath);
+        // 通知渲染进程有新的监控数据
+        mainWindow.webContents.send('monitor-data-updated', { filePath });
+    }
+});
+
 // 处理打开商品详情页的请求
 ipcMain.on('open-product-detail', (event, data) => {
     console.log('收到打开商品详情页请求:', data);
