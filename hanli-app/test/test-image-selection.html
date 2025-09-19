@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片选择组件测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 4px;
+        }
+        #image-selection-container {
+            min-height: 200px;
+            border: 2px dashed #ccc;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-item {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .log-single { background: #d4edda; }
+        .log-multi { background: #cce5ff; }
+        .log-clear { background: #f8d7da; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>图片选择组件测试</h1>
+        
+        <div class="test-info">
+            <h3>测试说明：</h3>
+            <ul>
+                <li><strong>单选模式：</strong>直接点击图片进行选择</li>
+                <li><strong>多选模式：</strong>按住Shift键的同时点击图片进行多选</li>
+                <li><strong>取消选择：</strong>点击空白区域取消所有选择</li>
+            </ul>
+        </div>
+        
+        <div id="image-selection-container">
+            <div style="text-align: center; color: #666; padding: 50px;">
+                正在加载图片选择组件...
+            </div>
+        </div>
+        
+        <div class="log" id="log-container">
+            <h4>选择日志：</h4>
+            <div id="log-content"></div>
+        </div>
+    </div>
+
+    <script src="hanli-app/renderer/components/Detail/ImageSelection.js"></script>
+    <script>
+        // 测试数据
+        const testImages = [
+            { url: 'https://via.placeholder.com/150x150/ff6b6b/ffffff?text=图片1', name: '图片1' },
+            { url: 'https://via.placeholder.com/150x150/4ecdc4/ffffff?text=图片2', name: '图片2' },
+            { url: 'https://via.placeholder.com/150x150/45b7d1/ffffff?text=图片3', name: '图片3' },
+            { url: 'https://via.placeholder.com/150x150/96ceb4/ffffff?text=图片4', name: '图片4' },
+            { url: 'https://via.placeholder.com/150x150/feca57/ffffff?text=图片5', name: '图片5' },
+            { url: 'https://via.placeholder.com/150x150/ff9ff3/ffffff?text=图片6', name: '图片6' }
+        ];
+
+        // 日志功能
+        function addLog(message, type = '') {
+            const logContent = document.getElementById('log-content');
+            const logItem = document.createElement('div');
+            logItem.className = `log-item ${type}`;
+            logItem.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContent.appendChild(logItem);
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+
+        // 初始化图片选择组件
+        function initImageSelection() {
+            const container = document.getElementById('image-selection-container');
+            
+            if (typeof ImageSelection === 'undefined') {
+                container.innerHTML = '<div style="color: red;">ImageSelection组件未加载</div>';
+                return;
+            }
+
+            const imageSelection = new ImageSelection();
+            imageSelection.init(container, testImages, (selectedImage, selectedIndex, selectedImages) => {
+                if (selectedImages && selectedImages.length > 1) {
+                    addLog(`多选模式：选择了 ${selectedImages.length} 张图片`, 'log-multi');
+                    selectedImages.forEach((item, index) => {
+                        addLog(`  - 第 ${index + 1} 张：${item.image.name} (索引: ${item.index})`, 'log-multi');
+                    });
+                } else if (selectedImage) {
+                    addLog(`单选模式：选择了 ${selectedImage.name} (索引: ${selectedIndex})`, 'log-single');
+                } else {
+                    addLog('取消了所有选择', 'log-clear');
+                }
+            });
+
+            addLog('图片选择组件初始化完成', 'log-single');
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initImageSelection);
+    </script>
+</body>
+</html>

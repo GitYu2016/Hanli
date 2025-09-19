@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片显示测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .image-item {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f9f9f9;
+        }
+        .image-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+        .image-info {
+            padding: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+        .error {
+            color: #e74c3c;
+            background: #fdf2f2;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #27ae60;
+            background: #f0f9f0;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .loading {
+            color: #3498db;
+            background: #f0f8ff;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>产品详情页图片显示测试</h1>
+        
+        <div class="test-section">
+            <div class="test-title">测试产品: 601099514703283</div>
+            <div id="status" class="loading">正在加载产品数据...</div>
+            <div id="image-container" class="image-grid"></div>
+        </div>
+    </div>
+
+    <script>
+        async function testImageDisplay() {
+            const statusEl = document.getElementById('status');
+            const containerEl = document.getElementById('image-container');
+            
+            try {
+                statusEl.textContent = '正在获取产品数据...';
+                statusEl.className = 'loading';
+                
+                const response = await fetch('http://localhost:3001/api/products/601099514703283');
+                const data = await response.json();
+                
+                if (data.success && data.product.images) {
+                    statusEl.textContent = `成功加载 ${data.product.images.length} 张图片`;
+                    statusEl.className = 'success';
+                    
+                    // 显示前6张图片
+                    const imagesToShow = data.product.images.slice(0, 6);
+                    
+                    imagesToShow.forEach((image, index) => {
+                        const imageItem = document.createElement('div');
+                        imageItem.className = 'image-item';
+                        
+                        const img = document.createElement('img');
+                        img.src = image.url;
+                        img.alt = `图片 ${index + 1}`;
+                        
+                        img.onload = () => {
+                            console.log(`图片 ${index + 1} 加载成功:`, image.url);
+                        };
+                        
+                        img.onerror = () => {
+                            console.error(`图片 ${index + 1} 加载失败:`, image.url);
+                            img.style.background = '#ffebee';
+                            img.style.display = 'flex';
+                            img.style.alignItems = 'center';
+                            img.style.justifyContent = 'center';
+                            img.innerHTML = '加载失败';
+                        };
+                        
+                        const imageInfo = document.createElement('div');
+                        imageInfo.className = 'image-info';
+                        imageInfo.innerHTML = `
+                            <div><strong>文件名:</strong> ${image.filename}</div>
+                            <div><strong>URL:</strong> ${image.url}</div>
+                        `;
+                        
+                        imageItem.appendChild(img);
+                        imageItem.appendChild(imageInfo);
+                        containerEl.appendChild(imageItem);
+                    });
+                } else {
+                    statusEl.textContent = '产品数据加载失败';
+                    statusEl.className = 'error';
+                }
+            } catch (error) {
+                console.error('测试失败:', error);
+                statusEl.textContent = `测试失败: ${error.message}`;
+                statusEl.className = 'error';
+            }
+        }
+        
+        // 页面加载完成后开始测试
+        document.addEventListener('DOMContentLoaded', testImageDisplay);
+    </script>
+</body>
+</html>

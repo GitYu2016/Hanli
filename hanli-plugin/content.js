@@ -1973,7 +1973,7 @@
     // 监听localStorage变化，处理监控数据采集请求
     window.addEventListener('storage', (e) => {
         if (e.key === 'collectionRequest') {
-            console.log('收到监控数据采集请求:', e.newValue);
+            console.log('收到监控数据采集请求 (localStorage):', e.newValue);
             
             try {
                 const request = JSON.parse(e.newValue);
@@ -1983,9 +1983,32 @@
             } catch (error) {
                 console.error('解析采集请求失败:', error);
                 // 返回错误结果
+                if (request && request.taskId) {
+                    localStorage.setItem('collectionResult_' + request.taskId, JSON.stringify({
+                        success: false,
+                        error: '解析采集请求失败: ' + error.message
+                    }));
+                }
+            }
+        }
+    });
+
+    // 监听自定义事件，处理监控数据采集请求（备用方案）
+    window.addEventListener('hanliMonitorCollectionRequest', (e) => {
+        console.log('收到监控数据采集请求 (自定义事件):', e.detail);
+        
+        try {
+            const request = e.detail;
+            if (request.action === 'startCollection') {
+                handleMonitorCollectionRequest(request);
+            }
+        } catch (error) {
+            console.error('处理自定义采集请求失败:', error);
+            // 返回错误结果
+            if (request && request.taskId) {
                 localStorage.setItem('collectionResult_' + request.taskId, JSON.stringify({
                     success: false,
-                    error: '解析采集请求失败: ' + error.message
+                    error: '处理自定义采集请求失败: ' + error.message
                 }));
             }
         }
@@ -1995,22 +2018,36 @@
     async function handleMonitorCollectionRequest(request) {
         const { taskId, goodsId, url } = request;
         console.log(`开始处理监控数据采集请求: 任务ID=${taskId}, 商品ID=${goodsId}, URL=${url}`);
+        console.log(`当前页面URL: ${window.location.href}`);
+        console.log(`目标URL: ${url}`);
         
         try {
-            // 检查当前页面是否是目标URL
-            if (window.location.href !== url) {
-                console.log('当前页面URL不匹配，跳过采集');
+            // 检查当前页面是否是目标URL（更宽松的匹配）
+            const currentUrl = window.location.href;
+            const targetUrl = url;
+            
+            // 移除查询参数进行比较
+            const currentUrlBase = currentUrl.split('?')[0];
+            const targetUrlBase = targetUrl.split('?')[0];
+            
+            console.log(`比较URL: 当前=${currentUrlBase}, 目标=${targetUrlBase}`);
+            
+            if (currentUrlBase !== targetUrlBase) {
+                console.log('页面URL不匹配，跳过采集');
                 localStorage.setItem('collectionResult_' + taskId, JSON.stringify({
                     success: false,
-                    error: '页面URL不匹配'
+                    error: `页面URL不匹配: 当前=${currentUrlBase}, 目标=${targetUrlBase}`
                 }));
                 return;
             }
+            
+            console.log('URL匹配成功，开始执行监控数据采集');
             
             // 执行监控数据采集
             const monitoringData = await performMonitorDataCollection(goodsId);
             
             if (monitoringData) {
+                console.log('监控数据采集成功，数据:', monitoringData);
                 // 返回成功结果
                 localStorage.setItem('collectionResult_' + taskId, JSON.stringify({
                     success: true,
@@ -2038,42 +2075,61 @@
     async function performMonitorDataCollection(goodsId) {
         try {
             console.log(`开始监控数据采集: ${goodsId}`);
+            console.log('页面标题:', document.title);
+            console.log('页面URL:', window.location.href);
             
             // 显示采集提示卡片
             showCollectionCard();
             
-            // 等待1秒让用户看到提示
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // 等待2秒让用户看到提示和页面完全加载
+            console.log('等待页面加载...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
             
             // 找到包含 window.rawData 的 <script>
+            console.log('查找包含 window.rawData 的脚本...');
             let scripts = Array.from(document.querySelectorAll("script"));
+            console.log(`找到 ${scripts.length} 个脚本标签`);
+            
             let rawScript = scripts.find(s => s.textContent.includes("window.rawData"));
             if (!rawScript) {
+                console.error('未找到包含 window.rawData 的脚本');
+                console.log('可用的脚本内容预览:', scripts.slice(0, 3).map(s => s.textContent.substring(0, 100)));
                 throw new Error("未找到 window.rawData");
             }
+            
+            console.log('找到包含 window.rawData 的脚本');
 
             // 正则提取 JSON 字符串
             let match = rawScript.textContent.match(/window\.rawData\s*=\s*(\{.*?\});/s);
             if (!match) {
+                console.error('无法匹配 window.rawData 的正则表达式');
+                console.log('脚本内容预览:', rawScript.textContent.substring(0, 500));
                 throw new Error("无法解析 window.rawData");
             }
 
             let jsonStr = match[1];
+            console.log('提取到JSON字符串长度:', jsonStr.length);
+            
             let rawData;
             try {
                 rawData = JSON.parse(jsonStr);
+                console.log('JSON解析成功');
             } catch (e) {
+                console.error('JSON解析失败:', e);
+                console.log('JSON字符串预览:', jsonStr.substring(0, 500));
                 throw new Error("JSON解析失败: " + e.message);
             }
 
+            console.log('开始提取监控数据...');
             // 提取监控数据
             const monitoringData = extractMonitoringData(rawData);
+            console.log('监控数据提取结果:', monitoringData);
             
             // 隐藏采集提示卡片
             hideCollectionCard();
             
             // 转换为监控数据采集页面需要的格式
-            return {
+            const result = {
                 goodsData: {
                     goodsSold: monitoringData.goodsSold,
                     goodsPromoPrice: monitoringData.goodsPromoPrice,
@@ -2089,6 +2145,9 @@
                     storeName: monitoringData.storeName
                 }
             };
+            
+            console.log('监控数据采集完成，返回结果:', result);
+            return result;
             
         } catch (error) {
             console.error('监控数据采集失败:', error);
@@ -2197,31 +2256,31 @@
                 throw new Error("JSON解析失败: " + e.message);
             }
 
-            // 提取监控数据
-            const monitoringData = extractMonitoringData(rawData);
-            
             // 获取商品ID
             const goodsId = rawData?.store?.goodsId || "";
             if (!goodsId) {
                 throw new Error("无法获取商品ID");
             }
 
-            // 转换为监控数据格式
+            // 使用extractMonitoringData函数提取数值数据
+            const monitoringData = extractMonitoringData(rawData);
+
+            // 转换为监控数据格式（数值格式，与完整采集保持一致）
             const monitoringEntry = {
                 id: Date.now().toString(),
                 utcTime: new Date().toISOString().replace('Z', '+08:00'),
                 goodsData: {
-                    goodsSold: monitoringData.goodsData.goodsSold + "件",
-                    goodsPromoPrice: "¥" + monitoringData.goodsData.goodsPromoPrice,
+                    goodsSold: monitoringData.goodsData.goodsSold, // 数值
+                    goodsPromoPrice: monitoringData.goodsData.goodsPromoPrice, // 数值（人民币）
                     goodsTitle: rawData?.store?.goods?.goodsName || "",
-                    goodsRating: rawData?.store?.goods?.rating || "0",
-                    goodsReviews: (rawData?.store?.goods?.reviewCount || 0) + "条评价"
+                    goodsRating: parseFloat(rawData?.store?.goods?.rating || "0"), // 数值
+                    goodsReviews: rawData?.store?.goods?.reviewCount || 0 // 数值
                 },
                 storeData: {
-                    storeSold: monitoringData.storeData.storeSold + "件",
-                    storeFollowers: monitoringData.storeData.storeFollowers + "人关注",
-                    storeItemsNum: monitoringData.storeData.storeltemsNum + "个商品",
-                    storeRating: monitoringData.storeData.storeRating.toString(),
+                    storeSold: monitoringData.storeData.storeSold, // 数值
+                    storeFollowers: monitoringData.storeData.storeFollowers, // 数值
+                    storeItemsNum: monitoringData.storeData.storeltemsNum, // 数值
+                    storeRating: monitoringData.storeData.storeRating, // 数值
                     storeName: rawData?.store?.moduleMap?.mallModule?.data?.mallData?.mallName || ""
                 }
             };

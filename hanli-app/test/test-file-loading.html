@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件加载测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-item { margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .loading { background-color: #fff3cd; border-color: #ffeaa7; }
+    </style>
+</head>
+<body>
+    <h1>文件加载测试</h1>
+    <p>检查各个组件文件是否能正确加载</p>
+    
+    <div id="test-results"></div>
+
+    <script>
+        const testResults = document.getElementById('test-results');
+        
+        function addTestResult(name, status, message) {
+            const div = document.createElement('div');
+            div.className = `test-item ${status}`;
+            div.innerHTML = `<strong>${name}:</strong> ${message}`;
+            testResults.appendChild(div);
+        }
+
+        // 测试文件加载
+        function testFileLoading() {
+            const files = [
+                'hanli-app/renderer/components/Detail/ImageSelection.js',
+                'hanli-app/renderer/components/Detail/MediaCard.js',
+                'hanli-app/renderer/components/Detail/ProductCharts.js',
+                'hanli-app/renderer/components/Detail/AttachmentCard.js',
+                'hanli-app/renderer/components/Common/PageContainer.js',
+                'hanli-app/renderer/components/Common/Toast.js',
+                'hanli-app/renderer/components/Common/KeyboardShortcutManager.js'
+            ];
+
+            files.forEach(file => {
+                const script = document.createElement('script');
+                script.src = file;
+                script.onload = () => {
+                    addTestResult(file, 'success', '加载成功');
+                };
+                script.onerror = () => {
+                    addTestResult(file, 'error', '加载失败');
+                };
+                document.head.appendChild(script);
+            });
+        }
+
+        // 页面加载完成后开始测试
+        document.addEventListener('DOMContentLoaded', testFileLoading);
+    </script>
+</body>
+</html>

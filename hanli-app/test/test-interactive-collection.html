@@ -125,7 +125,6 @@
 
     <!-- 引入必要的脚本 -->
     <script src="../renderer/config.js"></script>
-    <script src="../renderer/components/Index/MonitorCard.js"></script>
 
     <script>
         let testUrls = [
@@ -191,7 +190,7 @@
             addLog('info', '开始交互式采集测试');
             addLog('info', `测试商品数量: ${testUrls.length}`);
             
-            // 模拟MonitorCard的采集状态
+            // 模拟采集状态（MonitorCard已移除）
             const collectionState = {
                 isRunning: true,
                 isPaused: false,
@@ -252,12 +251,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('交互式采集测试页面加载完成');
             
-            // 检查MonitorCard是否可用
-            if (typeof monitorCardInstance !== 'undefined') {
-                console.log('MonitorCard实例可用:', monitorCardInstance);
-            } else {
-                console.warn('MonitorCard实例不可用');
-            }
+            // MonitorCard组件已移除
+            console.log('MonitorCard组件已移除，不再可用');
         });
     </script>
 </body>

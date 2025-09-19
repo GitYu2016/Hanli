@@ -367,8 +367,17 @@
 
         <div class="control-panel">
             <h3 style="margin-bottom: 20px;">采集控制</h3>
-            <div style="padding: 10px; background: #e7f3ff; border-radius: 6px; font-size: 14px; color: #0066cc;">
+            <div style="padding: 10px; background: #e7f3ff; border-radius: 6px; font-size: 14px; color: #0066cc; margin-bottom: 20px;">
                 💡 页面会自动加载商品清单，直接点击每个商品的"开始采集"按钮即可开始采集。采集完成后会自动刷新状态。
+            </div>
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                <button id="auto-collect-btn" class="btn btn-success">
+                    <span class="btn-text">自动采集</span>
+                    <span class="btn-loading hidden">采集中...</span>
+                </button>
+                <div style="font-size: 14px; color: #666;">
+                    将自动采集 <span id="pending-count">0</span> 个今日未采集的任务
+                </div>
             </div>
         </div>
 

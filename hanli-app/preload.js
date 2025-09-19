@@ -11,14 +11,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // 显示设置
     showSettings: () => ipcRenderer.send('show-settings'),
     
-    // 监听菜单事件
-    onMenuNewProduct: (callback) => {
-        ipcRenderer.on('menu-new-product', callback);
-    },
-    
-    onMenuImportData: (callback) => {
-        ipcRenderer.on('menu-import-data', callback);
-    },
+    // 菜单事件已移除
     
     onMenuAbout: (callback) => {
         ipcRenderer.on('menu-about', callback);
@@ -48,7 +41,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
         saveFile: (data, options) => ipcRenderer.invoke('save-file', data, options),
         
         // 读取文件
-        readFile: (filePath) => ipcRenderer.invoke('read-file', filePath)
+        readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
+        
+        // 在 Finder/文件夹中显示文件
+        showInFinder: (filePath) => ipcRenderer.invoke('show-file-in-finder', filePath),
+        
+        // 在 Finder/文件夹中显示商品文件夹
+        showGoodsFolderInFinder: (goodsId) => ipcRenderer.invoke('show-goods-folder-in-finder', goodsId),
+        
+        // 另存为文件
+        saveAs: (sourcePath, fileName) => ipcRenderer.invoke('save-as-file', sourcePath, fileName),
+        
+        // 删除文件到废纸篓
+        moveToTrash: (filePath) => ipcRenderer.invoke('move-to-trash', filePath),
+        
+        // 复制多个文件到文件夹
+        copyFilesToFolder: (items, targetPath) => ipcRenderer.invoke('copy-files-to-folder', items, targetPath),
+        
+        // 获取桌面路径
+        getDesktopPath: () => ipcRenderer.invoke('get-desktop-path')
     },
     
     // 数据存储API
@@ -150,25 +161,13 @@ window.addEventListener('DOMContentLoaded', () => {
     // 可以在这里添加一些初始化逻辑
     console.log('预加载脚本已加载');
     
-    // 监听菜单事件
-    window.electronAPI.onMenuNewProduct(() => {
-        console.log('菜单：新建产品');
-        // 触发页面上的新建产品功能
-        const event = new CustomEvent('menu-new-product');
-        window.dispatchEvent(event);
-    });
-    
-    window.electronAPI.onMenuImportData(() => {
-        console.log('菜单：导入数据');
-        // 触发页面上的导入数据功能
-        const event = new CustomEvent('menu-import-data');
-        window.dispatchEvent(event);
-    });
+    // 菜单事件监听器已移除
     
     window.electronAPI.onMenuAbout(() => {
-        console.log('菜单：关于');
+        console.log('菜单：关于 - 收到IPC事件');
         // 显示关于对话框
         const event = new CustomEvent('menu-about');
+        console.log('菜单：关于 - 触发自定义事件');
         window.dispatchEvent(event);
     });
     

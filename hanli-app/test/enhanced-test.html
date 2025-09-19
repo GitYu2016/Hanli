@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>增强版图片选择测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+            margin: 0;
+        }
+        .test-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        #image-selection-container { 
+            border: 2px solid #e0e0e0; 
+            padding: 20px; 
+            margin: 20px 0;
+            min-height: 300px;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .image-selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
+        }
+        .image-selection-item {
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            aspect-ratio: 3/4;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        .image-selection-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        .image-selection-item.selected {
+            border-color: #007bff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,123,255,0.3);
+        }
+        .image-wrapper {
+            position: relative;
+            width: 100%;
+            flex: 1;
+            min-height: 0;
+        }
+        .selection-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .selection-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .image-selection-item:hover .selection-overlay {
+            opacity: 1;
+        }
+        
+        .image-selection-item.selected .selection-overlay {
+            opacity: 0;
+        }
+        .selection-checkbox {
+            width: 24px;
+            height: 24px;
+            background: #007bff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+        
+        /* 图片信息区域样式 */
+        .image-info {
+            padding: 12px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-height: 70px;
+            pointer-events: none; /* 禁止点击 */
+            user-select: none; /* 禁止选择文字 */
+        }
+
+        .image-number {
+            font-size: 12px;
+            font-weight: bold;
+            color: #007bff;
+            text-align: center;
+            background: #e3f2fd;
+            padding: 4px 8px;
+            border-radius: 12px;
+            display: inline-block;
+            width: fit-content;
+            margin: 0 auto;
+        }
+
+        .image-title {
+            font-size: 12px;
+            color: #333;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin: 2px 0;
+            font-weight: 500;
+        }
+
+        .image-size {
+            font-size: 10px;
+            color: #666;
+            text-align: center;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin: 0 auto;
+            width: fit-content;
+        }
+
+        /* 选中状态下的图片信息样式 */
+        .image-selection-item.selected .image-info {
+            background: #e3f2fd;
+            border-top-color: #007bff;
+        }
+
+        .image-selection-item.selected .image-number {
+            background: #007bff;
+            color: white;
+        }
+
+        .image-selection-item.selected .image-title {
+            color: #007bff;
+            font-weight: 600;
+        }
+
+        .image-selection-item.selected .image-size {
+            color: #007bff;
+            background: #bbdefb;
+        }
+
+        /* 多选模式样式 */
+        .image-selection-grid.multi-select-mode {
+            position: relative;
+        }
+
+        .image-selection-grid.multi-select-mode::before {
+            content: "按住Shift键进行多选";
+            position: absolute;
+            top: -35px;
+            left: 0;
+            font-size: 12px;
+            color: #007bff;
+            background: #e3f2fd;
+            padding: 6px 12px;
+            border-radius: 6px;
+            opacity: 0.9;
+            z-index: 10;
+            font-weight: 500;
+        }
+
+        .image-selection-grid.multi-select-mode .image-selection-item {
+            cursor: crosshair;
+        }
+
+        .image-selection-grid.multi-select-mode .image-selection-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+
+        /* 选择编号样式已移除 */
+
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin-top: 30px;
+            max-height: 300px;
+            overflow-y: auto;
+            border-radius: 8px;
+        }
+        
+        .log-item {
+            margin: 8px 0;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .log-single { 
+            background: #d4edda; 
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+        .log-multi { 
+            background: #cce5ff; 
+            color: #004085;
+            border-left: 4px solid #007bff;
+        }
+        .log-clear { 
+            background: #f8d7da; 
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>增强版图片选择组件</h1>
+        <p class="subtitle">支持序号、标题、大小显示，以及单选/多选/连续选择功能</p>
+        
+        <div class="stats" id="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="total-count">0</div>
+                <div class="stat-label">总图片数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="selected-count">0</div>
+                <div class="stat-label">已选择</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="multi-mode">否</div>
+                <div class="stat-label">多选模式</div>
+            </div>
+        </div>
+        
+        <div id="image-selection-container">
+            正在加载图片选择组件...
+        </div>
+        
+        <div class="log" id="log-container">
+            <h4>选择日志：</h4>
+            <div id="log-content"></div>
+        </div>
+    </div>
+
+    <script src="hanli-app/renderer/components/Detail/ImageSelection.js"></script>
+    <script>
+        // 测试数据
+        const testImages = [
+            { 
+                url: 'https://via.placeholder.com/300x200/ff6b6b/ffffff?text=1', 
+                name: '图片1',
+                title: '图片1',
+                width: 300,
+                height: 200
+            },
+            { 
+                url: 'https://via.placeholder.com/400x300/4ecdc4/ffffff?text=2', 
+                name: '图片2',
+                title: '图片2',
+                width: 400,
+                height: 300
+            },
+            { 
+                url: 'https://via.placeholder.com/350x250/45b7d1/ffffff?text=3', 
+                name: '图片3',
+                title: '图片3',
+                width: 350,
+                height: 250
+            },
+            { 
+                url: 'https://via.placeholder.com/320x240/96ceb4/ffffff?text=4', 
+                name: '图片4',
+                title: '图片4',
+                width: 320,
+                height: 240
+            },
+            { 
+                url: 'https://via.placeholder.com/280x200/feca57/ffffff?text=5', 
+                name: '图片5',
+                title: '图片5',
+                width: 280,
+                height: 200
+            },
+            { 
+                url: 'https://via.placeholder.com/360x270/ff9ff3/ffffff?text=6', 
+                name: '图片6',
+                title: '图片6',
+                width: 360,
+                height: 270
+            },
+            { 
+                url: 'https://via.placeholder.com/300x200/ff6b6b/ffffff?text=7', 
+                name: '图片7',
+                title: '图片7',
+                width: 300,
+                height: 200
+            },
+            { 
+                url: 'https://via.placeholder.com/400x300/4ecdc4/ffffff?text=8', 
+                name: '图片8',
+                title: '图片8',
+                width: 400,
+                height: 300
+            },
+            { 
+                url: 'https://via.placeholder.com/350x250/45b7d1/ffffff?text=9', 
+                name: '图片9',
+                title: '图片9',
+                width: 350,
+                height: 250
+            }
+        ];
+
+        let imageSelection = null;
+
+        // 日志功能
+        function addLog(message, type = '') {
+            const logContent = document.getElementById('log-content');
+            const logItem = document.createElement('div');
+            logItem.className = `log-item ${type}`;
+            logItem.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContent.appendChild(logItem);
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+
+        // 更新统计信息
+        function updateStats() {
+            document.getElementById('total-count').textContent = testImages.length;
+            document.getElementById('selected-count').textContent = imageSelection ? imageSelection.getSelectedCount() : 0;
+            document.getElementById('multi-mode').textContent = imageSelection && imageSelection.isMultiSelectMode ? '是' : '否';
+        }
+
+        // 初始化图片选择组件
+        function initImageSelection() {
+            const container = document.getElementById('image-selection-container');
+            
+            if (typeof ImageSelection === 'undefined') {
+                container.innerHTML = '<div style="color: red; text-align: center; padding: 50px;">ImageSelection组件未加载</div>';
+                return;
+            }
+
+            imageSelection = new ImageSelection();
+            imageSelection.init(container, testImages, (selectedImage, selectedIndex, selectedImages) => {
+                if (selectedImages && selectedImages.length > 1) {
+                    addLog(`多选模式：选择了 ${selectedImages.length} 张图片`, 'log-multi');
+                    selectedImages.forEach((item, index) => {
+                        addLog(`  - 第 ${index + 1} 张：${item.image.title} (${item.image.width}×${item.image.height})`, 'log-multi');
+                    });
+                } else if (selectedImage) {
+                    addLog(`单选模式：选择了 ${selectedImage.title} (${selectedImage.width}×${selectedImage.height})`, 'log-single');
+                } else {
+                    addLog('取消了所有选择', 'log-clear');
+                }
+                updateStats();
+            });
+
+            // 监听多选模式变化
+            const originalUpdateMultiSelectUI = imageSelection.updateMultiSelectUI;
+            imageSelection.updateMultiSelectUI = function() {
+                originalUpdateMultiSelectUI.call(this);
+                updateStats();
+            };
+
+            addLog('图片选择组件初始化完成', 'log-single');
+            updateStats();
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initImageSelection);
+    </script>
+</body>
+</html>

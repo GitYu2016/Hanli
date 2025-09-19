@@ -82,7 +82,10 @@ class AttachmentCard {
             const iconClass = attachment.name.endsWith('.json') ? 'ph-file-json' : 'ph-file-pdf';
             
             html += `
-                <div class="attachment-item">
+                <div class="attachment-item" 
+                     oncontextmenu="attachmentCardInstance.showContextMenu(event, '${attachment.name}', '${attachment.path || ''}')"
+                     data-file-name="${attachment.name}"
+                     data-file-path="${attachment.path || ''}">
                     <div class="attachment-icon">
                         <i class="ph ${iconClass}"></i>
                     </div>
@@ -98,7 +101,7 @@ class AttachmentCard {
                     </div>
                     <div class="attachment-actions">
                         ${attachment.name.endsWith('.json') ? `
-                        <button class="attachment-btn" onclick="attachmentCardInstance.viewJsonFile('${attachment.name}')" title="查看">
+                        <button class="attachment-btn" onclick="attachmentCardInstance.viewJsonFile('${attachment.name}', '${this.goodsId}')" title="查看">
                             <i class="ph ph-eye"></i>
                         </button>
                         ` : ''}
@@ -139,12 +142,17 @@ class AttachmentCard {
     /**
      * 查看JSON文件
      * @param {string} fileName - 文件名
+     * @param {string} goodsId - 产品ID（可选，如果未提供则使用实例的goodsId）
      */
-    async viewJsonFile(fileName) {
-        if (!this.goodsId) return;
+    async viewJsonFile(fileName, goodsId = null) {
+        const productId = goodsId || this.goodsId;
+        if (!productId) {
+            console.error('产品ID未提供');
+            return;
+        }
 
         try {
-            const response = await fetch(`http://localhost:3001/api/products/${this.goodsId}/file/${encodeURIComponent(fileName)}`);
+            const response = await fetch(`http://localhost:3001/api/products/${productId}/file/${encodeURIComponent(fileName)}`);
             
             if (response.ok) {
                 const data = await response.json();
@@ -182,7 +190,7 @@ class AttachmentCard {
                     <pre><code>${this.formatJson(jsonText)}</code></pre>
                 </div>
                 <div class="json-modal-footer">
-                    <button class="btn btn-secondary" onclick="attachmentCardInstance.copyJson('${fileName}')">
+                    <button class="btn btn-secondary" onclick="attachmentCardInstance.copyJson('${fileName}', '${this.goodsId}')">
                         <i class="ph ph-copy"></i> 复制
                     </button>
                 </div>
@@ -209,12 +217,17 @@ class AttachmentCard {
     /**
      * 复制JSON内容
      * @param {string} fileName - 文件名
+     * @param {string} goodsId - 产品ID（可选，如果未提供则使用实例的goodsId）
      */
-    async copyJson(fileName) {
-        if (!this.goodsId) return;
+    async copyJson(fileName, goodsId = null) {
+        const productId = goodsId || this.goodsId;
+        if (!productId) {
+            console.error('产品ID未提供');
+            return;
+        }
 
         try {
-            const response = await fetch(`http://localhost:3001/api/products/${this.goodsId}/file/${encodeURIComponent(fileName)}`);
+            const response = await fetch(`http://localhost:3001/api/products/${productId}/file/${encodeURIComponent(fileName)}`);
             const data = await response.json();
             
             if (data.success) {
@@ -228,6 +241,133 @@ class AttachmentCard {
             }
         } catch (error) {
             console.error('复制JSON失败:', error);
+        }
+    }
+
+    /**
+     * 显示右键菜单
+     * @param {Event} event - 右键事件
+     * @param {string} fileName - 文件名
+     * @param {string} filePath - 文件路径
+     */
+    showContextMenu(event, fileName, filePath) {
+        event.preventDefault();
+        
+        // 移除现有的右键菜单
+        this.hideContextMenu();
+        
+        // 创建右键菜单
+        const contextMenu = document.createElement('div');
+        contextMenu.className = 'context-menu';
+        contextMenu.id = 'attachment-context-menu';
+        
+        // 根据平台显示不同的文本
+        const platform = navigator.platform.toLowerCase();
+        const showInFinderText = platform.includes('mac') ? '在 Finder 中显示' : '在文件夹中显示';
+        
+        contextMenu.innerHTML = `
+            <div class="context-menu-item" onclick="attachmentCardInstance.showInFinder('${fileName}', '${filePath}')">
+                <span>${showInFinderText}</span>
+            </div>
+            <div class="context-menu-item" onclick="attachmentCardInstance.saveAs('${fileName}', '${filePath}')">
+                <span>另存为</span>
+            </div>
+        `;
+        
+        // 设置菜单位置
+        contextMenu.style.position = 'fixed';
+        contextMenu.style.left = event.clientX + 'px';
+        contextMenu.style.top = event.clientY + 'px';
+        contextMenu.style.zIndex = '10000';
+        
+        // 添加到页面
+        document.body.appendChild(contextMenu);
+        
+        // 点击其他地方隐藏菜单
+        setTimeout(() => {
+            document.addEventListener('click', this.hideContextMenu.bind(this), { once: true });
+        }, 0);
+    }
+
+    /**
+     * 隐藏右键菜单
+     */
+    hideContextMenu() {
+        const contextMenu = document.getElementById('attachment-context-menu');
+        if (contextMenu) {
+            contextMenu.remove();
+        }
+    }
+
+    /**
+     * 在 Finder/文件夹中显示文件
+     * @param {string} fileName - 文件名
+     * @param {string} filePath - 文件路径
+     */
+    async showInFinder(fileName, filePath) {
+        try {
+            // 如果没有文件路径，尝试构建路径
+            let fullPath = filePath;
+            if (!fullPath && this.goodsId) {
+                // 构建相对路径，主进程会处理转换为绝对路径
+                fullPath = `hanli-app/data/goods-library/${this.goodsId}/${fileName}`;
+            }
+            
+            if (!fullPath) {
+                console.error('无法确定文件路径');
+                return;
+            }
+            
+            console.log('准备显示文件:', fullPath);
+            
+            // 调用 Electron API
+            const result = await window.electronAPI.fileAPI.showInFinder(fullPath);
+            
+            if (result.success) {
+                console.log('文件已在 Finder/文件夹中显示');
+            } else {
+                console.error('显示文件失败:', result.error);
+            }
+        } catch (error) {
+            console.error('显示文件在 Finder 中失败:', error);
+        } finally {
+            // 隐藏右键菜单
+            this.hideContextMenu();
+        }
+    }
+
+    /**
+     * 另存为文件
+     * @param {string} fileName - 文件名
+     * @param {string} filePath - 文件路径
+     */
+    async saveAs(fileName, filePath) {
+        try {
+            // 如果没有文件路径，尝试构建路径
+            let fullPath = filePath;
+            if (!fullPath && this.goodsId) {
+                // 构建文件路径
+                fullPath = `hanli-app/data/goods-library/${this.goodsId}/${fileName}`;
+            }
+            
+            if (!fullPath) {
+                console.error('无法确定文件路径');
+                return;
+            }
+            
+            // 调用 Electron API 另存为
+            const result = await window.electronAPI.fileAPI.saveAs(fullPath, fileName);
+            
+            if (result.success) {
+                console.log('文件另存为成功');
+            } else {
+                console.error('另存为失败:', result.error);
+            }
+        } catch (error) {
+            console.error('另存为失败:', error);
+        } finally {
+            // 隐藏右键菜单
+            this.hideContextMenu();
         }
     }
 

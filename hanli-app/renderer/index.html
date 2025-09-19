@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http://localhost:3001; font-src 'self' data:; connect-src 'self' http://localhost:3001 ws: wss:;">
     <title>Hanli - 产品管理系统</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="theme/light/colors.css" id="theme-colors">
@@ -16,13 +17,18 @@
     <script src="components/Common/TopBar.js"></script>
     <script src="components/Common/SideBar.js"></script>
     <script src="components/Common/PageContainer.js"></script>
+    <script src="components/Common/Toast.js"></script>
+    <script src="components/Common/KeyboardShortcutManager.js"></script>
     <script src="components/Detail/ProductCharts.js"></script>
     <script src="components/Detail/AttachmentCard.js"></script>
-    <script src="components/Index/MonitorCard.js"></script>
+    <script src="components/Detail/MediaSelection.js"></script>
+    <script src="components/Detail/MediaCard.js"></script>
     <script src="pages/HomePage.js"></script>
     <script src="pages/ProductLibrary.js"></script>
     <script src="pages/ProductDetail.js"></script>
     <script src="components/Modal/SettingsModal.js"></script>
+    <script src="components/Modal/SearchModal.js"></script>
+    <script src="components/Modal/MoreMenu.js"></script>
 </head>
 <body>
     <div id="home-page" class="home-page">

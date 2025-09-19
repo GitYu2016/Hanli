@@ -19,7 +19,8 @@ class TabManager {
             pageType: pageData.type,
             title: pageData.title,
             pageData: pageData,
-            isActive: false
+            isActive: false,
+            closable: pageData.closable !== false // 默认为true，除非明确设置为false
         };
         
         this.tabs.push(tab);
@@ -119,6 +120,11 @@ class HomePage {
         this.applyStoredSettings();
         this.setupIPCListeners();
         
+        // 延迟设置关于菜单监听器，确保DOM完全加载
+        setTimeout(() => {
+            this.setupAboutMenuListener();
+        }, 100);
+        
         // 设置全局引用，供TabManager使用
         window.homePageInstance = this;
     }
@@ -137,38 +143,42 @@ class HomePage {
     setTheme(theme) {
         this.currentTheme = theme;
         const themeColors = document.getElementById('theme-colors');
-        const body = document.body;
+        const root = document.documentElement;
         
         // 移除现有主题类
-        body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+        root.classList.remove('theme-light', 'theme-dark', 'theme-auto');
         
         if (theme === 'auto') {
             // 跟随系统主题
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             const actualTheme = prefersDark ? 'dark' : 'light';
             themeColors.href = `theme/${actualTheme}/colors.css`;
-            body.classList.add(`theme-${actualTheme}`);
+            root.classList.add(`theme-${actualTheme}`);
             
             // 监听系统主题变化
             this.setupSystemThemeListener();
         } else {
             // 使用指定主题
             themeColors.href = `theme/${theme}/colors.css`;
-            body.classList.add(`theme-${theme}`);
+            root.classList.add(`theme-${theme}`);
         }
+        
+        // 重新应用背景色，确保主题切换后背景色仍然有效
+        const savedBgColor = localStorage.getItem('app-background-color') || 'default';
+        this.setBackgroundColor(savedBgColor);
         
         localStorage.setItem('app-theme', theme);
     }
 
     // 设置背景色
     setBackgroundColor(bgColor) {
-        const body = document.body;
+        const root = document.documentElement;
         
         // 移除现有背景色类
-        body.classList.remove('bg-default', 'bg-blue', 'bg-green', 'bg-purple', 'bg-orange', 'bg-pink', 'bg-gray', 'bg-indigo');
+        root.classList.remove('bg-default', 'bg-blue', 'bg-green', 'bg-purple', 'bg-orange', 'bg-pink', 'bg-gray', 'bg-indigo');
         
         // 添加新背景色类
-        body.classList.add(`bg-${bgColor}`);
+        root.classList.add(`bg-${bgColor}`);
         
         // 保存到localStorage
         localStorage.setItem('app-background-color', bgColor);
@@ -188,16 +198,21 @@ class HomePage {
                 const prefersDark = this.systemThemeListener.matches;
                 const actualTheme = prefersDark ? 'dark' : 'light';
                 const themeColors = document.getElementById('theme-colors');
-                const body = document.body;
+                const root = document.documentElement;
                 
-                body.classList.remove('theme-light', 'theme-dark');
-                body.classList.add(`theme-${actualTheme}`);
+                root.classList.remove('theme-light', 'theme-dark');
+                root.classList.add(`theme-${actualTheme}`);
                 themeColors.href = `theme/${actualTheme}/colors.css`;
+                
+                // 重新应用背景色，确保系统主题切换后背景色仍然有效
+                const savedBgColor = localStorage.getItem('app-background-color') || 'default';
+                this.setBackgroundColor(savedBgColor);
             }
         };
         
         this.systemThemeListener.addEventListener('change', this.handleSystemThemeChange);
     }
+
 
     // 初始化所有组件
     async initComponents() {
@@ -242,11 +257,8 @@ class HomePage {
         // 创建PageContainer组件实例
         this.pageContainer = new PageContainer();
         
-        // 先渲染PageContainer的HTML结构
+        // 只渲染PageContainer的HTML结构，不渲染具体页面内容
         this.pageContainer.render();
-        
-        // 然后渲染首页内容
-        await this.pageContainer.renderHomePage();
     }
 
     // 初始化SettingsModal组件
@@ -278,22 +290,19 @@ class HomePage {
         // Tab切换事件监听
         this.bindTabSwitchEvents();
         
-        // 键盘快捷键
-        this.bindKeyboardShortcuts();
+        // 设置键盘快捷键
+        this.setupKeyboardShortcuts();
 
         // 窗口控制按钮事件
         this.setupWindowControls();
 
         // 产品标题点击事件委托
         document.addEventListener('click', (e) => {
-            console.log('点击事件触发:', e.target);
             const productName = e.target.closest('.product-name.clickable');
             if (productName) {
-                console.log('找到产品标题元素:', productName);
                 const goodsId = productName.dataset.goodsId;
-                console.log('商品ID:', goodsId);
                 if (goodsId) {
-                    console.log('准备打开产品详情:', goodsId);
+                    console.log('打开产品详情:', goodsId);
                     this.viewProductDetail(goodsId);
                 }
             }
@@ -313,7 +322,6 @@ class HomePage {
         // 监听Tab切换事件
         document.addEventListener('tabSwitch', (event) => {
             const { tab } = event.detail;
-            console.log('Tab切换到:', tab.pageType);
             
             // 根据Tab类型更新页面内容
             this.handleTabSwitch(tab);
@@ -322,8 +330,12 @@ class HomePage {
     
     // 处理Tab切换
     handleTabSwitch(tab) {
-        console.log('处理Tab切换:', tab);
-        console.log('Tab pageData:', tab.pageData);
+        // 避免重复处理相同Tab
+        if (this.lastHandledTabId === tab.id) {
+            return;
+        }
+        
+        this.lastHandledTabId = tab.id;
         
         // 根据页面类型更新侧边栏状态
         if (this.sideBar) {
@@ -335,41 +347,74 @@ class HomePage {
         
         // 根据Tab类型管理产品总数刷新
         if (tab.pageType === 'home') {
-            // 切换到首页，启动定时刷新
-            this.startProductCountRefresh();
+            // 切换到首页，按需刷新产品总数
+            this.refreshProductCountIfNeeded();
         } else if (tab.pageType === 'product-library') {
             // 切换到产品库，触发一次刷新
             this.loadProductLibrary();
-        } else {
-            // 离开首页，停止定时刷新
-            this.stopProductCountRefresh();
         }
     }
     
-    // 绑定键盘快捷键
-    bindKeyboardShortcuts() {
-        document.addEventListener('keydown', (e) => {
-            // Ctrl+W 关闭当前Tab
-            if (e.ctrlKey && e.key === 'w') {
-                e.preventDefault();
-                const activeTab = this.tabManager.getActiveTab();
-                if (activeTab && this.tabManager.tabs.length > 1) {
-                    this.tabManager.closeTab(activeTab.id);
+    // 设置键盘快捷键
+    setupKeyboardShortcuts() {
+        // 注册Tab管理快捷键
+        window.keyboardShortcutManager.register('ctrl+w', (e) => {
+            this.handleCloseShortcut();
+        }, 'global', '关闭当前Tab或窗口');
+
+        window.keyboardShortcutManager.register('ctrl+tab', (e) => {
+            this.switchToNextTab();
+        }, 'global', '切换到下一个Tab');
+
+        window.keyboardShortcutManager.register('ctrl+shift+tab', (e) => {
+            this.switchToPreviousTab();
+        }, 'global', '切换到上一个Tab');
+    }
+
+    /**
+     * 处理关闭快捷键 (⌘/Ctrl+W)
+     * 如果有可关闭的Tab，则关闭当前Tab
+     * 如果没有可关闭的Tab，则关闭窗口
+     */
+    handleCloseShortcut() {
+        // 查找可关闭的Tab
+        const closableTabs = this.tabManager.tabs.filter(tab => tab.closable);
+        
+        if (closableTabs.length > 0) {
+            // 有可关闭的Tab，关闭当前活动Tab（如果它是可关闭的）
+            const activeTab = this.tabManager.getActiveTab();
+            if (activeTab && activeTab.closable) {
+                this.tabManager.closeTab(activeTab.id);
+                this.renderTabs();
+                // 触发Tab切换事件
+                const newActiveTab = this.tabManager.getActiveTab();
+                if (newActiveTab) {
+                    this.tabManager.onTabSwitch(newActiveTab);
                 }
             }
-            
-            // Ctrl+Tab 切换到下一个Tab
-            if (e.ctrlKey && e.key === 'Tab') {
-                e.preventDefault();
-                this.switchToNextTab();
+        } else {
+            // 没有可关闭的Tab，关闭窗口
+            if (window.electronAPI && window.electronAPI.windowAPI) {
+                window.electronAPI.windowAPI.close();
             }
-            
-            // Ctrl+Shift+Tab 切换到上一个Tab
-            if (e.ctrlKey && e.shiftKey && e.key === 'Tab') {
-                e.preventDefault();
-                this.switchToPreviousTab();
-            }
-        });
+        }
+    }
+
+    /**
+     * 为弹窗注册ESC键关闭功能
+     * @param {string} context - 上下文名称
+     * @param {Function} closeHandler - 关闭处理函数
+     */
+    registerModalEscKey(context, closeHandler) {
+        window.keyboardShortcutManager.register('escape', closeHandler, context, '关闭弹窗');
+    }
+
+    /**
+     * 注销弹窗ESC键关闭功能
+     * @param {string} context - 上下文名称
+     */
+    unregisterModalEscKey(context) {
+        window.keyboardShortcutManager.unregisterContext(context);
     }
     
     // 切换到下一个Tab
@@ -401,12 +446,10 @@ class HomePage {
 
     // 导航到页面
     navigateToPage(page) {
-        console.log('导航到页面:', page);
-        
         // 定义页面数据
         const pageDataMap = {
-            'home': { type: 'home', title: '首页' },
-            'product-library': { type: 'goodsList', title: '产品库' }
+            'home': { type: 'home', title: '首页', closable: false }, // 首页不支持关闭
+            'product-library': { type: 'goodsList', title: '产品库', closable: true } // 产品库支持关闭
         };
         
         const pageData = pageDataMap[page];
@@ -465,6 +508,7 @@ class HomePage {
             const homeTab = this.tabManager.addTab({
                 type: 'home',
                 title: '首页',
+                closable: false, // 首页不支持关闭
                 pageData: { type: 'home', title: '首页' }
             });
             
@@ -489,20 +533,23 @@ class HomePage {
         document.querySelector(`[data-page="${this.activePage}"]`)?.classList.add('active');
     }
 
-    // 处理Tab切换
-    handleTabSwitch(tab) {
-        console.log('处理Tab切换:', tab);
-        
-        // 根据Tab类型渲染对应的页面内容
-        this.renderPageContent(tab.pageData.type, tab.pageData);
-        
+    // 更新侧边栏状态（辅助方法）
+    updateSidebarForTab(tab) {
         // 更新侧边栏状态
-        this.updateSidebarForTab(tab);
+        if (this.sideBar) {
+            this.sideBar.updateSidebarForTab(tab);
+        }
     }
 
     // 渲染页面内容
     async renderPageContent(pageType, pageData = null) {
-        console.log('渲染页面内容:', pageType, pageData);
+        // 避免重复渲染相同内容
+        const renderKey = `${pageType}_${pageData?.productId || 'default'}`;
+        if (this.lastRenderKey === renderKey) {
+            return;
+        }
+        
+        this.lastRenderKey = renderKey;
         
         if (!this.pageContainer) {
             console.error('PageContainer组件未初始化');
@@ -515,11 +562,10 @@ class HomePage {
                 await this.pageContainer.renderHomePage();
                 break;
             case 'goodsList':
-                console.log('渲染产品库');
                 this.loadProductLibrary();
                 break;
             case 'productDetail':
-                console.log('渲染产品详情页, pageData:', pageData);
+                console.log('渲染产品详情页');
                 // 产品详情页需要根据productId重新加载数据
                 if (pageData && pageData.productId) {
                     console.log('根据productId加载产品详情:', pageData.productId);
@@ -574,7 +620,8 @@ class HomePage {
     // 加载仪表板数据
     loadDashboardData() {
         this.loadProductCount();
-        this.startProductCountRefresh();
+        // 初始化页面可见性监听（用于App前后台切换时刷新）
+        this.initVisibilityListener();
     }
 
     // 加载产品总数
@@ -596,30 +643,46 @@ class HomePage {
         }
     }
 
-    // 开始产品总数定时刷新
-    startProductCountRefresh() {
-        // 清除现有定时器
-        this.stopProductCountRefresh();
-        
-        // 设置5秒定时刷新
-        this.productCountRefreshTimer = setInterval(() => {
-            // 只有在首页且没有其他活动Tab时才刷新
-            if (this.isOnHomePage()) {
-                console.log('定时刷新产品总数...');
-                this.loadProductCount();
-            }
-        }, 5000);
-        
-        console.log('产品总数定时刷新已启动，间隔5秒');
+    // 按需刷新产品总数（已移除定时刷新）
+    refreshProductCountIfNeeded() {
+        // 只有在首页时才刷新
+        if (this.isOnHomePage()) {
+            console.log('按需刷新产品总数...');
+            this.loadProductCount();
+        }
     }
 
-    // 停止产品总数定时刷新
-    stopProductCountRefresh() {
-        if (this.productCountRefreshTimer) {
-            clearInterval(this.productCountRefreshTimer);
-            this.productCountRefreshTimer = null;
-            console.log('产品总数定时刷新已停止');
+    // 初始化页面可见性监听
+    initVisibilityListener() {
+        // 如果已经初始化过，直接返回
+        if (this.visibilityListenerInitialized) {
+            return;
         }
+
+        // 绑定事件处理函数，以便后续可以正确移除
+        this.handleVisibilityChange = () => {
+            if (!document.hidden && this.isOnHomePage()) {
+                console.log('App从后台切换到前台，刷新产品总数');
+                this.loadProductCount();
+            }
+        };
+
+        this.handleWindowFocus = () => {
+            if (this.isOnHomePage()) {
+                console.log('窗口获得焦点，刷新产品总数');
+                this.loadProductCount();
+            }
+        };
+
+        // 监听页面可见性变化（App从后台到前台）
+        document.addEventListener('visibilitychange', this.handleVisibilityChange);
+
+        // 监听窗口焦点变化（作为备用）
+        window.addEventListener('focus', this.handleWindowFocus);
+
+        // 标记为已初始化
+        this.visibilityListenerInitialized = true;
+        console.log('页面可见性监听器已初始化');
     }
 
     // 检查是否在首页
@@ -636,6 +699,13 @@ class HomePage {
 
     // 加载产品库数据
     async loadProductLibrary() {
+        // 避免重复加载
+        if (this.isLoadingProductLibrary) {
+            return;
+        }
+        
+        this.isLoadingProductLibrary = true;
+        
         try {
             console.log('开始加载产品库数据...');
             
@@ -664,6 +734,8 @@ class HomePage {
         } catch (error) {
             console.error('加载产品库数据失败:', error);
             this.showProductLibraryError('加载数据失败');
+        } finally {
+            this.isLoadingProductLibrary = false;
         }
     }
 
@@ -832,6 +904,14 @@ class HomePage {
 
     // 查看产品详情
     async viewProductDetail(goodsId) {
+        // 避免重复加载相同产品
+        if (this.isLoadingProductDetail && this.loadingProductId === goodsId) {
+            return;
+        }
+        
+        this.isLoadingProductDetail = true;
+        this.loadingProductId = goodsId;
+        
         console.log('查看产品详情:', goodsId);
         
         try {
@@ -853,6 +933,9 @@ class HomePage {
         } catch (error) {
             console.error('获取产品详情失败:', error);
             this.showToast('获取产品详情失败: ' + error.message);
+        } finally {
+            this.isLoadingProductDetail = false;
+            this.loadingProductId = null;
         }
     }
 
@@ -871,6 +954,7 @@ class HomePage {
             const pageData = {
                 type: 'productDetail',
                 title: `产品详情 - ${product.goodsCat3 || product.goodsTitleEn || product.goodsId}`,
+                closable: true, // 产品详情支持关闭
                 productId: product.goodsId
             };
             const newTabId = this.tabManager.addTab(pageData);
@@ -890,13 +974,19 @@ class HomePage {
         // 使用PageContainer组件渲染产品详情
         if (this.pageContainer) {
             await this.pageContainer.renderProductDetail(product);
-            // 初始化附件卡片
-            await this.initAttachmentCard(product.goodsId);
         }
     }
 
     // 根据商品ID加载产品详情
     async loadProductDetailByGoodsId(goodsId) {
+        // 避免重复加载相同产品
+        if (this.isLoadingProductDetailByGoodsId && this.loadingProductIdByGoodsId === goodsId) {
+            return;
+        }
+        
+        this.isLoadingProductDetailByGoodsId = true;
+        this.loadingProductIdByGoodsId = goodsId;
+        
         console.log('根据商品ID加载产品详情:', goodsId);
         
         try {
@@ -914,6 +1004,9 @@ class HomePage {
         } catch (error) {
             console.error('获取产品详情失败:', error);
             this.showToast('获取产品详情失败: ' + error.message);
+        } finally {
+            this.isLoadingProductDetailByGoodsId = false;
+            this.loadingProductIdByGoodsId = null;
         }
     }
 
@@ -1060,46 +1153,210 @@ class HomePage {
         }, 3000);
     }
 
+    /**
+     * 显示视频右键菜单
+     * @param {Event} event - 右键事件
+     * @param {number} index - 视频索引
+     * @param {string} videoName - 视频名称
+     * @param {string} videoPath - 视频路径
+     */
+    showVideoContextMenu(event, index, videoName, videoPath) {
+        event.preventDefault();
+        
+        // 移除现有的右键菜单
+        this.hideVideoContextMenu();
+        
+        // 创建右键菜单
+        const contextMenu = document.createElement('div');
+        contextMenu.className = 'context-menu';
+        contextMenu.id = 'home-video-context-menu';
+        
+        // 根据平台显示不同的文本
+        const platform = navigator.platform.toLowerCase();
+        const showInFinderText = platform.includes('mac') ? '在 Finder 中显示' : '在文件夹中显示';
+        
+        contextMenu.innerHTML = `
+            <div class="context-menu-item" onclick="homePageInstance.showVideoInFinder(${index}, '${videoName}', '${videoPath}')">
+                <span>${showInFinderText}</span>
+            </div>
+            <div class="context-menu-item" onclick="homePageInstance.saveVideoAs(${index}, '${videoName}', '${videoPath}')">
+                <span>另存为</span>
+            </div>
+            <div class="context-menu-item context-menu-item-danger" onclick="homePageInstance.moveVideoToTrash(${index}, '${videoName}', '${videoPath}')">
+                <span>移到废纸篓</span>
+            </div>
+        `;
+        
+        // 设置菜单位置
+        contextMenu.style.position = 'fixed';
+        contextMenu.style.left = event.clientX + 'px';
+        contextMenu.style.top = event.clientY + 'px';
+        contextMenu.style.zIndex = '10000';
+        
+        // 添加到页面
+        document.body.appendChild(contextMenu);
+        
+        // 点击其他地方隐藏菜单
+        setTimeout(() => {
+            document.addEventListener('click', this.hideVideoContextMenu.bind(this), { once: true });
+        }, 0);
+    }
+
+    /**
+     * 隐藏视频右键菜单
+     */
+    hideVideoContextMenu() {
+        const contextMenu = document.getElementById('home-video-context-menu');
+        if (contextMenu) {
+            contextMenu.remove();
+        }
+    }
+
+    /**
+     * 在 Finder/文件夹中显示视频文件
+     * @param {number} index - 视频索引
+     * @param {string} videoName - 视频名称
+     * @param {string} videoPath - 视频路径
+     */
+    async showVideoInFinder(index, videoName, videoPath) {
+        try {
+            // 如果没有文件路径，尝试构建路径
+            let fullPath = videoPath;
+            if (!fullPath) {
+                console.error('无法确定视频文件路径');
+                return;
+            }
+            
+            // 调用 Electron API
+            const result = await window.electronAPI.fileAPI.showInFinder(fullPath);
+            
+            if (result.success) {
+                console.log('视频文件已在 Finder/文件夹中显示');
+            } else {
+                console.error('显示视频文件失败:', result.error);
+            }
+        } catch (error) {
+            console.error('显示视频文件在 Finder 中失败:', error);
+        } finally {
+            // 隐藏右键菜单
+            this.hideVideoContextMenu();
+        }
+    }
+
+    /**
+     * 另存为视频文件
+     * @param {number} index - 视频索引
+     * @param {string} videoName - 视频名称
+     * @param {string} videoPath - 视频路径
+     */
+    async saveVideoAs(index, videoName, videoPath) {
+        try {
+            // 如果没有文件路径，尝试构建路径
+            let fullPath = videoPath;
+            if (!fullPath) {
+                console.error('无法确定视频文件路径');
+                return;
+            }
+            
+            // 调用 Electron API 另存为
+            const result = await window.electronAPI.fileAPI.saveAs(fullPath, videoName);
+            
+            if (result.success) {
+                console.log('视频文件另存为成功');
+            } else {
+                console.error('另存为失败:', result.error);
+            }
+        } catch (error) {
+            console.error('另存为失败:', error);
+        } finally {
+            // 隐藏右键菜单
+            this.hideVideoContextMenu();
+        }
+    }
+
+    /**
+     * 移动视频文件到废纸篓
+     * @param {number} index - 视频索引
+     * @param {string} videoName - 视频名称
+     * @param {string} videoPath - 视频路径
+     */
+    async moveVideoToTrash(index, videoName, videoPath) {
+        try {
+            // 确认删除操作
+            const confirmed = confirm(`确定要将视频文件 "${videoName}" 移到废纸篓吗？\n\n此操作不可撤销。`);
+            if (!confirmed) {
+                this.hideVideoContextMenu();
+                return;
+            }
+
+            // 如果没有文件路径，尝试构建路径
+            let fullPath = videoPath;
+            if (!fullPath) {
+                console.error('无法确定视频文件路径');
+                alert('无法确定视频文件路径，请检查文件是否存在');
+                return;
+            }
+            
+            console.log('准备删除视频文件到废纸篓:', fullPath);
+            
+            // 调用 Electron API 删除文件到废纸篓
+            const result = await window.electronAPI.fileAPI.moveToTrash(fullPath);
+            
+            if (result.success) {
+                console.log('视频文件已移动到废纸篓');
+                
+                // 显示成功提示
+                if (window.showToast) {
+                    window.showToast('视频文件已移动到废纸篓', 'success');
+                } else {
+                    alert('视频文件已移动到废纸篓');
+                }
+            } else {
+                console.error('删除视频文件失败:', result.error);
+                alert('删除视频文件失败: ' + result.error);
+            }
+        } catch (error) {
+            console.error('删除视频文件失败:', error);
+            alert('删除视频文件失败: ' + error.message);
+        } finally {
+            // 隐藏右键菜单
+            this.hideVideoContextMenu();
+        }
+    }
+
     // 渲染媒体内容
     renderMediaContent(product) {
         let mediaHTML = '<div class="media-grid">';
         
-        // 视频
+        // 合并图片和视频数据
+        const mediaItems = [];
+        
+        // 添加视频
         if (product.videos && product.videos.length > 0) {
-            mediaHTML += '<div class="media-section">';
-            mediaHTML += '<h4 class="section-subtitle">视频</h4>';
-            mediaHTML += '<div class="video-list">';
-            product.videos.forEach((video, index) => {
-                mediaHTML += `
-                    <div class="video-item">
-                        <video controls>
-                            <source src="${video.url}" type="video/mp4">
-                            您的浏览器不支持视频播放
-                        </video>
-                        <p class="video-title">视频 ${index + 1}</p>
-                    </div>
-                `;
+            product.videos.forEach(video => {
+                mediaItems.push({
+                    ...video,
+                    type: 'video'
+                });
             });
-            mediaHTML += '</div></div>';
         }
         
-        // 图片
+        // 添加图片
         if (product.images && product.images.length > 0) {
-            mediaHTML += '<div class="media-section">';
-            mediaHTML += '<h4 class="section-subtitle">图片</h4>';
-            mediaHTML += '<div class="image-grid">';
-            product.images.forEach((image, index) => {
-                mediaHTML += `
-                    <div class="image-item">
-                        <img src="${image.url}" alt="产品图片 ${index + 1}" onclick="homePageInstance.openImageModal('${image.url}')">
-                    </div>
-                `;
+            product.images.forEach(image => {
+                mediaItems.push({
+                    ...image,
+                    type: 'image'
+                });
             });
-            mediaHTML += '</div></div>';
         }
         
-        // 如果没有媒体文件
-        if ((!product.videos || product.videos.length === 0) && (!product.images || product.images.length === 0)) {
+        if (mediaItems.length > 0) {
+            mediaHTML += '<div class="media-section">';
+            mediaHTML += '<h4 class="section-subtitle">媒体资源</h4>';
+            mediaHTML += '<div id="home-media-card-container"></div>';
+            mediaHTML += '</div>';
+        } else {
             mediaHTML += '<div class="no-media">暂无媒体资源</div>';
         }
         
@@ -1786,23 +2043,6 @@ class HomePage {
         ctx.fillText('评分', 220, legendY);
     }
 
-    // 打开图片模态框
-    openImageModal(imageUrl) {
-        // 创建图片查看模态框
-        const modal = document.createElement('div');
-        modal.className = 'image-modal';
-        modal.innerHTML = `
-            <div class="modal-overlay" onclick="this.parentElement.remove()">
-                <div class="modal-content" onclick="event.stopPropagation()">
-                    <img src="${imageUrl}" alt="产品图片">
-                    <button class="modal-close" onclick="this.closest('.image-modal').remove()">
-                        <i class="ph ph-x"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    }
 
     // 返回产品库
     goBackToProductLibrary() {
@@ -1830,9 +2070,110 @@ class HomePage {
         `;
     }
 
+    // 设置关于菜单监听器
+    setupAboutMenuListener() {
+        console.log('设置关于菜单监听器');
+        const handleAboutMenu = () => {
+            console.log('收到关于菜单事件');
+            this.showAboutDialog();
+        };
+        
+        window.addEventListener('menu-about', handleAboutMenu);
+        
+        // 保存引用以便清理
+        this.handleAboutMenu = handleAboutMenu;
+    }
+
+    // 显示关于弹窗
+    showAboutDialog() {
+        console.log('显示关于弹窗');
+        // 创建弹窗遮罩
+        const modalOverlay = document.createElement('div');
+        modalOverlay.id = 'about-modal';
+        modalOverlay.className = 'modal-overlay active';
+        modalOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        `;
+
+        // 创建弹窗内容
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: var(--color-card-background, #ffffff);
+            border-radius: 12px;
+            padding: 32px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--color-border, #e5e7eb);
+        `;
+
+        modalContent.innerHTML = `
+            <div style="margin-bottom: 24px;">
+                <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
+                <h2 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 600; color: var(--color-text-primary, #1f2937);">关于 Hanli</h2>
+                <p style="margin: 0; font-size: 16px; color: var(--color-text-secondary, #6b7280); line-height: 1.5;">这是一个产品管理App</p>
+            </div>
+            <button id="about-ok-btn" style="
+                background: var(--color-primary, #3b82f6);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 12px 24px;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                min-width: 100px;
+            " onmouseover="this.style.background='var(--color-primary-hover, #2563eb)'" onmouseout="this.style.background='var(--color-primary, #3b82f6)'">
+                我知道了
+            </button>
+        `;
+
+        modalOverlay.appendChild(modalContent);
+        document.body.appendChild(modalOverlay);
+
+        // 绑定关闭事件
+        const closeModal = () => {
+            document.body.removeChild(modalOverlay);
+        };
+
+        // 点击遮罩关闭
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                closeModal();
+            }
+        });
+
+        // 点击按钮关闭
+        const okBtn = modalContent.querySelector('#about-ok-btn');
+        okBtn.addEventListener('click', closeModal);
+
+        // 注册ESC键关闭
+        this.registerModalEscKey('about-modal', () => {
+            closeModal();
+            this.unregisterModalEscKey('about-modal');
+        });
+    }
+
     // 清理资源
     cleanup() {
-        this.stopProductCountRefresh();
+        // 移除事件监听器
+        document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+        window.removeEventListener('focus', this.handleWindowFocus);
+        if (this.handleAboutMenu) {
+            window.removeEventListener('menu-about', this.handleAboutMenu);
+        }
         
         if (this.topBar) {
             this.topBar.destroy();
@@ -2126,30 +2467,27 @@ class HomePage {
             });
         }
 
-        // ESC键关闭
-        const handleKeyDown = (e) => {
-            if (e.key === 'Escape') {
-                this.closeSettingsModal();
-                document.removeEventListener('keydown', handleKeyDown);
-            }
-        };
-        document.addEventListener('keydown', handleKeyDown);
+        // 注册ESC键关闭
+        this.registerModalEscKey('settings-modal', () => {
+            this.closeSettingsModal();
+            this.unregisterModalEscKey('settings-modal');
+        });
     }
 
     // 预览主题效果
     previewTheme(theme) {
-        const body = document.body;
+        const root = document.documentElement;
         
         // 移除现有主题类
-        body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+        root.classList.remove('theme-light', 'theme-dark', 'theme-auto');
         
         // 添加新主题类
         if (theme === 'auto') {
             // 跟随系统主题
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            body.classList.add(prefersDark ? 'theme-dark' : 'theme-light');
+            root.classList.add(prefersDark ? 'theme-dark' : 'theme-light');
         } else {
-            body.classList.add(`theme-${theme}`);
+            root.classList.add(`theme-${theme}`);
         }
     }
 
@@ -2249,12 +2587,11 @@ class HomePage {
 
     // 应用存储的设置
     applyStoredSettings() {
-        // 应用自动刷新设置
+        // 应用自动刷新设置（已改为按需刷新）
         const autoRefresh = localStorage.getItem('app-auto-refresh') === 'true';
         if (autoRefresh && this.isOnHomePage()) {
-            this.startProductCountRefresh();
-        } else {
-            this.stopProductCountRefresh();
+            // 按需刷新产品总数
+            this.refreshProductCountIfNeeded();
         }
     }
 
@@ -2276,6 +2613,11 @@ class HomePage {
 
     // 设置IPC监听器
     setupIPCListeners() {
+        // 如果已经初始化过，直接返回
+        if (this.ipcListenersInitialized) {
+            return;
+        }
+
         console.log('开始设置IPC监听器...');
         
         // 监听来自主进程的商品详情页打开请求
@@ -2299,9 +2641,70 @@ class HomePage {
                 }
             });
             
+            // 标记为已初始化
+            this.ipcListenersInitialized = true;
             console.log('IPC监听器已设置完成');
         } else {
             console.error('electronAPI不可用，无法设置IPC监听器');
+        }
+    }
+
+    // 初始化媒体卡片组件
+    async initMediaCard() {
+        try {
+            const mediaContainer = document.getElementById('home-media-card-container');
+            if (mediaContainer && this.currentProductDetail) {
+                // 合并图片和视频数据
+                const mediaItems = [];
+                
+                // 添加视频
+                if (this.currentProductDetail.videos && this.currentProductDetail.videos.length > 0) {
+                    this.currentProductDetail.videos.forEach(video => {
+                        mediaItems.push({
+                            ...video,
+                            type: 'video'
+                        });
+                    });
+                }
+                
+                // 添加图片
+                if (this.currentProductDetail.images && this.currentProductDetail.images.length > 0) {
+                    this.currentProductDetail.images.forEach(image => {
+                        mediaItems.push({
+                            ...image,
+                            type: 'image'
+                        });
+                    });
+                }
+                
+                if (mediaItems.length > 0) {
+                    if (typeof MediaCard !== 'undefined') {
+                        this.mediaCard = new MediaCard();
+                        this.mediaCard.init(
+                            mediaContainer, 
+                            mediaItems, 
+                            {
+                                goodsId: this.currentProductDetail.goodsId,
+                                onSelectionChange: (selectedItems) => {
+                                    console.log('媒体选择变化:', selectedItems);
+                                },
+                                onVideoContextMenu: (event, index, fileName, filePath) => {
+                                    this.showVideoContextMenu(event, index, fileName, filePath);
+                                }
+                            }
+                        );
+                    } else {
+                        console.error('MediaCard组件未加载');
+                        mediaContainer.innerHTML = '<div class="no-media">媒体卡片组件加载失败</div>';
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('初始化媒体卡片组件失败:', error);
+            const mediaContainer = document.getElementById('home-media-card-container');
+            if (mediaContainer) {
+                mediaContainer.innerHTML = '<div class="no-media">媒体卡片组件初始化失败</div>';
+            }
         }
     }
 
@@ -2471,14 +2874,11 @@ class HomePage {
             }
         });
 
-        // ESC键关闭弹窗
-        const handleKeyDown = (e) => {
-            if (e.key === 'Escape') {
-                modalOverlay.remove();
-                document.removeEventListener('keydown', handleKeyDown);
-            }
-        };
-        document.addEventListener('keydown', handleKeyDown);
+        // 注册ESC键关闭
+        this.registerModalEscKey('product-detail-modal', () => {
+            modalOverlay.remove();
+            this.unregisterModalEscKey('product-detail-modal');
+        });
 
         // 显示Toast通知
         this.showToast('商品数据采集成功！');

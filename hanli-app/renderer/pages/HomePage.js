@@ -9,6 +9,7 @@ class HomePageComponent {
             productCount: 0,
             todayCollect: 0
         };
+        this.activityRefreshTimer = null;
     }
 
     /**
@@ -31,7 +32,7 @@ class HomePageComponent {
         this.container.innerHTML = `
             <div class="welcome-section">
                 <h1 class="welcome-title">欢迎使用Hanli</h1>
-                <p class="welcome-desc">高效管理您的产品信息、图片资源和数据分析</p>
+                <p class="welcome-desc">高效管理您的产品信息、图片资源和监控数据</p>
             </div>
             
             <div class="dashboard-grid">
@@ -45,7 +46,7 @@ class HomePageComponent {
                 
                 <div class="dashboard-card">
                     <div class="card-icon">
-                        <i class="ph ph-arrow-clockwise"></i>
+                        <i class="ph ph-download"></i>
                     </div>
                     <div class="card-title">今日采集</div>
                     <div class="card-value" id="today-collect">0</div>
@@ -105,6 +106,9 @@ class HomePageComponent {
             
             // 加载最近活动
             await this.loadRecentActivities();
+            
+            // 启动活动刷新定时器（每30秒刷新一次）
+            this.startActivityRefresh();
 
         } catch (error) {
             console.error('加载仪表板数据失败:', error);
@@ -218,6 +222,10 @@ class HomePageComponent {
             'product_added': 'ph-package',
             'product_updated': 'ph-arrow-clockwise',
             'data_collected': 'ph-download',
+            'folder_added': 'ph-folder-plus',
+            'folder_removed': 'ph-folder-minus',
+            'monitoring_updated': 'ph-chart-line',
+            'media_updated': 'ph-image',
             'system': 'ph-gear'
         };
         return iconMap[type] || 'ph-info';
@@ -277,6 +285,7 @@ class HomePageComponent {
 
 
 
+
     /**
      * 显示错误信息
      * @param {string} message - 错误消息
@@ -302,9 +311,37 @@ class HomePageComponent {
     }
 
     /**
+     * 启动活动刷新定时器
+     */
+    startActivityRefresh() {
+        // 清除现有定时器
+        if (this.activityRefreshTimer) {
+            clearInterval(this.activityRefreshTimer);
+        }
+        
+        // 每30秒刷新一次活动列表
+        this.activityRefreshTimer = setInterval(async () => {
+            await this.loadRecentActivities();
+        }, 30000);
+    }
+
+    /**
+     * 停止活动刷新定时器
+     */
+    stopActivityRefresh() {
+        if (this.activityRefreshTimer) {
+            clearInterval(this.activityRefreshTimer);
+            this.activityRefreshTimer = null;
+        }
+    }
+
+    /**
      * 销毁组件
      */
     destroy() {
+        // 停止定时器
+        this.stopActivityRefresh();
+        
         if (this.container) {
             this.container.innerHTML = '';
         }

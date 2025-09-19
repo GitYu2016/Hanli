@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>监控数据采集Fallback机制测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            background: #0056CC;
+            transform: translateY(-1px);
+        }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 2px 0;
+        }
+        .log-success { color: #28a745; }
+        .log-error { color: #dc3545; }
+        .log-warning { color: #ffc107; }
+        .log-info { color: #17a2b8; }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 监控数据采集Fallback机制测试</h1>
+        
+        <div class="status info">
+            <strong>测试说明：</strong>此页面演示完整的fallback机制：DOM点击 → localStorage事件 → 直接调用插件函数。
+        </div>
+
+        <div>
+            <button id="test-dom-click" class="btn" style="background: #28a745;">测试DOM点击</button>
+            <button id="test-event-trigger" class="btn">测试事件触发</button>
+            <button id="test-direct-call" class="btn">测试直接调用</button>
+            <button id="test-fallback" class="btn">测试完整Fallback</button>
+            <button id="clear-log" class="btn" style="background: #6c757d;">清空日志</button>
+        </div>
+
+        <div id="status" class="status info">
+            准备就绪
+        </div>
+
+        <!-- 模拟监控按钮 -->
+        <div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 2px dashed #dee2e6;">
+            <h4 style="margin: 0 0 15px 0; color: #495057;">🎯 模拟监控按钮区域</h4>
+            <div id="hanli-button-container" style="display: flex; gap: 10px;">
+                <button class="monitor-btn" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+                    📊 仅采集监控数据
+                </button>
+                <button class="collect-btn" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+                    🔄 采集并监控
+                </button>
+            </div>
+            <p style="margin: 10px 0 0 0; font-size: 12px; color: #6c757d;">
+                这些按钮用于测试DOM点击功能。点击"测试DOM点击"按钮会模拟点击"仅采集监控数据"按钮。
+            </p>
+        </div>
+
+        <div class="log" id="log">
+            <div class="log-entry log-info">[系统] 测试页面已加载</div>
+        </div>
+
+        <div>
+            <h3>📋 测试步骤：</h3>
+            <ol>
+                <li><strong>测试DOM点击：</strong>模拟点击监控按钮（第一优先级）</li>
+                <li><strong>测试事件触发：</strong>模拟通过localStorage和自定义事件触发采集</li>
+                <li><strong>测试直接调用：</strong>直接调用插件函数（需要插件已加载）</li>
+                <li><strong>测试完整Fallback：</strong>DOM点击 → 事件触发 → 直接调用的完整流程</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // 模拟插件函数（用于测试）
+        window.collectMonitoringDataOnly = async function() {
+            return new Promise((resolve, reject) => {
+                console.log('模拟插件函数被调用');
+                
+                // 模拟异步采集过程
+                setTimeout(() => {
+                    const mockData = {
+                        id: Date.now().toString(),
+                        utcTime: new Date().toISOString().replace('Z', '+08:00'),
+                        goodsData: {
+                            goodsSold: "1000件",
+                            goodsPromoPrice: "¥99.99",
+                            goodsTitle: "测试商品",
+                            goodsRating: "4.8",
+                            goodsReviews: "500条评价"
+                        },
+                        storeData: {
+                            storeSold: "5000件",
+                            storeFollowers: "1000人关注",
+                            storeItemsNum: "200个商品",
+                            storeRating: "4.6",
+                            storeName: "测试店铺"
+                        }
+                    };
+
+                    // 触发完成事件
+                    window.dispatchEvent(new CustomEvent('hanliPopupMonitoringCollectionCompleted', {
+                        detail: { monitoringData: mockData }
+                    }));
+
+                    resolve({ monitoringData: mockData });
+                }, 2000);
+            });
+        };
+
+        // 日志管理
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+
+        // 测试DOM点击
+        async function testDomClick() {
+            updateStatus('测试DOM点击中...', 'info');
+            log('开始测试DOM点击机制');
+            
+            try {
+                const result = await triggerCollectionByClick();
+                log(`DOM点击成功: ${JSON.stringify(result, null, 2)}`, 'success');
+                updateStatus('DOM点击成功', 'success');
+            } catch (error) {
+                log(`DOM点击失败: ${error.message}`, 'error');
+                updateStatus('DOM点击失败', 'error');
+            }
+        }
+
+        // 测试事件触发
+        async function testEventTrigger() {
+            updateStatus('测试事件触发中...', 'info');
+            log('开始测试事件触发机制');
+            
+            try {
+                const result = await triggerCollectionByEvent();
+                log(`事件触发成功: ${JSON.stringify(result, null, 2)}`, 'success');
+                updateStatus('事件触发成功', 'success');
+            } catch (error) {
+                log(`事件触发失败: ${error.message}`, 'error');
+                updateStatus('事件触发失败', 'error');
+            }
+        }
+
+        // 测试直接调用
+        async function testDirectCall() {
+            updateStatus('测试直接调用中...', 'info');
+            log('开始测试直接调用插件函数');
+            
+            try {
+                const result = await window.collectMonitoringDataOnly();
+                log(`直接调用成功: ${JSON.stringify(result, null, 2)}`, 'success');
+                updateStatus('直接调用成功', 'success');
+            } catch (error) {
+                log(`直接调用失败: ${error.message}`, 'error');
+                updateStatus('直接调用失败', 'error');
+            }
+        }
+
+        // 测试完整Fallback机制
+        async function testFallback() {
+            updateStatus('测试完整Fallback机制中...', 'info');
+            log('开始测试完整Fallback机制');
+            
+            try {
+                // 方法1: 尝试DOM点击
+                log('尝试DOM点击...');
+                const clickResult = await triggerCollectionByClick();
+                if (clickResult.success) {
+                    log('DOM点击成功，无需fallback', 'success');
+                    updateStatus('DOM点击成功', 'success');
+                    return;
+                }
+            } catch (error) {
+                log(`DOM点击失败: ${error.message}，尝试事件触发`, 'warning');
+            }
+
+            try {
+                // 方法2: 尝试事件触发
+                log('尝试事件触发...');
+                const eventResult = await triggerCollectionByEvent();
+                if (eventResult.success) {
+                    log('事件触发成功，无需fallback', 'success');
+                    updateStatus('事件触发成功', 'success');
+                    return;
+                }
+            } catch (error) {
+                log(`事件触发失败: ${error.message}，尝试直接调用`, 'warning');
+            }
+
+            // 方法3: Fallback到直接调用
+            try {
+                log('Fallback到直接调用插件函数...');
+                const result = await window.collectMonitoringDataOnly();
+                log(`Fallback成功: ${JSON.stringify(result, null, 2)}`, 'success');
+                updateStatus('Fallback成功', 'success');
+            } catch (error) {
+                log(`Fallback也失败: ${error.message}`, 'error');
+                updateStatus('Fallback失败', 'error');
+            }
+        }
+
+        // DOM点击触发函数
+        async function triggerCollectionByClick() {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    log('开始DOM点击触发采集');
+                    
+                    // 等待页面加载完成
+                    await waitForPageLoad();
+                    
+                    // 查找监控按钮
+                    const monitorButton = findMonitorButton();
+                    if (!monitorButton) {
+                        throw new Error('未找到监控按钮');
+                    }
+
+                    log(`找到监控按钮，准备点击`);
+                    
+                    // 监听采集完成事件
+                    const handleComplete = (event) => {
+                        window.removeEventListener('hanliPopupMonitoringCollectionCompleted', handleComplete);
+                        window.removeEventListener('hanliPopupMonitoringCollectionError', handleError);
+                        
+                        if (event.detail && event.detail.monitoringData) {
+                            resolve({
+                                success: true,
+                                data: event.detail.monitoringData
+                            });
+                        } else {
+                            reject(new Error('采集完成但数据无效'));
+                        }
+                    };
+
+                    const handleError = (event) => {
+                        window.removeEventListener('hanliPopupMonitoringCollectionCompleted', handleComplete);
+                        window.removeEventListener('hanliPopupMonitoringCollectionError', handleError);
+                        reject(new Error(event.detail?.error || '采集失败'));
+                    };
+
+                    // 注册事件监听器
+                    window.addEventListener('hanliPopupMonitoringCollectionCompleted', handleComplete, { once: true });
+                    window.addEventListener('hanliPopupMonitoringCollectionError', handleError, { once: true });
+
+                    // 设置超时
+                    const timeoutId = setTimeout(() => {
+                        window.removeEventListener('hanliPopupMonitoringCollectionCompleted', handleComplete);
+                        window.removeEventListener('hanliPopupMonitoringCollectionError', handleError);
+                        reject(new Error('DOM点击触发超时'));
+                    }, 5000);
+
+                    // 模拟点击事件
+                    simulateClick(monitorButton);
+                    
+                    log(`已模拟点击监控按钮`);
+
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        // 查找监控按钮
+        function findMonitorButton() {
+            // 尝试多种选择器查找监控按钮
+            const selectors = [
+                '#hanli-button-container .monitor-btn',
+                '#hanli-button-container button[data-action="monitor"]',
+                '.hanli-monitor-button',
+                '[data-testid="monitor-button"]',
+                'button[data-testid="monitor-collection"]'
+            ];
+
+            for (const selector of selectors) {
+                try {
+                    const button = document.querySelector(selector);
+                    if (button) {
+                        log(`找到监控按钮: ${selector}`);
+                        return button;
+                    }
+                } catch (e) {
+                    // 忽略选择器错误
+                }
+            }
+
+            // 如果标准选择器找不到，尝试通过文本内容查找
+            const buttons = document.querySelectorAll('button');
+            for (const button of buttons) {
+                const text = button.textContent || button.innerText || '';
+                if (text.includes('监控') || text.includes('采集') || text.includes('monitor')) {
+                    log(`通过文本内容找到按钮: ${text.trim()}`);
+                    return button;
+                }
+            }
+
+            return null;
+        }
+
+        // 等待页面加载完成
+        async function waitForPageLoad(maxWaitTime = 3000) {
+            const startTime = Date.now();
+            
+            while (Date.now() - startTime < maxWaitTime) {
+                if (document.readyState === 'complete') {
+                    // 额外等待一点时间确保所有脚本都加载完成
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    return;
+                }
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            throw new Error('页面加载超时');
+        }
+
+        // 模拟点击事件
+        function simulateClick(element) {
+            // 创建并分发鼠标事件
+            const events = [
+                new MouseEvent('mousedown', {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window,
+                    button: 0
+                }),
+                new MouseEvent('mouseup', {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window,
+                    button: 0
+                }),
+                new MouseEvent('click', {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window,
+                    button: 0
+                })
+            ];
+
+            // 依次触发事件
+            events.forEach(event => {
+                element.dispatchEvent(event);
+            });
+
+            // 如果元素有focus方法，也调用它
+            if (typeof element.focus === 'function') {
+                element.focus();
+            }
+
+            // 如果元素有click方法，也调用它
+            if (typeof element.click === 'function') {
+                element.click();
+            }
+        }
+
+        // 事件触发函数
+        async function triggerCollectionByEvent() {
+            return new Promise((resolve, reject) => {
+                const timeout = 5000; // 5秒超时
+                const timeoutId = setTimeout(() => {
+                    reject(new Error('事件触发超时'));
+                }, timeout);
+
+                // 监听采集完成事件
+                const handleComplete = (event) => {
+                    clearTimeout(timeoutId);
+                    window.removeEventListener('hanliPopupMonitoringCollectionCompleted', handleComplete);
+                    window.removeEventListener('hanliPopupMonitoringCollectionError', handleError);
+                    
+                    if (event.detail && event.detail.monitoringData) {
+                        resolve({
+                            success: true,
+                            data: event.detail.monitoringData
+                        });
+                    } else {
+                        reject(new Error('采集完成但数据无效'));
+                    }
+                };
+
+                const handleError = (event) => {
+                    clearTimeout(timeoutId);
+                    window.removeEventListener('hanliPopupMonitoringCollectionCompleted', handleComplete);
+                    window.removeEventListener('hanliPopupMonitoringCollectionError', handleError);
+                    reject(new Error(event.detail?.error || '采集失败'));
+                };
+
+                // 注册事件监听器
+                window.addEventListener('hanliPopupMonitoringCollectionCompleted', handleComplete, { once: true });
+                window.addEventListener('hanliPopupMonitoringCollectionError', handleError, { once: true });
+
+                // 发送采集请求
+                const collectionRequest = {
+                    action: 'startCollection',
+                    taskId: 0,
+                    goodsId: 'test-goods-id',
+                    url: window.location.href,
+                    timestamp: new Date().toISOString()
+                };
+
+                log(`发送localStorage采集请求: ${JSON.stringify(collectionRequest, null, 2)}`);
+                
+                // 通过localStorage发送请求
+                localStorage.setItem('collectionRequest', JSON.stringify(collectionRequest));
+                
+                // 发送自定义事件
+                window.dispatchEvent(new CustomEvent('hanliMonitorCollectionRequest', {
+                    detail: collectionRequest
+                }));
+
+                // 额外发送一个存储事件
+                window.dispatchEvent(new CustomEvent('storage', {
+                    detail: {
+                        key: 'collectionRequest',
+                        newValue: JSON.stringify(collectionRequest)
+                    }
+                }));
+            });
+        }
+
+        // 事件监听
+        document.getElementById('test-dom-click').addEventListener('click', testDomClick);
+        document.getElementById('test-event-trigger').addEventListener('click', testEventTrigger);
+        document.getElementById('test-direct-call').addEventListener('click', testDirectCall);
+        document.getElementById('test-fallback').addEventListener('click', testFallback);
+        document.getElementById('clear-log').addEventListener('click', () => {
+            document.getElementById('log').innerHTML = '<div class="log-entry log-info">[系统] 日志已清空</div>';
+        });
+
+        // 为模拟按钮添加点击事件
+        document.querySelector('.monitor-btn').addEventListener('click', function() {
+            log('模拟监控按钮被点击', 'info');
+            // 触发采集完成事件
+            setTimeout(() => {
+                const mockData = {
+                    id: Date.now().toString(),
+                    utcTime: new Date().toISOString().replace('Z', '+08:00'),
+                    goodsData: {
+                        goodsSold: "1000件",
+                        goodsPromoPrice: "¥99.99",
+                        goodsTitle: "测试商品",
+                        goodsRating: "4.8",
+                        goodsReviews: "500条评价"
+                    },
+                    storeData: {
+                        storeSold: "5000件",
+                        storeFollowers: "1000人关注",
+                        storeItemsNum: "200个商品",
+                        storeRating: "4.6",
+                        storeName: "测试店铺"
+                    }
+                };
+
+                window.dispatchEvent(new CustomEvent('hanliPopupMonitoringCollectionCompleted', {
+                    detail: { monitoringData: mockData }
+                }));
+                
+                log('模拟采集完成事件已触发', 'success');
+            }, 1000);
+        });
+
+        document.querySelector('.collect-btn').addEventListener('click', function() {
+            log('模拟采集按钮被点击', 'info');
+        });
+
+        // 页面加载完成
+        log('页面加载完成，插件函数已模拟');
+        updateStatus('准备就绪', 'info');
+    </script>
+</body>
+</html>

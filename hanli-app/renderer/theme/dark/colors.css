@@ -1,23 +1,24 @@
 /* 深色主题颜色变量 */
-:root {
+:root,
+.theme-dark {
     /* 基础颜色 */
-    --color-background: #000000;
-    --color-foreground: #ffffff;
+    --color-background: rgba(0, 0, 0, 1);
+    --color-foreground: rgba(255, 255, 255, 1);
     
     /* 文本颜色 */
-    --color-text-primary: #ffffff;
-    --color-text-secondary: #a0a0a0;
+    --color-text-primary: rgba(255, 255, 255, 0.9);
+    --color-text-secondary: rgba(255, 255, 255, 0.6);
     
     /* 半透明文本颜色 */
     --color-text-primary-transparent: rgba(255, 255, 255, 0.8);
-    --color-text-secondary-transparent: rgba(160, 160, 160, 0.7);
+    --color-text-secondary-transparent: rgba(255, 255, 255, 0.5);
     
     /* 背景颜色 */
     --color-page-container-background: rgba(0, 0, 0, 0.8);
-    --color-card-background: rgb(255 255 255 / 10%);
-    --color-modal-background: rgba(26, 26, 26, 0.95);
+    --color-card-background: rgba(255, 255, 255, 0.1);
+    --color-modal-background: rgba(0, 0, 0, 0.95);
     --color-modal-overlay: rgba(0, 0, 0, 0.7);
-    --color-input-background: #2a2a2a;
+    --color-input-background: rgba(255, 255, 255, 0.1);
     
     /* 交互颜色 */
     --color-hover: rgba(255, 255, 255, 0.05);
@@ -28,32 +29,37 @@
     --color-tab-active: rgba(255, 255, 255, 0.1);
     
     /* 边框颜色 */
-    --color-border: #333333;
+    --color-border: rgba(255, 255, 255, 0.1);
     
     /* 主色调 */
-    --color-primary: #007bff;
-    --color-primary-foreground: #ffffff;
-    --color-primary-hover: #0056b3;
+    --color-primary: rgba(255, 255, 255, 0.8);
+    --color-primary-foreground: rgba(0, 0, 0, 1);
+    --color-primary-hover: rgba(255, 255, 255, 0.9);
+    --color-primary-light: rgba(255, 255, 255, 0.1);
     
     /* 次要色调 */
-    --color-secondary: #6c757d;
-    --color-secondary-foreground: #ffffff;
-    --color-secondary-hover: #545b62;
+    --color-secondary: rgba(255, 255, 255, 0.4);
+    --color-secondary-foreground: rgba(0, 0, 0, 1);
+    --color-secondary-hover: rgba(255, 255, 255, 0.6);
     
     /* 图表颜色 */
-    --color-success: #20c997;
-    --color-warning: #fd7e14;
-    --color-info: #6f42c1;
+    --color-success: rgba(255, 255, 255, 0.7);
+    --color-warning: rgba(255, 255, 255, 0.6);
+    --color-info: rgba(255, 255, 255, 0.5);
+    
+    /* 危险颜色 */
+    --color-danger: rgba(248, 113, 113, 1);
+    --color-danger-light: rgba(248, 113, 113, 0.1);
     
     /* 图标颜色 - 深色主题 */
-    --color-icon-primary: #a0a0a0;    /* 普通图标 */
-    --color-icon-secondary: #666666;  /* 次要图标 */
-    --color-icon-hover: #ffffff;      /* 悬停状态 */
-    --color-icon-active: #007bff;     /* 激活状态 */
-    --color-icon-disabled: #444444;   /* 禁用状态 */
+    --color-icon-primary: rgba(255, 255, 255, 0.6);    /* 普通图标 */
+    --color-icon-secondary: rgba(255, 255, 255, 0.4);  /* 次要图标 */
+    --color-icon-hover: rgba(255, 255, 255, 0.8);      /* 悬停状态 */
+    --color-icon-active: rgba(255, 255, 255, 0.8);     /* 激活状态 */
+    --color-icon-disabled: rgba(255, 255, 255, 0.2);   /* 禁用状态 */
     
     /* 图标背景 */
-    --color-icon-background: #2a2a2a;
+    --color-icon-background: rgba(255, 255, 255, 0.05);
     
     /* 阴影 */
     --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -70,54 +76,54 @@
     --color-background: rgba(0, 0, 0, 0.95);
     --color-page-container-background: rgba(0, 0, 0, 0.8);
     --color-text-primary-transparent: rgba(255, 255, 255, 0.8);
-    --color-text-secondary-transparent: rgba(160, 160, 160, 0.7);
+    --color-text-secondary-transparent: rgba(255, 255, 255, 0.5);
 }
 
 .bg-blue {
-    --color-background: rgba(12, 18, 32, 0.95);
-    --color-page-container-background: rgba(12, 18, 32, 0.8);
+    --color-background: rgba(15, 23, 42, 0.95);
+    --color-page-container-background: rgba(15, 23, 42, 0.9);
     --color-text-primary-transparent: rgba(255, 255, 255, 0.8);
-    --color-text-secondary-transparent: rgba(160, 160, 160, 0.7);
+    --color-text-secondary-transparent: rgba(255, 255, 255, 0.5);
 }
 
 .bg-green {
-    --color-background: rgba(12, 26, 12, 0.95);
-    --color-page-container-background: rgba(12, 26, 12, 0.8);
+    --color-background: rgba(15, 31, 20, 0.95);
+    --color-page-container-background: rgba(15, 31, 20, 0.9);
     --color-text-primary-transparent: rgba(255, 255, 255, 0.8);
-    --color-text-secondary-transparent: rgba(160, 160, 160, 0.7);
+    --color-text-secondary-transparent: rgba(255, 255, 255, 0.5);
 }
 
 .bg-purple {
-    --color-background: rgba(26, 12, 26, 0.95);
-    --color-page-container-background: rgba(26, 12, 26, 0.8);
+    --color-background: rgba(31, 15, 31, 0.95);
+    --color-page-container-background: rgba(31, 15, 31, 0.9);
     --color-text-primary-transparent: rgba(255, 255, 255, 0.8);
-    --color-text-secondary-transparent: rgba(160, 160, 160, 0.7);
+    --color-text-secondary-transparent: rgba(255, 255, 255, 0.5);
 }
 
 .bg-orange {
-    --color-background: rgba(26, 12, 12, 0.95);
-    --color-page-container-background: rgba(26, 12, 12, 0.8);
+    --color-background: rgba(31, 20, 15, 0.95);
+    --color-page-container-background: rgba(31, 20, 15, 0.9);
     --color-text-primary-transparent: rgba(255, 255, 255, 0.8);
-    --color-text-secondary-transparent: rgba(160, 160, 160, 0.7);
+    --color-text-secondary-transparent: rgba(255, 255, 255, 0.5);
 }
 
 .bg-pink {
-    --color-background: rgba(26, 12, 20, 0.95);
-    --color-page-container-background: rgba(26, 12, 20, 0.8);
+    --color-background: rgba(31, 20, 25, 0.95);
+    --color-page-container-background: rgba(31, 20, 25, 0.9);
     --color-text-primary-transparent: rgba(255, 255, 255, 0.8);
-    --color-text-secondary-transparent: rgba(160, 160, 160, 0.7);
+    --color-text-secondary-transparent: rgba(255, 255, 255, 0.5);
 }
 
 .bg-gray {
-    --color-background: rgba(10, 10, 10, 0.95);
-    --color-page-container-background: rgba(10, 10, 10, 0.8);
+    --color-background: rgba(20, 20, 20, 0.95);
+    --color-page-container-background: rgba(20, 20, 20, 0.9);
     --color-text-primary-transparent: rgba(255, 255, 255, 0.8);
-    --color-text-secondary-transparent: rgba(160, 160, 160, 0.7);
+    --color-text-secondary-transparent: rgba(255, 255, 255, 0.5);
 }
 
 .bg-indigo {
-    --color-background: rgba(12, 12, 26, 0.95);
-    --color-page-container-background: rgba(12, 12, 26, 0.8);
+    --color-background: rgba(23, 15, 42, 0.95);
+    --color-page-container-background: rgba(23, 15, 42, 0.9);
     --color-text-primary-transparent: rgba(255, 255, 255, 0.8);
-    --color-text-secondary-transparent: rgba(160, 160, 160, 0.7);
+    --color-text-secondary-transparent: rgba(255, 255, 255, 0.5);
 }

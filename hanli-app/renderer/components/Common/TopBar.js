@@ -7,6 +7,8 @@ class TopBar {
         this.tabManager = null;
         this.settingsCallback = null;
         this.tabSwitchCallback = null;
+        this.searchModal = null;
+        this.searchCallback = null;
         this.init();
     }
 
@@ -43,6 +45,14 @@ class TopBar {
     }
 
     /**
+     * 设置搜索回调
+     * @param {Function} callback - 搜索回调函数
+     */
+    setSearchCallback(callback) {
+        this.searchCallback = callback;
+    }
+
+    /**
      * 渲染TopBar HTML结构
      */
     render() {
@@ -52,13 +62,16 @@ class TopBar {
                     <div class="logo">Hanli</div>
                 </div>
                 <div class="top-bar-center">
+                    <div class="search-icon" id="search-btn">
+                        <i class="ph ph-magnifying-glass"></i>
+                    </div>
                     <div id="top-bar-tabs" class="top-bar-tabs">
                         <!-- Tabs will be dynamically rendered here -->
                     </div>
                 </div>
                 <div class="top-bar-right">
                     <div class="settings-icon" id="settings-btn">
-                        <i class="ph ph-sliders"></i>
+                        <i class="ph ph-gear"></i>
                     </div>
                 </div>
             </div>
@@ -85,6 +98,14 @@ class TopBar {
                 if (this.settingsCallback) {
                     this.settingsCallback();
                 }
+            });
+        }
+
+        // 搜索按钮点击事件
+        const searchBtn = document.getElementById('search-btn');
+        if (searchBtn) {
+            searchBtn.addEventListener('click', () => {
+                this.openSearchModal();
             });
         }
 
@@ -135,7 +156,11 @@ class TopBar {
      */
     createTabElement(tab) {
         const tabDiv = document.createElement('div');
-        tabDiv.className = `tab ${tab.isActive ? 'active' : ''} ${this.tabManager.tabs.length === 1 ? 'single-tab' : ''}`;
+        const isSingleTab = this.tabManager.tabs.length === 1;
+        const isNotClosable = !tab.closable;
+        const closableClass = isNotClosable ? 'not-closable' : '';
+        
+        tabDiv.className = `tab ${tab.isActive ? 'active' : ''} ${isSingleTab ? 'single-tab' : ''} ${closableClass}`;
         tabDiv.dataset.tabId = tab.id;
         tabDiv.dataset.pageType = tab.pageType;
 
@@ -154,7 +179,10 @@ class TopBar {
             // 检查是否点击了关闭按钮或其子元素
             if (e.target.closest('.tab-close')) {
                 e.stopPropagation();
-                this.closeTab(tab.id);
+                // 只有可关闭的Tab才能被关闭
+                if (tab.closable) {
+                    this.closeTab(tab.id);
+                }
             } else {
                 this.switchTab(tab.id);
             }
@@ -264,6 +292,105 @@ class TopBar {
     }
 
     /**
+     * 打开搜索弹窗
+     */
+    openSearchModal() {
+        // 如果搜索弹窗不存在，创建它
+        if (!this.searchModal) {
+            // 动态导入SearchModal组件
+            if (typeof SearchModal !== 'undefined') {
+                this.searchModal = new SearchModal();
+                this.searchModal.setSearchCallback((query) => {
+                    this.handleSearch(query);
+                });
+            } else {
+                console.error('SearchModal component not found');
+                return;
+            }
+        }
+        
+        this.searchModal.open();
+    }
+
+    /**
+     * 处理搜索
+     * @param {string} query - 搜索关键词
+     */
+    async handleSearch(query) {
+        if (this.searchCallback) {
+            this.searchCallback(query);
+        } else {
+            // 默认搜索逻辑 - 可以在这里添加产品搜索功能
+            console.log('搜索关键词:', query);
+            await this.performDefaultSearch(query);
+        }
+    }
+
+    /**
+     * 执行默认搜索
+     * @param {string} query - 搜索关键词
+     */
+    async performDefaultSearch(query) {
+        try {
+            // 从API获取产品数据进行搜索
+            const response = await fetch('http://localhost:3001/api/products');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.products) {
+                    // 搜索产品
+                    const filteredResults = data.products.filter(product => {
+                        const searchText = query.toLowerCase();
+                        return (
+                            (product.goodsTitleEn && product.goodsTitleEn.toLowerCase().includes(searchText)) ||
+                            (product.goodsCat3 && product.goodsCat3.toLowerCase().includes(searchText)) ||
+                            (product.goodsId && product.goodsId.includes(searchText)) ||
+                            (product.goodsTitle && product.goodsTitle.toLowerCase().includes(searchText))
+                        );
+                    }).slice(0, 10).map(product => ({
+                        id: product.goodsId,
+                        title: product.goodsCat3 || product.goodsTitleEn || product.goodsTitle || '未知产品',
+                        price: product.goodsPrice ? `¥${product.goodsPrice}` : null,
+                        image: product.goodsImages && product.goodsImages.length > 0 ? product.goodsImages[0] : null
+                    }));
+
+                    if (this.searchModal) {
+                        this.searchModal.showResults(filteredResults);
+                    }
+                    return;
+                }
+            }
+        } catch (error) {
+            console.warn('搜索产品数据失败，使用模拟数据:', error);
+        }
+
+        // 如果API搜索失败，使用模拟数据
+        const mockResults = [
+            {
+                id: '601099514703283',
+                title: '示例产品 1',
+                price: '299.00',
+                image: null
+            },
+            {
+                id: '601099515504642',
+                title: '示例产品 2',
+                price: '199.00',
+                image: null
+            }
+        ];
+
+        // 简单的关键词匹配
+        const filteredResults = mockResults.filter(product => 
+            product.title.toLowerCase().includes(query.toLowerCase()) ||
+            product.id.includes(query)
+        );
+
+        if (this.searchModal) {
+            this.searchModal.showResults(filteredResults);
+        }
+    }
+
+    /**
      * 销毁组件
      */
     destroy() {
@@ -273,11 +400,22 @@ class TopBar {
             settingsBtn.replaceWith(settingsBtn.cloneNode(true));
         }
 
+        const searchBtn = document.getElementById('search-btn');
+        if (searchBtn) {
+            searchBtn.replaceWith(searchBtn.cloneNode(true));
+        }
+
         // 清理Tab事件监听器
         const tabElements = document.querySelectorAll('.tab');
         tabElements.forEach(tab => {
             tab.replaceWith(tab.cloneNode(true));
         });
+
+        // 清理搜索弹窗
+        if (this.searchModal) {
+            this.searchModal.destroy();
+            this.searchModal = null;
+        }
     }
 }
 

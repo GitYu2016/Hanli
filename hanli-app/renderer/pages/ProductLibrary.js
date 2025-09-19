@@ -6,12 +6,15 @@ class ProductLibraryComponent {
     constructor() {
         this.container = null;
         this.products = [];
+        this.filteredProducts = [];
         this.totalCount = 0;
         this.currentPage = 1;
         this.itemsPerPage = 100;
         this.sortField = 'collectTime';
         this.sortOrder = 'desc'; // 默认按采集时间倒序，最近的在最上面
         this.refreshInterval = null;
+        this.currentCategory = 'all';
+        this.categories = [];
     }
 
     /**
@@ -21,7 +24,7 @@ class ProductLibraryComponent {
     async init(container) {
         this.container = container;
         this.render();
-        await this.loadProductLibrary();
+        // 不在这里加载数据，由外部调用
         this.bindEvents();
     }
 
@@ -34,11 +37,15 @@ class ProductLibraryComponent {
         this.container.innerHTML = `
             <div class="product-library-page">
                 <div class="page-header">
-                    <h1 class="page-title">产品库</h1>
-                    <div class="page-actions">
-                        <button class="refresh-btn" onclick="productLibraryComponentInstance.refreshData()" title="刷新数据">
-                            <i class="ph ph-arrow-clockwise"></i>
-                        </button>
+                    <h1 class="page-title">
+                        <i class="ph ph-package"></i>
+                        产品库
+                    </h1>
+                </div>
+                
+                <div class="category-filter" id="category-filter">
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-category="all">全部</button>
                     </div>
                 </div>
                 
@@ -47,8 +54,8 @@ class ProductLibraryComponent {
                         <thead>
                             <tr>
                                 <th class="sortable" data-sort="goodsCat3">产品标题</th>
-                                <th class="sortable" data-sort="yesterdaySales">昨日销量</th>
-                                <th class="sortable" data-sort="priceGrowthPercent">价格增长</th>
+                                <th class="sortable" data-sort="goodsCat2">二级分类</th>
+                                <th class="sortable" data-sort="totalSales">总销量</th>
                                 <th class="sortable sort-desc" data-sort="collectTime">采集日期</th>
                             </tr>
                         </thead>
@@ -62,17 +69,37 @@ class ProductLibraryComponent {
                     </table>
                 </div>
                 
-                <div class="product-summary">
-                    <div class="summary-item">
-                        <span class="summary-label">总产品数:</span>
-                        <span class="summary-value" id="total-count">0</span>
-                    </div>
-                    <div class="pagination-info">
-                        <span>第 <strong id="current-page">1</strong> 页，共 <strong id="total-pages">1</strong> 页</span>
-                    </div>
-                </div>
             </div>
         `;
+    }
+
+    /**
+     * 设置产品数据（由外部调用）
+     * @param {Array} products - 产品列表
+     * @param {number} totalCount - 总数量
+     */
+    setProducts(products, totalCount = 0) {
+        this.products = products || [];
+        this.totalCount = totalCount;
+        
+        // 提取所有分类
+        this.extractCategories();
+        
+        // 应用分类筛选
+        this.applyCategoryFilter();
+        
+        // 应用默认排序（按采集时间倒序）
+        this.sortProducts();
+        
+        this.updateProductTable();
+        this.updateSummary();
+        this.updateSortIndicators();
+        this.updateCategoryFilter();
+        
+        // 避免重复日志，只在调试模式下输出
+        if (window.DEBUG_MODE) {
+            console.log('产品库数据设置成功:', this.products.length, '个产品');
+        }
     }
 
     /**
@@ -84,16 +111,8 @@ class ProductLibraryComponent {
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
-                    this.products = data.products || [];
-                    this.totalCount = data.products ? data.products.length : 0;
-                    
-                    // 应用默认排序（按采集时间倒序）
-                    this.sortProducts();
-                    
-                    this.updateProductTable();
-                    this.updateSummary();
-                    this.updateSortIndicators(); // 更新排序指示器
-                    console.log('产品库数据加载成功:', this.products.length, '个产品');
+                    // 使用setProducts方法统一处理数据
+                    this.setProducts(data.products, data.products ? data.products.length : 0);
                 } else {
                     this.showError('加载产品数据失败: ' + (data.error || '未知错误'));
                 }
@@ -113,7 +132,7 @@ class ProductLibraryComponent {
         const tableBody = document.getElementById('product-table-body');
         if (!tableBody) return;
 
-        if (this.products.length === 0) {
+        if (this.filteredProducts.length === 0) {
             tableBody.innerHTML = `
                 <tr>
                     <td colspan="4" class="empty-row">
@@ -127,7 +146,24 @@ class ProductLibraryComponent {
             return;
         }
 
-        tableBody.innerHTML = this.generateProductTableRows(this.products);
+        // 计算当前页的产品数据
+        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        const currentPageProducts = this.filteredProducts.slice(startIndex, endIndex);
+
+        tableBody.innerHTML = this.generateProductTableRows(currentPageProducts);
+    }
+
+    /**
+     * 获取产品的第一张图片
+     * @param {Object} product - 产品数据
+     * @returns {Object|null} 第一张图片信息
+     */
+    getFirstImage(product) {
+        if (product.images && product.images.length > 0) {
+            return product.images[0];
+        }
+        return null;
     }
 
     /**
@@ -138,17 +174,24 @@ class ProductLibraryComponent {
     generateProductTableRows(products) {
         return products.map(product => {
             const goodsCat3 = product.goodsCat3 || product.goodsTitleEn || '未知商品';
-            const yesterdaySales = this.getYesterdaySales(product);
-            const priceGrowthPercent = this.getPriceGrowthPercent(product);
+            const goodsCat2 = product.goodsCat2 || '未知分类';
+            const totalSales = this.getTotalSales(product);
             const collectTime = this.formatCollectTime(product.collectTime);
+            const firstImage = this.getFirstImage(product);
             
             return `
                 <tr class="product-row" data-goods-id="${product.goodsId}">
                     <td class="product-name clickable" title="${goodsCat3}" data-goods-id="${product.goodsId}">
-                        <div class="name-content">${this.truncateText(goodsCat3, 50)}</div>
+                        <div class="name-content">
+                            ${firstImage ? 
+                                `<img src="${firstImage.url}" alt="${goodsCat3}" class="product-thumbnail" onerror="this.style.display='none'" loading="lazy">` : 
+                                `<div class="product-thumbnail placeholder">📦</div>`
+                            }
+                            <span class="product-title">${this.truncateText(goodsCat3, 50)}</span>
+                        </div>
                     </td>
-                    <td class="product-sales">${yesterdaySales}</td>
-                    <td class="product-price-growth ${priceGrowthPercent.startsWith('+') ? 'positive' : priceGrowthPercent.startsWith('-') ? 'negative' : ''}">${priceGrowthPercent}</td>
+                    <td class="product-category">${goodsCat2}</td>
+                    <td class="product-sales">${totalSales}</td>
                     <td class="product-time">${collectTime}</td>
                 </tr>
             `;
@@ -159,20 +202,13 @@ class ProductLibraryComponent {
      * 更新摘要信息
      */
     updateSummary() {
-        const totalCountEl = document.getElementById('total-count');
-        const currentPageEl = document.getElementById('current-page');
-        const totalPagesEl = document.getElementById('total-pages');
-
-        if (totalCountEl) {
-            totalCountEl.textContent = this.totalCount.toLocaleString();
-        }
-        
-        if (currentPageEl) {
-            currentPageEl.textContent = this.currentPage;
-        }
-        
-        if (totalPagesEl) {
-            totalPagesEl.textContent = Math.ceil(this.totalCount / this.itemsPerPage);
+        // 更新翻页组件的数据
+        if (typeof homePageInstance !== 'undefined' && homePageInstance.pageContainer && homePageInstance.pageContainer.updatePagination) {
+            homePageInstance.pageContainer.updatePagination({
+                totalItems: this.filteredProducts.length,
+                currentPage: this.currentPage,
+                itemsPerPage: this.itemsPerPage
+            });
         }
     }
 
@@ -185,6 +221,9 @@ class ProductLibraryComponent {
         
         // 绑定产品点击事件
         this.bindProductClickEvents();
+        
+        // 绑定分类筛选事件
+        this.bindCategoryFilterEvents();
     }
 
     /**
@@ -202,17 +241,10 @@ class ProductLibraryComponent {
 
     /**
      * 绑定产品点击事件
+     * 注意：产品点击事件已在app.js中统一处理，这里不需要重复绑定
      */
     bindProductClickEvents() {
-        document.addEventListener('click', async (e) => {
-            const productName = e.target.closest('.product-name.clickable');
-            if (productName) {
-                const goodsId = productName.dataset.goodsId;
-                if (goodsId) {
-                    await this.navigateToProductDetail(goodsId);
-                }
-            }
-        });
+        // 产品点击事件已在app.js中统一处理，避免重复绑定
     }
 
     /**
@@ -236,7 +268,7 @@ class ProductLibraryComponent {
      * 排序产品
      */
     sortProducts() {
-        this.products.sort((a, b) => {
+        this.filteredProducts.sort((a, b) => {
             let aVal = this.getSortValue(a, this.sortField);
             let bVal = this.getSortValue(b, this.sortField);
 
@@ -261,10 +293,10 @@ class ProductLibraryComponent {
         switch (field) {
             case 'goodsCat3':
                 return product.goodsCat3 || product.goodsTitleEn || '';
-            case 'yesterdaySales':
-                return product.yesterdaySales || 0;
-            case 'priceGrowthPercent':
-                return product.priceGrowthPercent || 0;
+            case 'goodsCat2':
+                return product.goodsCat2 || '';
+            case 'totalSales':
+                return this.getTotalSalesValue(product);
             case 'collectTime':
                 return new Date(product.collectTime || 0);
             default:
@@ -372,30 +404,39 @@ class ProductLibraryComponent {
     }
 
     /**
-     * 获取昨日销量
+     * 获取总销量
      * @param {Object} product - 产品数据
      * @returns {string} 销量字符串
      */
-    getYesterdaySales(product) {
-        if (product.yesterdaySales !== undefined) {
-            return Math.round(product.yesterdaySales).toLocaleString() + '件';
+    getTotalSales(product) {
+        // 从monitoring.json中获取最近一天的goodsSold
+        if (product.monitoringData && product.monitoringData.length > 0) {
+            const latestData = product.monitoringData[product.monitoringData.length - 1];
+            if (latestData.goodsData && latestData.goodsData.goodsSold) {
+                return latestData.goodsData.goodsSold;
+            }
         }
         return '-';
     }
 
     /**
-     * 获取价格增长百分比
+     * 获取总销量数值（用于排序）
      * @param {Object} product - 产品数据
-     * @returns {string} 增长百分比字符串
+     * @returns {number} 销量数值
      */
-    getPriceGrowthPercent(product) {
-        if (product.priceGrowthPercent !== undefined) {
-            const percent = product.priceGrowthPercent;
-            const sign = percent >= 0 ? '+' : '';
-            return `${sign}${percent.toFixed(1)}%`;
+    getTotalSalesValue(product) {
+        if (product.monitoringData && product.monitoringData.length > 0) {
+            const latestData = product.monitoringData[product.monitoringData.length - 1];
+            if (latestData.goodsData && latestData.goodsData.goodsSold) {
+                // 提取数字部分，去掉"件"等文字
+                const salesText = latestData.goodsData.goodsSold;
+                const match = salesText.match(/(\d+)/);
+                return match ? parseInt(match[1]) : 0;
+            }
         }
-        return '-';
+        return 0;
     }
+
 
     /**
      * 截断文本
@@ -451,6 +492,96 @@ class ProductLibraryComponent {
         if (this.container) {
             await this.loadProductLibrary();
         }
+    }
+
+    /**
+     * 提取所有分类
+     */
+    extractCategories() {
+        const categorySet = new Set();
+        this.products.forEach(product => {
+            if (product.goodsCat1) {
+                categorySet.add(product.goodsCat1);
+            }
+        });
+        this.categories = Array.from(categorySet).sort();
+    }
+
+    /**
+     * 应用分类筛选
+     */
+    applyCategoryFilter() {
+        if (this.currentCategory === 'all') {
+            this.filteredProducts = [...this.products];
+        } else {
+            this.filteredProducts = this.products.filter(product => 
+                product.goodsCat1 === this.currentCategory
+            );
+        }
+    }
+
+    /**
+     * 更新分类筛选器
+     */
+    updateCategoryFilter() {
+        const filterContainer = document.getElementById('category-filter');
+        if (!filterContainer) return;
+
+        const buttonsContainer = filterContainer.querySelector('.filter-buttons');
+        if (!buttonsContainer) return;
+
+        // 生成分类按钮
+        const categoryButtons = this.categories.map(category => 
+            `<button class="filter-btn" data-category="${category}">${category}</button>`
+        ).join('');
+
+        buttonsContainer.innerHTML = `
+            <button class="filter-btn ${this.currentCategory === 'all' ? 'active' : ''}" data-category="all">全部</button>
+            ${categoryButtons}
+        `;
+
+        // 重新绑定事件
+        this.bindCategoryFilterEvents();
+    }
+
+    /**
+     * 绑定分类筛选事件
+     */
+    bindCategoryFilterEvents() {
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        filterButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const category = e.currentTarget.dataset.category;
+                this.handleCategoryFilter(category);
+            });
+        });
+    }
+
+    /**
+     * 处理分类筛选
+     * @param {string} category - 分类名称
+     */
+    handleCategoryFilter(category) {
+        this.currentCategory = category;
+        
+        // 更新按钮状态
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        filterButtons.forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.category === category) {
+                btn.classList.add('active');
+            }
+        });
+
+        // 应用筛选
+        this.applyCategoryFilter();
+        
+        // 重新排序
+        this.sortProducts();
+        
+        // 更新表格和摘要
+        this.updateProductTable();
+        this.updateSummary();
     }
 }
 

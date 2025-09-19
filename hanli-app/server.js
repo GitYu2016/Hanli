@@ -4,6 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
+const chokidar = require('chokidar');
 // 移除uuid导入，使用自定义的ID生成函数
 
 const app = express();
@@ -23,6 +24,171 @@ const ensureDataDir = async () => {
         await fsPromises.mkdir(dataDir, { recursive: true });
     }
 };
+
+// 活动记录相关变量
+const activityFilePath = path.join(dataDir, 'activity.json');
+let fileWatcher = null;
+
+// 获取东八区时间
+function getBeijingTime() {
+    const now = new Date();
+    const beijingTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+    return beijingTime.toISOString();
+}
+
+// 读取活动记录
+async function loadActivities() {
+    try {
+        if (fs.existsSync(activityFilePath)) {
+            const content = await fsPromises.readFile(activityFilePath, 'utf8');
+            return JSON.parse(content);
+        }
+        return [];
+    } catch (error) {
+        console.error('读取活动记录失败:', error);
+        return [];
+    }
+}
+
+// 保存活动记录
+async function saveActivities(activities) {
+    try {
+        await fsPromises.writeFile(activityFilePath, JSON.stringify(activities, null, 2), 'utf8');
+    } catch (error) {
+        console.error('保存活动记录失败:', error);
+    }
+}
+
+// 添加活动记录
+async function addActivity(type, title, details = {}) {
+    try {
+        const activities = await loadActivities();
+        const newActivity = {
+            id: generateProductId(),
+            type,
+            title,
+            details,
+            time: getBeijingTime(),
+            utcTime: getBeijingTime()
+        };
+        
+        // 将新活动添加到数组开头
+        activities.unshift(newActivity);
+        
+        // 只保留最近100条记录
+        if (activities.length > 100) {
+            activities.splice(100);
+        }
+        
+        await saveActivities(activities);
+        console.log('活动记录已添加:', newActivity.title);
+        return newActivity;
+    } catch (error) {
+        console.error('添加活动记录失败:', error);
+    }
+}
+
+// 启动文件监控
+function startFileWatcher() {
+    const goodsLibraryPath = path.join(dataDir, 'goods-library');
+    
+    // 确保目录存在
+    if (!fs.existsSync(goodsLibraryPath)) {
+        fs.mkdirSync(goodsLibraryPath, { recursive: true });
+    }
+    
+    console.log('开始监控目录:', goodsLibraryPath);
+    
+    fileWatcher = chokidar.watch(goodsLibraryPath, {
+        ignored: /(^|[\/\\])\../, // 忽略隐藏文件
+        persistent: true,
+        ignoreInitial: true, // 忽略初始扫描
+        depth: 1 // 只监控一级目录
+    });
+    
+    // 监听目录添加事件
+    fileWatcher.on('addDir', async (dirPath) => {
+        const dirName = path.basename(dirPath);
+        console.log('检测到新目录:', dirName);
+        
+        // 等待一下确保目录完全创建
+        setTimeout(async () => {
+            try {
+                // 检查是否是有效的产品目录（包含product.json）
+                const productJsonPath = path.join(dirPath, 'product.json');
+                if (fs.existsSync(productJsonPath)) {
+                    const productContent = await fsPromises.readFile(productJsonPath, 'utf8');
+                    const productInfo = JSON.parse(productContent);
+                    
+                    await addActivity('product_added', `添加了产品: ${productInfo.title || '未知产品'}`, {
+                        goodsId: dirName,
+                        productTitle: productInfo.title
+                    });
+                } else {
+                    await addActivity('folder_added', `添加了文件夹: ${dirName}`, {
+                        folderName: dirName
+                    });
+                }
+            } catch (error) {
+                console.error('处理新目录失败:', error);
+                await addActivity('folder_added', `添加了文件夹: ${dirName}`, {
+                    folderName: dirName
+                });
+            }
+        }, 1000);
+    });
+    
+    // 监听目录删除事件
+    fileWatcher.on('unlinkDir', async (dirPath) => {
+        const dirName = path.basename(dirPath);
+        console.log('检测到目录删除:', dirName);
+        
+        await addActivity('folder_removed', `删除了文件夹: ${dirName}`, {
+            folderName: dirName
+        });
+    });
+    
+    // 监听文件变化事件
+    fileWatcher.on('change', async (filePath) => {
+        const fileName = path.basename(filePath);
+        const dirName = path.basename(path.dirname(filePath));
+        
+        if (fileName === 'product.json') {
+            try {
+                const productContent = await fsPromises.readFile(filePath, 'utf8');
+                const productInfo = JSON.parse(productContent);
+                
+                await addActivity('product_updated', `更新了产品: ${productInfo.title || '未知产品'}`, {
+                    goodsId: dirName,
+                    productTitle: productInfo.title
+                });
+            } catch (error) {
+                console.error('处理产品更新失败:', error);
+            }
+        } else if (fileName === 'monitoring.json') {
+            await addActivity('monitoring_updated', `更新了监控数据: ${dirName}`, {
+                goodsId: dirName
+            });
+        } else if (fileName === 'media.json') {
+            await addActivity('media_updated', `更新了媒体数据: ${dirName}`, {
+                goodsId: dirName
+            });
+        }
+    });
+    
+    fileWatcher.on('error', error => {
+        console.error('文件监控错误:', error);
+    });
+}
+
+// 停止文件监控
+function stopFileWatcher() {
+    if (fileWatcher) {
+        fileWatcher.close();
+        fileWatcher = null;
+        console.log('文件监控已停止');
+    }
+}
 
 // 生成12位数字UUID
 function generateProductId() {
@@ -52,24 +218,58 @@ async function loadProductData(productDir) {
         
         // 读取media.json
         const mediaFile = path.join(productDir, 'media.json');
+        let mediaData = null;
         if (fs.existsSync(mediaFile)) {
             const mediaContent = await fsPromises.readFile(mediaFile, 'utf8');
             const mediaInfo = JSON.parse(mediaContent);
             productData.media = mediaInfo;
+            mediaData = mediaInfo;
         }
         
         // 获取图片文件列表
         const files = await fsPromises.readdir(productDir);
+        console.log(`[图片检测] 产品目录: ${productDir}`);
+        console.log(`[图片检测] 目录中总文件数: ${files.length}`);
+        
         const imageFiles = files.filter(file => 
             file.endsWith('.jpg') || file.endsWith('.jpeg') || file.endsWith('.png') || file.endsWith('.gif')
         );
         
+        console.log(`[图片检测] 找到图片文件数: ${imageFiles.length}`);
         if (imageFiles.length > 0) {
-            productData.images = imageFiles.map(file => ({
-                filename: file,
-                url: `file://${path.join(productDir, file)}`,
-                localPath: path.join(productDir, file)
-            }));
+            console.log(`[图片检测] 图片文件列表:`, imageFiles);
+        }
+        
+        if (imageFiles.length > 0) {
+            productData.images = imageFiles.map(file => {
+                // 尝试从media.json中找到对应的图片信息
+                let imageInfo = {
+                    filename: file,
+                    url: `http://localhost:3001/api/products/${path.basename(productDir)}/image/${file}`,
+                    localPath: path.join(productDir, file)
+                };
+                
+                if (mediaData && mediaData.media) {
+                    const mediaImage = mediaData.media.find(media => 
+                        media.type === 'image' && 
+                        (media.path === file || 
+                         media.url.includes(file) ||
+                         path.basename(media.url) === file)
+                    );
+                    
+                    if (mediaImage) {
+                        imageInfo = {
+                            ...imageInfo,
+                            width: mediaImage.width,
+                            height: mediaImage.height,
+                            isTargetSize: mediaImage.isTargetSize,
+                            aspectRatio: mediaImage.aspectRatio
+                        };
+                    }
+                }
+                
+                return imageInfo;
+            });
         }
         
         // 获取视频文件列表
@@ -77,10 +277,15 @@ async function loadProductData(productDir) {
             file.endsWith('.mp4') || file.endsWith('.avi') || file.endsWith('.mov') || file.endsWith('.webm')
         );
         
+        console.log(`[视频检测] 找到视频文件数: ${videoFiles.length}`);
+        if (videoFiles.length > 0) {
+            console.log(`[视频检测] 视频文件列表:`, videoFiles);
+        }
+        
         if (videoFiles.length > 0) {
             productData.videos = videoFiles.map(file => ({
                 filename: file,
-                url: `file://${path.join(productDir, file)}`,
+                url: `file://${path.resolve(productDir, file)}`,
                 localPath: path.join(productDir, file)
             }));
         }
@@ -204,6 +409,54 @@ async function downloadMediaFiles(goodsId, mediaList) {
     }
     
     return downloadedFiles;
+}
+
+// 检查本地已存在的媒体文件
+async function checkExistingMediaFiles(goodsId, mediaUrls) {
+    try {
+        const productDir = path.join(dataDir, 'goods-library', goodsId);
+        const mediaJsonPath = path.join(productDir, 'media.json');
+        
+        // 如果商品目录不存在，返回空数组
+        if (!fs.existsSync(productDir)) {
+            console.log(`商品目录不存在: ${productDir}`);
+            return [];
+        }
+        
+        // 如果media.json文件不存在，返回空数组
+        if (!fs.existsSync(mediaJsonPath)) {
+            console.log(`media.json文件不存在: ${mediaJsonPath}`);
+            return [];
+        }
+        
+        // 读取media.json文件
+        const mediaJsonContent = await fsPromises.readFile(mediaJsonPath, 'utf8');
+        let mediaData;
+        
+        try {
+            mediaData = JSON.parse(mediaJsonContent);
+        } catch (parseError) {
+            console.error('解析media.json失败:', parseError);
+            return [];
+        }
+        
+        // 提取已存在的媒体文件URL
+        const existingUrls = [];
+        if (mediaData && mediaData.media && Array.isArray(mediaData.media)) {
+            mediaData.media.forEach(media => {
+                if (media.url && mediaUrls.includes(media.url)) {
+                    existingUrls.push(media.url);
+                }
+            });
+        }
+        
+        console.log(`商品 ${goodsId} 检查结果: 已存在 ${existingUrls.length} 个媒体文件`);
+        return existingUrls;
+        
+    } catch (error) {
+        console.error('检查本地媒体文件时出错:', error);
+        return [];
+    }
 }
 
 // API路由
@@ -377,6 +630,37 @@ app.post('/api/download-media', async (req, res) => {
     }
 });
 
+// 检查本地已存在的媒体文件
+app.post('/api/check-existing-media', async (req, res) => {
+    try {
+        const { goodsId, mediaUrls } = req.body;
+        
+        if (!goodsId || !mediaUrls) {
+            return res.status(400).json({ 
+                success: false, 
+                error: '商品ID和媒体URL列表不能为空' 
+            });
+        }
+        
+        const existingUrls = await checkExistingMediaFiles(goodsId, mediaUrls);
+        
+        res.json({
+            success: true,
+            message: '本地媒体文件检查完成',
+            existingUrls: existingUrls,
+            existingCount: existingUrls.length,
+            totalChecked: mediaUrls.length
+        });
+        
+    } catch (error) {
+        console.error('检查本地媒体文件失败:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 // 获取单个产品详情
 app.get('/api/products/:goodsId', async (req, res) => {
     try {
@@ -463,15 +747,17 @@ app.get('/api/products', async (req, res) => {
         for (const entry of entries) {
             if (entry.isDirectory()) {
                 const productDir = path.join(goodsLibraryDir, entry.name);
-                const productJsonPath = path.join(productDir, 'product.json');
                 
                 try {
-                    const productData = await fsPromises.readFile(productJsonPath, 'utf8');
-                    const product = JSON.parse(productData);
-                    products.push({
-                        goodsId: entry.name,
-                        ...product
-                    });
+                    // 使用loadProductData函数加载完整的产品数据，包括图片
+                    const productData = await loadProductData(productDir);
+                    
+                    // 确保goodsId存在
+                    if (!productData.goodsId) {
+                        productData.goodsId = entry.name;
+                    }
+                    
+                    products.push(productData);
                 } catch (error) {
                     console.warn(`读取商品数据失败: ${entry.name}`, error.message);
                 }
@@ -751,6 +1037,135 @@ app.get('/api/products/:goodsId/file/:fileName', async (req, res) => {
         console.error('读取文件失败:', error);
         res.status(500).json({ 
             error: '读取文件失败'
+        });
+    }
+});
+
+// 图片服务路由
+app.get('/api/products/:goodsId/image/:fileName', async (req, res) => {
+    try {
+        const { goodsId, fileName } = req.params;
+        const goodsLibraryDir = path.join(dataDir, 'goods-library');
+        const productDir = path.join(goodsLibraryDir, goodsId);
+        const imagePath = path.join(productDir, fileName);
+        
+        // 检查产品目录是否存在
+        if (!fs.existsSync(productDir)) {
+            return res.status(404).json({ 
+                error: '产品目录不存在'
+            });
+        }
+        
+        // 检查图片文件是否存在
+        if (!fs.existsSync(imagePath)) {
+            return res.status(404).json({ 
+                error: '图片文件不存在'
+            });
+        }
+        
+        // 检查文件扩展名，只允许图片格式
+        const ext = path.extname(fileName).toLowerCase();
+        if (!['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext)) {
+            return res.status(400).json({ 
+                error: '不支持的文件格式'
+            });
+        }
+        
+        // 设置正确的Content-Type
+        const mimeTypes = {
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp'
+        };
+        
+        res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+        res.setHeader('Cache-Control', 'public, max-age=3600'); // 缓存1小时
+        
+        // 直接发送文件
+        res.sendFile(imagePath);
+        
+    } catch (error) {
+        console.error('图片服务错误:', error);
+        res.status(500).json({ 
+            error: '服务器内部错误'
+        });
+    }
+});
+
+// 获取最近活动
+app.get('/api/activities/recent', async (req, res) => {
+    try {
+        const activities = await loadActivities();
+        
+        // 只返回最近5个活动
+        const recentActivities = activities.slice(0, 5);
+        
+        res.json({ 
+            success: true, 
+            activities: recentActivities
+        });
+    } catch (error) {
+        console.error('获取最近活动失败:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: '获取最近活动失败',
+            activities: []
+        });
+    }
+});
+
+// 获取所有活动
+app.get('/api/activities', async (req, res) => {
+    try {
+        const activities = await loadActivities();
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = (page - 1) * limit;
+        
+        const paginatedActivities = activities.slice(offset, offset + limit);
+        
+        res.json({ 
+            success: true, 
+            activities: paginatedActivities,
+            total: activities.length,
+            page,
+            limit
+        });
+    } catch (error) {
+        console.error('获取活动列表失败:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: '获取活动列表失败',
+            activities: []
+        });
+    }
+});
+
+// 添加活动（用于手动添加）
+app.post('/api/activities', async (req, res) => {
+    try {
+        const { type, title, details } = req.body;
+        
+        if (!type || !title) {
+            return res.status(400).json({
+                success: false,
+                error: '缺少必要参数: type 和 title'
+            });
+        }
+        
+        const activity = await addActivity(type, title, details);
+        
+        res.json({ 
+            success: true, 
+            activity
+        });
+    } catch (error) {
+        console.error('添加活动失败:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: '添加活动失败'
         });
     }
 });
@@ -1203,6 +1618,45 @@ app.get('/api/monitor/get-monitoring-data', async (req, res) => {
     }
 });
 
+// 获取产品监控数据 - 产品详情页专用API
+app.get('/api/products/:goodsId/monitoring', async (req, res) => {
+    try {
+        const { goodsId } = req.params;
+        
+        if (!goodsId) {
+            return res.status(400).json({
+                success: false,
+                error: '商品ID不能为空'
+            });
+        }
+        
+        const productDir = path.join(dataDir, 'goods-library', goodsId);
+        const monitoringPath = path.join(productDir, 'monitoring.json');
+        
+        if (!fs.existsSync(monitoringPath)) {
+            return res.status(404).json({
+                success: false,
+                error: 'monitoring.json文件不存在'
+            });
+        }
+        
+        const content = await fsPromises.readFile(monitoringPath, 'utf8');
+        const monitoringData = JSON.parse(content);
+        
+        res.json({
+            success: true,
+            monitoring: monitoringData
+        });
+        
+    } catch (error) {
+        console.error('获取产品监控数据失败:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 // 更新monitoring.json数据
 app.post('/api/monitor/update-monitoring-data', async (req, res) => {
     try {
@@ -1282,7 +1736,13 @@ async function startServer() {
     app.listen(PORT, () => {
         console.log(`Hanli API服务器已启动: http://localhost:${PORT}`);
         console.log(`数据存储目录: ${dataDir}`);
+        
+        // 启动文件监控
+        startFileWatcher();
     });
 }
+
+// 启动服务器
+startServer();
 
 module.exports = { startServer, app };

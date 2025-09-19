@@ -134,8 +134,6 @@ class SideBar {
      * @param {string} page - 页面标识
      */
     navigateToPage(page) {
-        console.log('SideBar导航到页面:', page);
-        
         if (this.navigationCallback) {
             this.navigationCallback(page);
         }

@@ -42,7 +42,10 @@ function createWindow() {
             nodeIntegration: false,
             contextIsolation: true,
             enableRemoteModule: false,
-            preload: path.join(__dirname, 'preload.js')
+            preload: path.join(__dirname, 'preload.js'),
+            webSecurity: true,
+            allowRunningInsecureContent: false,
+            experimentalFeatures: false
         },
         frame: false, // 完全自定义窗口控制
         titleBarStyle: 'hidden', // 完全隐藏标题栏
@@ -101,28 +104,7 @@ function createMenu() {
         {
             label: '文件',
             submenu: [
-                {
-                    label: '新建产品',
-                    accelerator: 'CmdOrCtrl+N',
-                    click: () => {
-                        mainWindow.webContents.send('menu-new-product');
-                    }
-                },
-                {
-                    label: '导入数据',
-                    accelerator: 'CmdOrCtrl+I',
-                    click: () => {
-                        mainWindow.webContents.send('menu-import-data');
-                    }
-                },
-                { type: 'separator' },
-                {
-                    label: '退出',
-                    accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
-                    click: () => {
-                        app.quit();
-                    }
-                }
+                // 文件菜单项已移除
             ]
         },
         {
@@ -492,6 +474,272 @@ ipcMain.on('open-product-detail', (event, data) => {
     // 通知渲染进程打开商品详情页
     if (mainWindow) {
         mainWindow.webContents.send('navigate-to-product', data);
+    }
+});
+
+// 处理显示文件在 Finder/文件夹中的请求
+ipcMain.handle('show-file-in-finder', async (event, filePath) => {
+    try {
+        const { shell } = require('electron');
+        const path = require('path');
+        const fs = require('fs');
+        
+        let fullPath = filePath;
+        
+        // 如果是相对路径，转换为绝对路径
+        if (!path.isAbsolute(filePath)) {
+            // 检查是否是商品库的相对路径
+            if (filePath.startsWith('hanli-app/data/goods-library/')) {
+                // 移除开头的 hanli-app/，因为 __dirname 已经指向 hanli-app 目录
+                const relativePath = filePath.replace('hanli-app/', '');
+                fullPath = path.join(__dirname, relativePath);
+            } else {
+                // 其他相对路径，相对于应用目录
+                fullPath = path.join(__dirname, filePath);
+            }
+        }
+        
+        console.log('原始路径:', filePath);
+        console.log('转换后路径:', fullPath);
+        
+        // 检查文件是否存在
+        if (!fs.existsSync(fullPath)) {
+            throw new Error('文件不存在: ' + fullPath);
+        }
+        
+        // 根据平台显示文件
+        if (process.platform === 'darwin') {
+            // macOS: 在 Finder 中显示
+            shell.showItemInFolder(fullPath);
+        } else if (process.platform === 'win32') {
+            // Windows: 在文件夹中显示
+            shell.showItemInFolder(fullPath);
+        } else {
+            // Linux: 在文件管理器中显示
+            shell.showItemInFolder(fullPath);
+        }
+        
+        return { success: true };
+    } catch (error) {
+        console.error('显示文件在 Finder 中失败:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// 处理显示商品文件夹在 Finder 中的请求
+ipcMain.handle('show-goods-folder-in-finder', async (event, goodsId) => {
+    try {
+        const { shell } = require('electron');
+        const path = require('path');
+        const fs = require('fs');
+        
+        // 构建商品文件夹路径
+        const goodsLibraryPath = path.join(__dirname, 'data', 'goods-library', goodsId);
+        
+        // 检查文件夹是否存在
+        if (!fs.existsSync(goodsLibraryPath)) {
+            throw new Error('商品文件夹不存在: ' + goodsLibraryPath);
+        }
+        
+        // 根据平台显示文件夹
+        if (process.platform === 'darwin') {
+            // macOS: 在 Finder 中显示
+            shell.showItemInFolder(goodsLibraryPath);
+        } else if (process.platform === 'win32') {
+            // Windows: 在文件夹中显示
+            shell.showItemInFolder(goodsLibraryPath);
+        } else {
+            // Linux: 在文件管理器中显示
+            shell.showItemInFolder(goodsLibraryPath);
+        }
+        
+        console.log('已在 Finder 中显示商品文件夹:', goodsLibraryPath);
+        return { success: true, path: goodsLibraryPath };
+    } catch (error) {
+        console.error('显示商品文件夹在 Finder 中失败:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// 处理另存为文件的请求
+ipcMain.handle('save-as-file', async (event, sourcePath, fileName) => {
+    try {
+        const { dialog } = require('electron');
+        const fs = require('fs');
+        const path = require('path');
+        
+        // 检查源文件是否存在
+        if (!fs.existsSync(sourcePath)) {
+            throw new Error('源文件不存在: ' + sourcePath);
+        }
+        
+        // 打开保存对话框
+        const result = await dialog.showSaveDialog(mainWindow, {
+            title: '另存为',
+            defaultPath: fileName,
+            filters: [
+                { name: '所有文件', extensions: ['*'] },
+                { name: '图片文件', extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'] },
+                { name: '视频文件', extensions: ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'] },
+                { name: '文档文件', extensions: ['pdf', 'doc', 'docx', 'txt', 'json'] }
+            ]
+        });
+        
+        if (result.canceled) {
+            return { success: false, canceled: true };
+        }
+        
+        // 复制文件到目标位置
+        const targetPath = result.filePath;
+        fs.copyFileSync(sourcePath, targetPath);
+        
+        return { success: true, targetPath: targetPath };
+    } catch (error) {
+        console.error('另存为文件失败:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// 处理删除文件到废纸篓的请求
+ipcMain.handle('move-to-trash', async (event, filePath) => {
+    try {
+        const { shell } = require('electron');
+        const fs = require('fs');
+        const path = require('path');
+        
+        let fullPath = filePath;
+        
+        // 如果是相对路径，转换为绝对路径
+        if (!path.isAbsolute(filePath)) {
+            // 检查是否是商品库的相对路径
+            if (filePath.startsWith('hanli-app/data/goods-library/')) {
+                // 移除开头的 hanli-app/，因为 __dirname 已经指向 hanli-app 目录
+                const relativePath = filePath.replace('hanli-app/', '');
+                fullPath = path.join(__dirname, relativePath);
+            } else {
+                // 其他相对路径，相对于应用目录
+                fullPath = path.join(__dirname, filePath);
+            }
+        }
+        
+        console.log('准备删除文件到废纸篓:', fullPath);
+        
+        // 检查文件是否存在
+        if (!fs.existsSync(fullPath)) {
+            throw new Error('文件不存在: ' + fullPath);
+        }
+        
+        // 使用 Electron 的 shell.trashItem 方法将文件移动到废纸篓
+        await shell.trashItem(fullPath);
+        
+        console.log('文件已移动到废纸篓:', fullPath);
+        return { success: true, message: '文件已移动到废纸篓' };
+    } catch (error) {
+        console.error('移动文件到废纸篓失败:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// 处理获取桌面路径的请求
+ipcMain.handle('get-desktop-path', async (event) => {
+    try {
+        const os = require('os');
+        const path = require('path');
+        
+        const homeDir = os.homedir();
+        const desktopPath = path.join(homeDir, 'Desktop');
+        
+        return { success: true, path: desktopPath };
+    } catch (error) {
+        console.error('获取桌面路径失败:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// 处理多文件复制到文件夹的请求
+ipcMain.handle('copy-files-to-folder', async (event, items, targetPath) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        
+        console.log('收到多文件复制请求:', { items, targetPath });
+        
+        // 确保目标文件夹存在
+        if (!fs.existsSync(targetPath)) {
+            fs.mkdirSync(targetPath, { recursive: true });
+        }
+        
+        const results = [];
+        let successCount = 0;
+        let errorCount = 0;
+        
+        for (const item of items) {
+            try {
+                let sourcePath = item.filePath;
+                
+                // 如果是相对路径，转换为绝对路径
+                if (!path.isAbsolute(sourcePath)) {
+                    if (sourcePath.startsWith('hanli-app/data/goods-library/')) {
+                        const relativePath = sourcePath.replace('hanli-app/', '');
+                        sourcePath = path.join(__dirname, relativePath);
+                    } else {
+                        sourcePath = path.join(__dirname, sourcePath);
+                    }
+                }
+                
+                // 检查源文件是否存在
+                if (!fs.existsSync(sourcePath)) {
+                    throw new Error(`源文件不存在: ${sourcePath}`);
+                }
+                
+                // 构建目标文件路径
+                const targetFilePath = path.join(targetPath, item.fileName);
+                
+                // 如果目标文件已存在，添加序号
+                let finalTargetPath = targetFilePath;
+                let counter = 1;
+                while (fs.existsSync(finalTargetPath)) {
+                    const ext = path.extname(item.fileName);
+                    const nameWithoutExt = path.basename(item.fileName, ext);
+                    finalTargetPath = path.join(targetPath, `${nameWithoutExt}_${counter}${ext}`);
+                    counter++;
+                }
+                
+                // 复制文件
+                fs.copyFileSync(sourcePath, finalTargetPath);
+                
+                results.push({
+                    fileName: item.fileName,
+                    success: true,
+                    targetPath: finalTargetPath
+                });
+                
+                successCount++;
+                console.log(`文件复制成功: ${item.fileName} -> ${finalTargetPath}`);
+                
+            } catch (error) {
+                results.push({
+                    fileName: item.fileName,
+                    success: false,
+                    error: error.message
+                });
+                
+                errorCount++;
+                console.error(`文件复制失败: ${item.fileName}`, error);
+            }
+        }
+        
+        return {
+            success: errorCount === 0,
+            message: `复制完成: 成功 ${successCount} 个，失败 ${errorCount} 个`,
+            results: results,
+            successCount: successCount,
+            errorCount: errorCount
+        };
+        
+    } catch (error) {
+        console.error('多文件复制失败:', error);
+        return { success: false, error: error.message };
     }
 });
 

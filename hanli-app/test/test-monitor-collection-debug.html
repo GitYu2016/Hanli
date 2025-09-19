@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>监控数据采集调试测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 5px;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+        }
+        
+        .log-error {
+            color: #dc3545;
+        }
+        
+        .log-success {
+            color: #28a745;
+        }
+        
+        .log-warning {
+            color: #ffc107;
+        }
+        
+        .log-info {
+            color: #17a2b8;
+        }
+        
+        .status-panel {
+            background: #e7f3ff;
+            border: 1px solid #b3d7ff;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .status-label {
+            font-weight: 500;
+        }
+        
+        .status-value {
+            color: #666;
+        }
+        
+        .url-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>监控数据采集调试测试</h1>
+        
+        <div class="test-section">
+            <div class="test-title">测试说明</div>
+            <p>这个页面用于测试监控数据采集的自动采集功能。</p>
+            <p><strong>注意：</strong>请确保Chrome插件已安装并启用。</p>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">当前状态</div>
+            <div class="status-panel">
+                <div class="status-item">
+                    <span class="status-label">页面URL:</span>
+                    <span class="status-value" id="current-url">-</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">插件状态:</span>
+                    <span class="status-value" id="plugin-status">检测中...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">localStorage监听:</span>
+                    <span class="status-value" id="storage-status">未监听</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">自定义事件监听:</span>
+                    <span class="status-value" id="event-status">未监听</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">模拟采集请求</div>
+            <p>输入要测试的商品URL，然后点击按钮模拟采集请求：</p>
+            <input type="text" class="url-input" id="test-url" placeholder="输入商品URL，例如：https://www.temu.com/..." value="https://www.temu.com/">
+            
+            <div>
+                <button class="btn btn-primary" onclick="sendTestRequest()">发送localStorage请求</button>
+                <button class="btn btn-success" onclick="sendCustomEvent()">发送自定义事件</button>
+                <button class="btn btn-warning" onclick="simulateRawData()">模拟rawData数据</button>
+                <button class="btn btn-primary" onclick="clearLog()">清空日志</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">操作日志</div>
+            <div class="log" id="log-container">
+                <div class="log-entry log-info">等待操作...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟window.rawData
+        window.rawData = {
+            store: {
+                goods: {
+                    goodsId: "601099514703283",
+                    goodsName: "测试商品",
+                    rating: 4.5,
+                    reviewCount: 1234
+                },
+                moduleMap: {
+                    mallModule: {
+                        data: {
+                            mallData: {
+                                mallName: "测试店铺"
+                            }
+                        }
+                    }
+                }
+            },
+            goods: {
+                sold: 5678,
+                promoPrice: 12.99,
+                normalPrice: 19.99
+            }
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStatus();
+            setupListeners();
+            log('页面加载完成', 'info');
+        });
+
+        function updateStatus() {
+            document.getElementById('current-url').textContent = window.location.href;
+            
+            // 检测插件状态
+            if (typeof chrome !== 'undefined' && chrome.runtime) {
+                document.getElementById('plugin-status').textContent = '已安装';
+            } else {
+                document.getElementById('plugin-status').textContent = '未检测到';
+            }
+        }
+
+        function setupListeners() {
+            // 监听localStorage变化
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'collectionRequest') {
+                    log(`收到localStorage采集请求: ${e.newValue}`, 'info');
+                    document.getElementById('storage-status').textContent = '已收到请求';
+                }
+            });
+
+            // 监听自定义事件
+            window.addEventListener('hanliMonitorCollectionRequest', function(e) {
+                log(`收到自定义事件采集请求: ${JSON.stringify(e.detail)}`, 'info');
+                document.getElementById('event-status').textContent = '已收到请求';
+            });
+
+            // 监听采集结果
+            window.addEventListener('storage', function(e) {
+                if (e.key && e.key.startsWith('collectionResult_')) {
+                    log(`收到采集结果: ${e.key} = ${e.newValue}`, 'success');
+                }
+            });
+        }
+
+        function sendTestRequest() {
+            const testUrl = document.getElementById('test-url').value || window.location.href;
+            
+            const request = {
+                action: 'startCollection',
+                taskId: Date.now(),
+                goodsId: '601099514703283',
+                url: testUrl,
+                timestamp: new Date().toISOString()
+            };
+
+            log(`发送localStorage请求: ${JSON.stringify(request)}`, 'info');
+            localStorage.setItem('collectionRequest', JSON.stringify(request));
+            document.getElementById('storage-status').textContent = '已发送请求';
+        }
+
+        function sendCustomEvent() {
+            const testUrl = document.getElementById('test-url').value || window.location.href;
+            
+            const request = {
+                action: 'startCollection',
+                taskId: Date.now(),
+                goodsId: '601099514703283',
+                url: testUrl,
+                timestamp: new Date().toISOString()
+            };
+
+            log(`发送自定义事件: ${JSON.stringify(request)}`, 'info');
+            window.dispatchEvent(new CustomEvent('hanliMonitorCollectionRequest', {
+                detail: request
+            }));
+            document.getElementById('event-status').textContent = '已发送请求';
+        }
+
+        function simulateRawData() {
+            log('当前window.rawData内容:', 'info');
+            log(JSON.stringify(window.rawData, null, 2), 'info');
+            
+            // 模拟提取监控数据的函数
+            try {
+                const monitoringData = extractMonitoringData(window.rawData);
+                log('提取的监控数据:', 'success');
+                log(JSON.stringify(monitoringData, null, 2), 'success');
+            } catch (error) {
+                log(`提取监控数据失败: ${error.message}`, 'error');
+            }
+        }
+
+        function extractMonitoringData(rawData) {
+            return {
+                goodsSold: rawData.goods?.sold || 0,
+                goodsPromoPrice: rawData.goods?.promoPrice || 0,
+                goodsTitle: rawData.store?.goods?.goodsName || '',
+                goodsRating: rawData.store?.goods?.rating || 0,
+                goodsReviews: (rawData.store?.goods?.reviewCount || 0) + '条评价',
+                storeSold: 50000,
+                storeFollowers: 1000,
+                storeltemsNum: 100,
+                storeRating: 4.6,
+                storeName: rawData.store?.moduleMap?.mallModule?.data?.mallData?.mallName || ''
+            };
+        }
+
+        function clearLog() {
+            document.getElementById('log-container').innerHTML = '';
+            log('日志已清空', 'info');
+        }
+
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('log-container');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // 定期检查状态
+        setInterval(updateStatus, 5000);
+    </script>
+</body>
+</html>

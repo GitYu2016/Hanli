@@ -16,7 +16,22 @@ class ProductCharts {
      * @param {Object} monitoringData - 监控数据
      */
     renderCharts(product, monitoringData) {
-        console.log('渲染产品图表:', product, monitoringData);
+        console.log('ProductCharts.renderCharts 被调用:', {
+            productId: product?.goodsId,
+            hasMonitoringData: !!monitoringData,
+            monitoringDataType: Array.isArray(monitoringData) ? 'array' : typeof monitoringData
+        });
+        
+        // 避免重复渲染相同数据
+        if (this.lastProductId === product?.goodsId && this.lastMonitoringData === monitoringData) {
+            console.log('跳过重复渲染');
+            return;
+        }
+        
+        this.lastProductId = product?.goodsId;
+        this.lastMonitoringData = monitoringData;
+        
+        console.log('开始渲染产品图表:', product?.goodsId);
         
         // 显示加载状态
         this.showLoadingState();
@@ -30,10 +45,14 @@ class ProductCharts {
 
         try {
             // 处理图表数据
+            console.log('开始处理图表数据');
             this.chartData = this.processChartData(product, monitoringData);
+            console.log('图表数据处理完成:', this.chartData);
             
             // 渲染各个图表
+            console.log('开始渲染销量图表');
             this.renderSalesChart();
+            console.log('开始渲染价格图表');
             this.renderPriceChart();
             
             // 更新数据标签
@@ -41,6 +60,7 @@ class ProductCharts {
             
             // 隐藏加载状态
             this.hideLoadingState();
+            console.log('图表渲染完成');
         } catch (error) {
             console.error('图表渲染失败:', error);
             this.showErrorState('图表渲染失败');
@@ -54,38 +74,73 @@ class ProductCharts {
      * @returns {Object} 处理后的图表数据
      */
     processChartData(product, monitoringData) {
-        console.log('处理图表数据:', product, monitoringData);
+        // 减少日志输出，只在调试模式下输出详细信息
+        if (window.DEBUG_MODE) {
+            console.log('处理图表数据:', product?.goodsId, monitoringData);
+        }
         
         // 如果没有监控数据，使用产品基本信息生成单日数据
-        if (!monitoringData || !monitoringData.trendData) {
+        if (!monitoringData) {
             return this.generateSingleDayData(product, monitoringData);
         }
 
-        const trendData = monitoringData.trendData;
+        // 处理不同的监控数据格式
+        let trendData = null;
+        
+        // 如果是数组格式（monitoring.json的直接格式）
+        if (Array.isArray(monitoringData)) {
+            trendData = monitoringData;
+        }
+        // 如果是对象格式，检查是否有trendData字段
+        else if (monitoringData.trendData && Array.isArray(monitoringData.trendData)) {
+            trendData = monitoringData.trendData;
+        }
+        // 如果是单个监控记录对象
+        else if (monitoringData.goodsData) {
+            trendData = [monitoringData];
+        }
+
+        // 如果没有有效的趋势数据，使用产品基本信息生成单日数据
+        if (!trendData || trendData.length === 0) {
+            return this.generateSingleDayData(product, monitoringData);
+        }
+
         const labels = [];
         const sales = [];
         const promoPrice = [];
         const normalPrice = [];
 
         // 处理趋势数据
-        if (trendData && Array.isArray(trendData)) {
-            trendData.forEach((item, index) => {
-                // 生成日期标签
-                const date = new Date();
-                date.setDate(date.getDate() - (trendData.length - 1 - index));
-                labels.push(date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }));
+        trendData.forEach((item, index) => {
+            // 生成日期标签
+            const date = new Date();
+            date.setDate(date.getDate() - (trendData.length - 1 - index));
+            labels.push(date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }));
 
-                // 销量数据 - 使用goodsSold字段，确保为整数
-                sales.push(Math.round(item.goodsSold || 0));
+            // 销量数据 - 从goodsData中获取goodsSold字段
+            let goodsSold = 0;
+            if (item.goodsData && item.goodsData.goodsSold) {
+                goodsSold = this.parseNumber(item.goodsData.goodsSold);
+            } else if (item.goodsSold) {
+                goodsSold = this.parseNumber(item.goodsSold);
+            }
+            sales.push(Math.round(goodsSold));
 
-                // 价格数据 - 使用goodsPromoPrice和goodsNormalPrice字段
-                promoPrice.push(this.parsePrice(item.goodsPromoPrice) || 0);
-                normalPrice.push(this.parsePrice(item.goodsNormalPrice) || 0);
-            });
-        } else {
-            // 如果没有趋势数据，使用产品基本信息
-            return this.generateSingleDayData(product, monitoringData);
-        }
+            // 价格数据 - 从goodsData中获取价格字段
+            let promoPriceValue = 0;
+            let normalPriceValue = 0;
+            
+            if (item.goodsData) {
+                promoPriceValue = this.parsePrice(item.goodsData.goodsPromoPrice) || 0;
+                normalPriceValue = this.parsePrice(item.goodsData.goodsNormalPrice) || 0;
+            } else {
+                promoPriceValue = this.parsePrice(item.goodsPromoPrice) || 0;
+                normalPriceValue = this.parsePrice(item.goodsNormalPrice) || 0;
+            }
+            
+            promoPrice.push(promoPriceValue);
+            normalPrice.push(normalPriceValue);
+        });
 
         return {
             labels,
@@ -137,6 +192,23 @@ class ProductCharts {
         // 移除货币符号和空格，提取数字
         const match = priceStr.toString().match(/[\d.]+/);
         return match ? parseFloat(match[0]) : 0;
+    }
+
+    /**
+     * 解析数字字符串
+     * @param {string} numStr - 数字字符串，如 "72000件"
+     * @returns {number} 解析后的数字
+     */
+    parseNumber(numStr) {
+        if (!numStr) return 0;
+        
+        // 提取数字部分
+        const match = numStr.toString().match(/[\d,]+/);
+        if (match) {
+            // 移除逗号并转换为数字
+            return parseFloat(match[0].replace(/,/g, ''));
+        }
+        return 0;
     }
 
     /**
@@ -192,7 +264,7 @@ class ProductCharts {
                             color: 'rgba(255, 255, 255, 0.1)'
                         },
                         ticks: {
-                            stepSize: 1,
+                            stepSize: Math.max(1, Math.ceil(this.chartData.sales.reduce((a, b) => Math.max(a, b), 0) / 10)),
                             callback: function(value) {
                                 return Math.round(value) + '件';
                             }
@@ -255,7 +327,15 @@ class ProductCharts {
                 plugins: {
                     legend: {
                         display: true,
-                        position: 'top'
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            pointStyle: 'line',
+                            padding: 20,
+                            font: {
+                                size: 12
+                            }
+                        }
                     },
                     tooltip: {
                         callbacks: {
@@ -272,7 +352,7 @@ class ProductCharts {
                             color: 'rgba(255, 255, 255, 0.1)'
                         },
                         ticks: {
-                            stepSize: 1,
+                            stepSize: Math.max(1, Math.ceil(Math.max(...this.chartData.promoPrice, ...this.chartData.normalPrice) / 10)),
                             callback: function(value) {
                                 return '¥' + Math.round(value);
                             }
@@ -295,7 +375,14 @@ class ProductCharts {
      * @param {Object} monitoringData - 监控数据
      */
     updateCharts(product, monitoringData) {
-        console.log('更新图表数据:', product, monitoringData);
+        // 避免重复更新相同数据
+        if (this.lastProductId === product?.goodsId && this.lastMonitoringData === monitoringData) {
+            return;
+        }
+        
+        if (window.DEBUG_MODE) {
+            console.log('更新图表数据:', product?.goodsId);
+        }
         
         // 重新处理数据
         this.chartData = this.processChartData(product, monitoringData);

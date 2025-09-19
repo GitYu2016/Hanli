@@ -85,9 +85,111 @@ class SettingsModal {
                             ${this.renderSettingsContent()}
                         </div>
                         
-                        <div class="modal-footer">
-                            <button class="btn btn-secondary" onclick="window.settingsModalInstance.cancel()">取消</button>
-                            <button class="btn btn-primary" onclick="window.settingsModalInstance.save()">保存设置</button>
+                        <style>
+                            .shortcuts-list {
+                                max-height: 300px;
+                                overflow-y: auto;
+                                padding: 12px;
+                                background: var(--color-background-secondary);
+                                border-radius: 8px;
+                                border: 1px solid var(--color-border);
+                            }
+                            
+                            .shortcut-category {
+                                margin-bottom: 20px;
+                            }
+                            
+                            .shortcut-category:last-child {
+                                margin-bottom: 0;
+                            }
+                            
+                            .shortcut-category-title {
+                                font-size: 14px;
+                                font-weight: 600;
+                                color: var(--color-text-primary);
+                                margin: 0 0 8px 0;
+                                padding-bottom: 4px;
+                                border-bottom: 1px solid var(--color-border);
+                            }
+                            
+                            .shortcuts-empty {
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                padding: 40px 20px;
+                                color: var(--color-text-secondary);
+                                text-align: center;
+                            }
+                            
+                            .shortcuts-empty p {
+                                margin: 0;
+                                font-size: 14px;
+                            }
+                            
+                            .shortcut-items {
+                                display: flex;
+                                flex-direction: column;
+                                gap: 6px;
+                            }
+                            
+                            .shortcut-item {
+                                display: flex;
+                                align-items: center;
+                                justify-content: space-between;
+                                padding: 8px 12px;
+                                background: var(--color-background-primary);
+                                border-radius: 6px;
+                                border: 1px solid var(--color-border);
+                                transition: all 0.2s ease;
+                            }
+                            
+                            .shortcut-item:hover {
+                                background: var(--color-background-hover);
+                                border-color: var(--color-primary);
+                            }
+                            
+                            .shortcut-key {
+                                display: inline-flex;
+                                align-items: center;
+                                padding: 4px 8px;
+                                background: var(--color-background-secondary);
+                                border: 1px solid var(--color-border);
+                                border-radius: 4px;
+                                font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+                                font-size: 12px;
+                                font-weight: 600;
+                                color: var(--color-text-primary);
+                                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+                                min-width: 80px;
+                                justify-content: center;
+                            }
+                            
+                            .shortcut-description {
+                                font-size: 13px;
+                                color: var(--color-text-secondary);
+                                flex: 1;
+                                margin-left: 12px;
+                            }
+                            
+                            @media (max-width: 480px) {
+                                .shortcut-item {
+                                    flex-direction: column;
+                                    align-items: flex-start;
+                                    gap: 8px;
+                                }
+                                
+                                .shortcut-description {
+                                    margin-left: 0;
+                                }
+                                
+                                .shortcut-key {
+                                    align-self: flex-start;
+                                }
+                            }
+                        </style>
+                        
+                        <div class="modal-footer" id="settings-modal-footer">
+                            <!-- 按钮将通过JavaScript动态创建 -->
                         </div>
                     </div>
                 </div>
@@ -96,8 +198,156 @@ class SettingsModal {
 
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         
+        // 创建按钮
+        this.createButtons();
+        
         // 设置全局引用
         window.settingsModalInstance = this;
+    }
+
+    /**
+     * 创建弹窗按钮
+     */
+    createButtons() {
+        if (!window.buttonInstance) return;
+
+        // 创建footer按钮
+        const footer = document.getElementById('settings-modal-footer');
+        if (footer) {
+            // 创建取消按钮
+            const cancelButton = window.buttonInstance.secondary({
+                text: '取消',
+                size: 'M',
+                onClick: () => this.cancel(),
+                className: 'modal-btn-cancel'
+            });
+
+            // 创建保存按钮
+            const saveButton = window.buttonInstance.primary({
+                text: '保存设置',
+                size: 'M',
+                onClick: () => this.save(),
+                className: 'modal-btn-save'
+            });
+
+            // 添加按钮到footer
+            footer.appendChild(cancelButton);
+            footer.appendChild(saveButton);
+        }
+
+        // 创建打开文件夹按钮
+        const openFolderContainer = document.getElementById('open-folder-btn-container');
+        if (openFolderContainer) {
+            const openFolderButton = window.buttonInstance.secondary({
+                text: '打开文件夹',
+                size: 'S',
+                onClick: () => this.openDataFolder(),
+                className: 'setting-btn'
+            });
+            openFolderContainer.appendChild(openFolderButton);
+        }
+
+        // 创建清理缓存按钮
+        const clearCacheContainer = document.getElementById('clear-cache-btn-container');
+        if (clearCacheContainer) {
+            const clearCacheButton = window.buttonInstance.warning({
+                text: '清理缓存',
+                size: 'S',
+                onClick: () => this.clearCache(),
+                className: 'setting-btn'
+            });
+            clearCacheContainer.appendChild(clearCacheButton);
+        }
+    }
+
+    /**
+     * 渲染快捷键列表
+     * @returns {string} HTML字符串
+     */
+    renderShortcutsList() {
+        // 获取当前注册的快捷键
+        const registeredShortcuts = window.keyboardShortcutManager ? 
+            window.keyboardShortcutManager.getShortcuts() : [];
+        
+        // 静态快捷键列表（包括一些无法通过管理器获取的快捷键）
+        const staticShortcuts = [
+            {
+                category: 'Tab管理',
+                items: [
+                    { key: '⌘/Ctrl + W', description: '关闭当前Tab或窗口（有Tab时关闭Tab，无Tab时关闭窗口）' },
+                    { key: '⌘/Ctrl + Tab', description: '切换到下一个Tab' },
+                    { key: '⌘/Ctrl + Shift + Tab', description: '切换到上一个Tab' }
+                ]
+            },
+            {
+                category: '图片选择',
+                items: [
+                    { key: 'Shift', description: '按住进入多选模式' },
+                    { key: 'Shift + 点击', description: '多选图片（连续选择）' },
+                    { key: '点击空白', description: '取消所有选择' }
+                ]
+            },
+            {
+                category: '搜索功能',
+                items: [
+                    { key: '⌘/Ctrl + F', description: '打开搜索框' },
+                    { key: 'Enter', description: '执行搜索（在搜索框中）' },
+                    { key: 'ESC', description: '关闭搜索框' }
+                ]
+            },
+            {
+                category: '弹窗操作',
+                items: [
+                    { key: 'ESC', description: '关闭当前弹窗' },
+                    { key: 'ESC', description: '关闭设置弹窗' },
+                    { key: 'ESC', description: '关闭关于弹窗' },
+                    { key: 'ESC', description: '关闭商品详情弹窗' }
+                ]
+            },
+            {
+                category: '通用操作',
+                items: [
+                    { key: '点击遮罩', description: '关闭弹窗' },
+                    { key: '点击关闭按钮', description: '关闭弹窗' }
+                ]
+            }
+        ];
+
+        // 如果有注册的快捷键，添加动态快捷键部分
+        if (registeredShortcuts.length > 0) {
+            const dynamicShortcuts = {
+                category: '当前注册的快捷键',
+                items: registeredShortcuts.map(shortcut => ({
+                    key: shortcut.key,
+                    description: shortcut.description || '无描述'
+                }))
+            };
+            staticShortcuts.unshift(dynamicShortcuts);
+        }
+
+        const shortcuts = staticShortcuts;
+
+        if (shortcuts.length === 0) {
+            return `
+                <div class="shortcuts-empty">
+                    <p>暂无快捷键信息</p>
+                </div>
+            `;
+        }
+
+        return shortcuts.map(category => `
+            <div class="shortcut-category">
+                <h4 class="shortcut-category-title">${category.category}</h4>
+                <div class="shortcut-items">
+                    ${category.items.map(item => `
+                        <div class="shortcut-item">
+                            <kbd class="shortcut-key">${item.key}</kbd>
+                            <span class="shortcut-description">${item.description}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('');
     }
 
     /**
@@ -172,21 +422,21 @@ class SettingsModal {
                 </div>
                 
                 <div class="setting-item">
+                    <label class="setting-label">主题色</label>
+                    <div class="setting-control">
+                        <div class="background-color-selector">
+                            ${this.renderBackgroundColorOptions()}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="setting-item">
                     <label class="setting-label">语言设置</label>
                     <div class="setting-control">
                         <select class="setting-select" id="language-select">
                             <option value="zh-CN" ${this.settings.language === 'zh-CN' ? 'selected' : ''}>简体中文</option>
                             <option value="en-US" ${this.settings.language === 'en-US' ? 'selected' : ''}>English</option>
                         </select>
-                    </div>
-                </div>
-                
-                <div class="setting-item">
-                    <label class="setting-label">背景色</label>
-                    <div class="setting-control">
-                        <div class="background-color-selector">
-                            ${this.renderBackgroundColorOptions()}
-                        </div>
                     </div>
                 </div>
             </div>
@@ -218,20 +468,33 @@ class SettingsModal {
             </div>
             
             <div class="settings-section">
+                <h3 class="section-title">快捷键设置</h3>
+                
+                <div class="setting-item">
+                    <label class="setting-label">支持的快捷键</label>
+                    <div class="setting-control">
+                        <div class="shortcuts-list" id="shortcuts-list">
+                            ${this.renderShortcutsList()}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-section">
                 <h3 class="section-title">数据设置</h3>
                 
                 <div class="setting-item">
                     <label class="setting-label">数据存储路径</label>
                     <div class="setting-control">
                         <input type="text" class="setting-input" id="data-path" value="${this.getDataPath()}" readonly>
-                        <button class="btn btn-sm btn-secondary" onclick="window.settingsModalInstance.openDataFolder()">打开文件夹</button>
+                        <div id="open-folder-btn-container"></div>
                     </div>
                 </div>
                 
                 <div class="setting-item">
                     <label class="setting-label">缓存管理</label>
                     <div class="setting-control">
-                        <button class="btn btn-sm btn-warning" onclick="window.settingsModalInstance.clearCache()">清理缓存</button>
+                        <div id="clear-cache-btn-container"></div>
                         <span class="setting-description">清理临时文件和缓存数据</span>
                     </div>
                 </div>
@@ -304,23 +567,32 @@ class SettingsModal {
             });
         });
 
-        // ESC键关闭
-        this.handleKeyDown = (e) => {
-            if (e.key === 'Escape') {
-                this.close();
-            }
-        };
-        document.addEventListener('keydown', this.handleKeyDown);
+        // 注册ESC键关闭快捷键
+        this.registerShortcuts();
     }
+
+    /**
+     * 注册快捷键
+     */
+    registerShortcuts() {
+        window.keyboardShortcutManager.register('escape', (e) => {
+            this.close();
+        }, 'settings-modal', '关闭设置弹窗');
+    }
+
+    /**
+     * 注销快捷键
+     */
+    unregisterShortcuts() {
+        window.keyboardShortcutManager.unregisterContext('settings-modal');
+    }
+
 
     /**
      * 解绑事件监听器
      */
     unbindEvents() {
-        if (this.handleKeyDown) {
-            document.removeEventListener('keydown', this.handleKeyDown);
-            this.handleKeyDown = null;
-        }
+        this.unregisterShortcuts();
     }
 
     /**
@@ -342,24 +614,25 @@ class SettingsModal {
      * @param {string} theme - 主题名称
      */
     previewTheme(theme) {
-        const body = document.body;
+        const root = document.documentElement;
         const themeColors = document.getElementById('theme-colors');
         
         // 移除现有主题类
-        body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+        root.classList.remove('theme-light', 'theme-dark', 'theme-auto');
         
         // 添加新主题类
         if (theme === 'auto') {
             // 跟随系统主题
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             const actualTheme = prefersDark ? 'dark' : 'light';
-            body.classList.add(`theme-${actualTheme}`);
+            root.classList.add(`theme-${actualTheme}`);
             themeColors.href = `theme/${actualTheme}/colors.css`;
         } else {
-            body.classList.add(`theme-${theme}`);
+            root.classList.add(`theme-${theme}`);
             themeColors.href = `theme/${theme}/colors.css`;
         }
     }
+
 
     /**
      * 加载当前设置
@@ -521,19 +794,19 @@ class SettingsModal {
      * 恢复原始主题
      */
     restoreOriginalTheme() {
-        const body = document.body;
+        const root = document.documentElement;
         const themeColors = document.getElementById('theme-colors');
         
-        body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+        root.classList.remove('theme-light', 'theme-dark', 'theme-auto');
         
         const theme = localStorage.getItem('app-theme') || 'auto';
         if (theme === 'auto') {
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             const actualTheme = prefersDark ? 'dark' : 'light';
-            body.classList.add(`theme-${actualTheme}`);
+            root.classList.add(`theme-${actualTheme}`);
             themeColors.href = `theme/${actualTheme}/colors.css`;
         } else {
-            body.classList.add(`theme-${theme}`);
+            root.classList.add(`theme-${theme}`);
             themeColors.href = `theme/${theme}/colors.css`;
         }
     }

@@ -8,6 +8,10 @@ class ProductDetailComponent {
         this.product = null;
         this.productCharts = null;
         this.attachmentCard = null;
+        this.mediaCard = null;
+        this.selectedMedia = null;
+        this.selectedMediaItems = []; // 支持多选
+        this.moreMenu = null;
     }
 
     /**
@@ -16,10 +20,36 @@ class ProductDetailComponent {
      * @param {Object} product - 产品数据
      */
     async init(container, product) {
+        // 清理之前的状态
+        this.destroy();
+        
         this.container = container;
         this.product = product;
+        this.componentsInitialized = false; // 重置初始化标志
         this.render();
         await this.initComponents();
+    }
+
+    /**
+     * 检查是否有监控数据
+     * @returns {boolean} 是否有有效的监控数据
+     */
+    checkMonitoringData() {
+        // 检查是否有监控数据文件
+        if (!this.monitoringData) {
+            return false;
+        }
+        
+        // 检查监控数据是否为空数组或空对象
+        if (Array.isArray(this.monitoringData)) {
+            return this.monitoringData.length > 0;
+        }
+        
+        if (typeof this.monitoringData === 'object') {
+            return Object.keys(this.monitoringData).length > 0;
+        }
+        
+        return false;
     }
 
     /**
@@ -28,16 +58,26 @@ class ProductDetailComponent {
     render() {
         if (!this.container || !this.product) return;
 
+        // 检查是否有监控数据
+        const hasMonitoringData = this.checkMonitoringData();
+
         this.container.innerHTML = `
             <div class="product-detail-page">
                 <div class="page-header">
                     <h1 class="page-title">产品详情</h1>
+                    <div class="page-header-actions">
+                        <div id="more-menu-container"></div>
+                    </div>
                 </div>
                 
                 <div class="product-detail-content">
+                    ${hasMonitoringData ? `
                     <!-- 第一个卡片：图表 -->
                     <div class="detail-section">
-                        <h3 class="section-title">数据监控</h3>
+                        <h3 class="section-title">
+                            <i class="ph ph-chart-line"></i>
+                            数据监控
+                        </h3>
                         
                         <!-- 合并的趋势图表卡片 -->
                         <div class="detail-card chart-card">
@@ -45,7 +85,10 @@ class ProductDetailComponent {
                                 <div class="charts-container">
                                     <!-- 销量图表 -->
                                     <div class="chart-item">
-                                        <h5 class="section-subtitle">销量</h5>
+                                        <h5 class="section-subtitle">
+                                            <i class="ph ph-trend-up"></i>
+                                            销量
+                                        </h5>
                                         <div class="chart-container">
                                             <canvas id="sales-chart" width="800" height="150"></canvas>
                                         </div>
@@ -53,7 +96,10 @@ class ProductDetailComponent {
                                     
                                     <!-- 价格图表 -->
                                     <div class="chart-item">
-                                        <h5 class="section-subtitle">价格</h5>
+                                        <h5 class="section-subtitle">
+                                            <i class="ph ph-chart-bar"></i>
+                                            价格
+                                        </h5>
                                         <div class="chart-container">
                                             <canvas id="price-chart" width="800" height="150"></canvas>
                                         </div>
@@ -63,10 +109,10 @@ class ProductDetailComponent {
                             </div>
                         </div>
                     </div>
+                    ` : ''}
                     
                     <!-- 第二个卡片：媒体 -->
                     <div class="detail-section">
-                        <h3 class="section-title">媒体资源</h3>
                         <div class="detail-card media-card">
                             <div class="card-content">
                                 ${this.renderMediaContent(this.product)}
@@ -127,14 +173,39 @@ class ProductDetailComponent {
      * 初始化组件
      */
     async initComponents() {
-        // 初始化图表组件
-        await this.initProductCharts();
+        // 避免重复初始化
+        if (this.componentsInitialized) {
+            return;
+        }
+        
+        // 先加载监控数据
+        await this.loadMonitoringData();
+        
+        // 重新渲染页面（根据监控数据决定是否显示图表部分）
+        this.render();
+        
+        // 初始化图表组件（只有在有监控数据时才初始化）
+        if (this.checkMonitoringData()) {
+            await this.initProductCharts();
+            // 确保图表组件初始化后立即渲染
+            if (this.productCharts && this.monitoringData) {
+                this.productCharts.renderCharts(this.product, this.monitoringData);
+            }
+        }
         
         // 初始化附件卡片组件
         await this.initAttachmentCard();
         
+        // 初始化媒体卡片组件
+        await this.initMediaCard();
+        
+        // 初始化更多菜单组件
+        await this.initMoreMenu();
+        
         // 绑定事件
         this.bindEvents();
+        
+        this.componentsInitialized = true;
     }
 
     /**
@@ -144,9 +215,7 @@ class ProductDetailComponent {
         try {
             // 创建图表组件实例
             this.productCharts = new ProductCharts();
-            
-            // 获取监控数据
-            await this.loadMonitoringData();
+            console.log('图表组件已初始化');
         } catch (error) {
             console.error('初始化图表组件失败:', error);
         }
@@ -156,23 +225,61 @@ class ProductDetailComponent {
      * 加载监控数据
      */
     async loadMonitoringData() {
-        try {
-            // 尝试从API获取监控数据
-            const response = await fetch(`http://localhost:3001/api/products/${this.product.goodsId}/monitoring`);
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success && data.monitoring) {
-                    console.log('获取到监控数据:', data.monitoring);
-                    this.productCharts.renderCharts(this.product, data.monitoring);
-                    return;
-                }
-            }
-        } catch (error) {
-            console.warn('获取监控数据失败，使用产品基本信息:', error);
+        // 避免重复请求
+        if (this.isLoadingMonitoringData) {
+            return;
         }
         
-        // 如果API失败，使用产品基本信息
-        this.productCharts.renderCharts(this.product, null);
+        // 检查是否已经加载过相同产品的监控数据
+        if (this.lastLoadedProductId === this.product?.goodsId && this.monitoringDataLoaded) {
+            return;
+        }
+        
+        this.isLoadingMonitoringData = true;
+        
+        try {
+            console.log('开始加载监控数据:', this.product.goodsId);
+            // 尝试从API获取监控数据
+            const response = await fetch(`http://localhost:3001/api/products/${this.product.goodsId}/monitoring`);
+            console.log('API响应状态:', response.status);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('API返回数据:', data);
+                
+                if (data.success && data.monitoring) {
+                    console.log('获取到监控数据:', this.product.goodsId, data.monitoring);
+                    this.monitoringData = data.monitoring;
+                    // 只有当图表组件已初始化时才调用 renderCharts
+                    if (this.productCharts) {
+                        console.log('图表组件已存在，调用renderCharts');
+                        this.productCharts.renderCharts(this.product, data.monitoring);
+                    } else {
+                        console.log('图表组件尚未初始化，稍后渲染');
+                    }
+                    this.lastLoadedProductId = this.product.goodsId;
+                    this.monitoringDataLoaded = true;
+                    return;
+                } else {
+                    console.log('API返回数据格式不正确:', data);
+                }
+            } else {
+                console.log('API请求失败:', response.status, response.statusText);
+            }
+        } catch (error) {
+            console.warn('获取监控数据失败，使用产品基本信息:', error.message);
+        } finally {
+            this.isLoadingMonitoringData = false;
+        }
+        
+        // 如果API失败，设置监控数据为空
+        this.monitoringData = null;
+        // 只有当图表组件已初始化时才调用 renderCharts
+        if (this.productCharts) {
+            this.productCharts.renderCharts(this.product, null);
+        }
+        this.lastLoadedProductId = this.product.goodsId;
+        this.monitoringDataLoaded = true;
     }
 
     /**
@@ -191,6 +298,273 @@ class ProductDetailComponent {
             if (attachmentsList) {
                 attachmentsList.innerHTML = '<div class="no-attachments">暂无附件</div>';
             }
+        }
+    }
+
+    /**
+     * 初始化媒体卡片组件
+     */
+    async initMediaCard() {
+        try {
+            const mediaContainer = document.getElementById('media-card-container');
+            if (mediaContainer && this.product) {
+                // 合并图片和视频数据
+                const mediaItems = [];
+                
+                // 添加视频
+                if (this.product.videos && this.product.videos.length > 0) {
+                    this.product.videos.forEach(video => {
+                        mediaItems.push({
+                            ...video,
+                            type: 'video'
+                        });
+                    });
+                }
+                
+                // 添加图片
+                if (this.product.images && this.product.images.length > 0) {
+                    this.product.images.forEach(image => {
+                        mediaItems.push({
+                            ...image,
+                            type: 'image'
+                        });
+                    });
+                }
+                
+                if (mediaItems.length > 0) {
+                    if (typeof MediaCard !== 'undefined') {
+                        this.mediaCard = new MediaCard();
+                        this.mediaCard.init(
+                            mediaContainer, 
+                            mediaItems, 
+                            {
+                                goodsId: this.product.goodsId,
+                                onSelectionChange: (selectedItems) => {
+                                    this.onMediaSelectionChange(selectedItems);
+                                },
+                                onVideoContextMenu: (event, index, fileName, filePath) => {
+                                    this.showVideoContextMenu(event, index, fileName, filePath);
+                                }
+                            }
+                        );
+                    } else {
+                        console.error('MediaCard组件未加载');
+                        mediaContainer.innerHTML = '<div class="no-media">媒体卡片组件加载失败</div>';
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('初始化媒体卡片组件失败:', error);
+            const mediaContainer = document.getElementById('media-card-container');
+            if (mediaContainer) {
+                mediaContainer.innerHTML = '<div class="no-media">媒体卡片组件初始化失败</div>';
+            }
+        }
+    }
+
+    /**
+     * 初始化更多菜单组件
+     */
+    async initMoreMenu() {
+        try {
+            const moreMenuContainer = document.getElementById('more-menu-container');
+            if (moreMenuContainer && typeof MoreMenu !== 'undefined') {
+                // 如果已经存在MoreMenu实例，先销毁
+                if (this.moreMenu) {
+                    this.moreMenu.destroy();
+                }
+                
+                this.moreMenu = new MoreMenu();
+                
+                // 定义菜单项
+                const menuItems = [
+                    {
+                        label: '在 Finder 中显示',
+                        action: 'show-in-finder',
+                        icon: 'folder-open'
+                    }
+                ];
+                
+                // 如果 collectUrl 包含 temu，添加访问 TEMU 链接选项
+                if (this.product && this.product.collectUrl && this.product.collectUrl.toLowerCase().includes('temu')) {
+                    menuItems.push({
+                        label: '访问 TEMU 链接',
+                        action: 'visit-temu-link',
+                        icon: 'link-external'
+                    });
+                }
+                
+                menuItems.push({
+                    label: '刷新数据',
+                    action: 'refresh-data',
+                    icon: 'arrow-clockwise'
+                });
+                
+                this.moreMenu.init(moreMenuContainer, menuItems);
+                
+                // 设置菜单点击回调
+                this.moreMenu.setMenuClickCallback((action, menuItem) => {
+                    this.handleMoreMenuClick(action, menuItem);
+                });
+                
+                console.log('更多菜单组件已初始化');
+            } else {
+                console.error('更多菜单容器未找到或MoreMenu组件未加载');
+            }
+        } catch (error) {
+            console.error('初始化更多菜单组件失败:', error);
+        }
+    }
+
+    /**
+     * 图片选择变化回调
+     * @param {Object|null} selectedImage - 选中的图片对象（单选模式）
+     * @param {number|null} selectedIndex - 选中的图片索引（单选模式）
+     * @param {Array} selectedImages - 所有选中的图片数组（多选模式）
+     */
+    onMediaSelectionChange(selectedItems = []) {
+        this.selectedMediaItems = selectedItems;
+        this.selectedMedia = selectedItems.length === 1 ? selectedItems[0].item : null;
+        console.log('媒体选择变化:', selectedItems);
+    }
+
+    /**
+     * 处理更多菜单点击
+     * @param {string} action - 操作类型
+     * @param {HTMLElement} menuItem - 菜单项元素
+     */
+    async handleMoreMenuClick(action, menuItem) {
+        switch (action) {
+            case 'show-in-finder':
+                await this.showInFinder();
+                break;
+            case 'visit-temu-link':
+                await this.visitTemuLink();
+                break;
+            case 'refresh-data':
+                await this.refreshData();
+                break;
+            default:
+                console.warn('未知的菜单操作:', action);
+        }
+    }
+
+    /**
+     * 在 Finder 中显示商品文件夹
+     */
+    async showInFinder() {
+        try {
+            if (!this.product || !this.product.goodsId) {
+                this.showToast('商品ID不存在', 'error');
+                return;
+            }
+
+            // 调用 Electron API 在 Finder 中显示商品文件夹
+            const result = await window.electronAPI.fileAPI.showGoodsFolderInFinder(this.product.goodsId);
+            
+            if (result.success) {
+                this.showToast('已在 Finder 中显示', 'success');
+                console.log('商品文件夹路径:', result.path);
+            } else {
+                // 根据错误类型显示不同的提示
+                let errorMessage = '打开失败';
+                if (result.error.includes('不存在')) {
+                    errorMessage = '文件夹不存在';
+                } else if (result.error.includes('权限')) {
+                    errorMessage = '权限不足';
+                }
+                this.showToast(errorMessage, 'error');
+            }
+        } catch (error) {
+            console.error('在 Finder 中显示失败:', error);
+            this.showToast('打开失败', 'error');
+        }
+    }
+
+    /**
+     * 访问 TEMU 链接
+     */
+    async visitTemuLink() {
+        try {
+            if (!this.product || !this.product.collectUrl) {
+                this.showToast('链接不存在', 'error');
+                return;
+            }
+
+            // 检查链接是否包含 temu
+            if (!this.product.collectUrl.toLowerCase().includes('temu')) {
+                this.showToast('这不是 TEMU 链接', 'error');
+                return;
+            }
+
+            // 使用 Electron API 打开外部链接
+            const result = await window.electronAPI.openSystemBrowser(this.product.collectUrl);
+            
+            if (result.success) {
+                this.showToast('已在浏览器中打开 TEMU 链接', 'success');
+                console.log('TEMU 链接已打开:', this.product.collectUrl);
+            } else {
+                console.error('打开 TEMU 链接失败:', result.error);
+                this.showToast('打开链接失败', 'error');
+            }
+        } catch (error) {
+            console.error('访问 TEMU 链接失败:', error);
+            this.showToast('打开链接失败', 'error');
+        }
+    }
+
+    /**
+     * 降级复制方案
+     * @param {string} text - 要复制的文本
+     */
+    fallbackCopyToClipboard(text) {
+        // 创建临时文本区域
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                this.showToast('已复制', 'success');
+            } else {
+                throw new Error('execCommand failed');
+            }
+        } finally {
+            document.body.removeChild(textArea);
+        }
+    }
+
+    /**
+     * 刷新数据
+     */
+    async refreshData() {
+        try {
+            if (!this.product || !this.product.goodsId) {
+                this.showToast('商品信息不存在', 'error');
+                return;
+            }
+
+            // 重置组件状态
+            this.componentsInitialized = false;
+            this.monitoringDataLoaded = false;
+            this.lastLoadedProductId = null;
+            
+            // 执行刷新
+            await this.refresh();
+            
+            // 显示刷新完成提示
+            this.showToast('刷新完成', 'success');
+            
+            console.log('数据刷新完成');
+        } catch (error) {
+            console.error('刷新数据失败:', error);
+            this.showToast('刷新失败', 'error');
         }
     }
 
@@ -230,42 +604,35 @@ class ProductDetailComponent {
     renderMediaContent(product) {
         let mediaHTML = '<div class="media-grid">';
         
-        // 视频
+        // 合并图片和视频数据
+        const mediaItems = [];
+        
+        // 添加视频
         if (product.videos && product.videos.length > 0) {
-            mediaHTML += '<div class="media-section">';
-            mediaHTML += '<h4 class="section-subtitle">视频</h4>';
-            mediaHTML += '<div class="video-list">';
-            product.videos.forEach((video, index) => {
-                mediaHTML += `
-                    <div class="video-item">
-                        <video controls>
-                            <source src="${video.url}" type="video/mp4">
-                            您的浏览器不支持视频播放
-                        </video>
-                        <p class="video-title">视频 ${index + 1}</p>
-                    </div>
-                `;
+            product.videos.forEach(video => {
+                mediaItems.push({
+                    ...video,
+                    type: 'video'
+                });
             });
-            mediaHTML += '</div></div>';
         }
         
-        // 图片
+        // 添加图片
         if (product.images && product.images.length > 0) {
-            mediaHTML += '<div class="media-section">';
-            mediaHTML += '<h4 class="section-subtitle">图片</h4>';
-            mediaHTML += '<div class="image-grid">';
-            product.images.forEach((image, index) => {
-                mediaHTML += `
-                    <div class="image-item">
-                        <img src="${image.url}" alt="产品图片 ${index + 1}" onclick="window.openImageModal('${image.url}')">
-                    </div>
-                `;
+            product.images.forEach(image => {
+                mediaItems.push({
+                    ...image,
+                    type: 'image'
+                });
             });
-            mediaHTML += '</div></div>';
         }
         
-        // 如果没有媒体文件
-        if ((!product.videos || product.videos.length === 0) && (!product.images || product.images.length === 0)) {
+        if (mediaItems.length > 0) {
+            mediaHTML += '<div class="media-section">';
+            mediaHTML += '<h4 class="section-subtitle">媒体资源</h4>';
+            mediaHTML += '<div id="media-card-container"></div>';
+            mediaHTML += '</div>';
+        } else {
             mediaHTML += '<div class="no-media">暂无媒体资源</div>';
         }
         
@@ -357,16 +724,254 @@ class ProductDetailComponent {
      * 显示Toast通知
      * @param {string} message - 消息
      * @param {string} type - 类型 (success, error, info, warning)
+     * @param {number} duration - 显示时长（毫秒）
      */
-    showToast(message, type = 'info') {
-        // 这里可以集成toast通知系统
-        console.log(`[${type.toUpperCase()}] ${message}`);
+    showToast(message, type = 'info', duration = 3000) {
+        if (typeof toastInstance !== 'undefined' && toastInstance) {
+            toastInstance.show(message, type, duration);
+        } else {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+    }
+
+    /**
+     * 显示视频右键菜单
+     * @param {Event} event - 右键事件
+     * @param {number} index - 视频索引
+     * @param {string} videoName - 视频名称
+     * @param {string} videoPath - 视频路径
+     */
+    showVideoContextMenu(event, index, videoName, videoPath) {
+        event.preventDefault();
+        
+        // 移除现有的右键菜单
+        this.hideVideoContextMenu();
+        
+        // 创建右键菜单
+        const contextMenu = document.createElement('div');
+        contextMenu.className = 'context-menu';
+        contextMenu.id = 'video-context-menu';
+        
+        // 根据平台显示不同的文本
+        const platform = navigator.platform.toLowerCase();
+        const showInFinderText = platform.includes('mac') ? '在 Finder 中显示' : '在文件夹中显示';
+        
+        contextMenu.innerHTML = `
+            <div class="context-menu-item" onclick="productDetailInstance.showVideoInFinder(${index}, '${videoName}', '${videoPath}')">
+                <span>${showInFinderText}</span>
+            </div>
+            <div class="context-menu-item" onclick="productDetailInstance.saveVideoAs(${index}, '${videoName}', '${videoPath}')">
+                <span>另存为</span>
+            </div>
+            <div class="context-menu-item context-menu-item-danger" onclick="productDetailInstance.moveVideoToTrash(${index}, '${videoName}', '${videoPath}')">
+                <span>移到废纸篓</span>
+            </div>
+        `;
+        
+        // 设置菜单位置
+        contextMenu.style.position = 'fixed';
+        contextMenu.style.left = event.clientX + 'px';
+        contextMenu.style.top = event.clientY + 'px';
+        contextMenu.style.zIndex = '10000';
+        
+        // 添加到页面
+        document.body.appendChild(contextMenu);
+        
+        // 点击其他地方隐藏菜单
+        setTimeout(() => {
+            document.addEventListener('click', this.hideVideoContextMenu.bind(this), { once: true });
+        }, 0);
+    }
+
+    /**
+     * 隐藏视频右键菜单
+     */
+    hideVideoContextMenu() {
+        const contextMenu = document.getElementById('video-context-menu');
+        if (contextMenu) {
+            contextMenu.remove();
+        }
+    }
+
+    /**
+     * 在 Finder/文件夹中显示视频文件
+     * @param {number} index - 视频索引
+     * @param {string} videoName - 视频名称
+     * @param {string} videoPath - 视频路径
+     */
+    async showVideoInFinder(index, videoName, videoPath) {
+        try {
+            // 如果没有文件路径，尝试构建路径
+            let fullPath = videoPath;
+            if (!fullPath && this.product && this.product.videos && this.product.videos[index]) {
+                const video = this.product.videos[index];
+                // 尝试从视频对象中获取路径信息
+                if (video.path) {
+                    fullPath = video.path;
+                } else if (video.url && video.url.startsWith('file://')) {
+                    // 如果是本地文件URL，转换为文件路径
+                    fullPath = video.url.replace('file://', '');
+                }
+            }
+            
+            if (!fullPath) {
+                console.error('无法确定视频文件路径');
+                return;
+            }
+            
+            // 调用 Electron API
+            const result = await window.electronAPI.fileAPI.showInFinder(fullPath);
+            
+            if (result.success) {
+                console.log('视频文件已在 Finder/文件夹中显示');
+            } else {
+                console.error('显示视频文件失败:', result.error);
+            }
+        } catch (error) {
+            console.error('显示视频文件在 Finder 中失败:', error);
+        } finally {
+            // 隐藏右键菜单
+            this.hideVideoContextMenu();
+        }
+    }
+
+    /**
+     * 另存为视频文件
+     * @param {number} index - 视频索引
+     * @param {string} videoName - 视频名称
+     * @param {string} videoPath - 视频路径
+     */
+    async saveVideoAs(index, videoName, videoPath) {
+        try {
+            // 如果没有文件路径，尝试构建路径
+            let fullPath = videoPath;
+            if (!fullPath && this.product && this.product.videos && this.product.videos[index]) {
+                const video = this.product.videos[index];
+                // 尝试从视频对象中获取路径信息
+                if (video.path) {
+                    fullPath = video.path;
+                } else if (video.url && video.url.startsWith('file://')) {
+                    // 如果是本地文件URL，转换为文件路径
+                    fullPath = video.url.replace('file://', '');
+                }
+            }
+            
+            if (!fullPath) {
+                console.error('无法确定视频文件路径');
+                return;
+            }
+            
+            // 调用 Electron API 另存为
+            const result = await window.electronAPI.fileAPI.saveAs(fullPath, videoName);
+            
+            if (result.success) {
+                console.log('视频文件另存为成功');
+            } else {
+                console.error('另存为失败:', result.error);
+            }
+        } catch (error) {
+            console.error('另存为失败:', error);
+        } finally {
+            // 隐藏右键菜单
+            this.hideVideoContextMenu();
+        }
+    }
+
+    /**
+     * 移动视频文件到废纸篓
+     * @param {number} index - 视频索引
+     * @param {string} videoName - 视频名称
+     * @param {string} videoPath - 视频路径
+     */
+    async moveVideoToTrash(index, videoName, videoPath) {
+        try {
+            // 确认删除操作
+            const confirmed = confirm(`确定要将视频文件 "${videoName}" 移到废纸篓吗？\n\n此操作不可撤销。`);
+            if (!confirmed) {
+                this.hideVideoContextMenu();
+                return;
+            }
+
+            // 如果没有文件路径，尝试构建路径
+            let fullPath = videoPath;
+            if (!fullPath && this.product && this.product.videos && this.product.videos[index]) {
+                const video = this.product.videos[index];
+                // 优先使用服务器提供的localPath（绝对路径）
+                if (video.localPath) {
+                    fullPath = video.localPath;
+                    console.log('使用localPath:', fullPath);
+                } else if (video.path) {
+                    fullPath = video.path;
+                    console.log('使用path:', fullPath);
+                } else if (video.url && video.url.startsWith('file://')) {
+                    // 如果是本地文件URL，转换为文件路径
+                    fullPath = video.url.replace('file://', '');
+                    console.log('从URL转换路径:', fullPath);
+                } else if (video.url) {
+                    // 如果是HTTP URL，无法删除
+                    console.warn('视频URL是HTTP链接，无法删除:', video.url);
+                    alert('无法删除网络视频');
+                    return;
+                }
+            }
+            
+            // 如果还是没有路径，尝试构建默认路径
+            if (!fullPath) {
+                if (this.product && this.product.goodsId && videoName) {
+                    // 构建相对路径，主进程会处理转换为绝对路径
+                    fullPath = `hanli-app/data/goods-library/${this.product.goodsId}/${videoName}`;
+                    console.log('尝试构建的路径:', fullPath);
+                }
+            }
+            
+            if (!fullPath) {
+                console.error('无法确定视频文件路径');
+                alert('无法确定视频文件路径，请检查文件是否存在');
+                return;
+            }
+            
+            console.log('准备删除视频文件到废纸篓:', fullPath);
+            
+            // 调用 Electron API 删除文件到废纸篓
+            const result = await window.electronAPI.fileAPI.moveToTrash(fullPath);
+            
+            if (result.success) {
+                console.log('视频文件已移动到废纸篓');
+                
+                // 从视频数组中移除已删除的视频
+                if (this.product && this.product.videos && this.product.videos[index]) {
+                    this.product.videos.splice(index, 1);
+                    
+                    // 重新渲染视频列表
+                    this.render();
+                }
+                
+                // 显示成功提示
+                if (window.showToast) {
+                    window.showToast('视频文件已移动到废纸篓', 'success');
+                } else {
+                    alert('视频文件已移动到废纸篓');
+                }
+            } else {
+                console.error('删除视频文件失败:', result.error);
+                alert('删除视频文件失败: ' + result.error);
+            }
+        } catch (error) {
+            console.error('删除视频文件失败:', error);
+            alert('删除视频文件失败: ' + error.message);
+        } finally {
+            // 隐藏右键菜单
+            this.hideVideoContextMenu();
+        }
     }
 
     /**
      * 销毁组件
      */
     destroy() {
+        // 隐藏视频右键菜单
+        this.hideVideoContextMenu();
+        
         // 销毁图表组件
         if (this.productCharts) {
             this.productCharts.destroy();
@@ -379,12 +984,27 @@ class ProductDetailComponent {
             this.attachmentCard = null;
         }
 
+        // 销毁媒体卡片组件
+        if (this.mediaCard) {
+            this.mediaCard.destroy();
+            this.mediaCard = null;
+        }
+
+        // 销毁更多菜单组件
+        if (this.moreMenu) {
+            this.moreMenu.destroy();
+            this.moreMenu = null;
+        }
+
         if (this.container) {
             this.container.innerHTML = '';
         }
         
         this.product = null;
         this.container = null;
+        this.selectedMedia = null;
+        this.selectedMediaItems = [];
+        this.componentsInitialized = false; // 重置初始化标志
     }
 
     /**

@@ -31,8 +31,12 @@ scrapeRawData()
     │   ├── 调用hanliapp://open协议
     │   └── App置于最前窗口
     └── 3. 异步下载媒体
-        ├── 筛选符合要求的图片
-        └── 发送下载请求到App
+        ├── 第一步：尺寸筛选 (≥800×800px)
+        ├── 第二步：本地去重检查
+        │   ├── 调用 /api/check-existing-media
+        │   ├── 读取本地 media.json
+        │   └── 跳过已存在的URL
+        └── 第三步：发送下载请求到App
 ```
 
 ### 仅采集监控数据流程
@@ -111,7 +115,9 @@ App后端API
 ├── GET /api/monitor/get-products-list
 ├── GET /api/monitor/get-monitoring-data
 ├── POST /api/monitor/update-monitoring-data
-└── POST /api/save-json-files
+├── POST /api/save-json-files
+├── POST /api/download-media
+└── POST /api/check-existing-media (新增)
 ```
 
 ## 4. 状态管理
@@ -172,6 +178,7 @@ App后端API
 ### collectionManager.js
 - JSON保存
 - App唤起
+- 媒体文件筛选 (尺寸+本地去重)
 - 错误处理
 - 弹窗提示
 

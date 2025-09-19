@@ -94,23 +94,28 @@ class CollectionManager {
         try {
             console.log('开始带进度跟踪的媒体文件下载...');
             
-            // 筛选符合尺寸要求的图片（最小800x800px）
-            const filteredMedia = mediaData.media.filter(item => {
+            // 第一步：筛选符合尺寸要求的图片（最小800x800px）
+            const sizeFilteredMedia = mediaData.media.filter(item => {
                 if (item.type === 'image') {
                     const isLargeEnough = item.width >= 800 && item.height >= 800;
-                    console.log(`图片筛选: ${item.url} - ${item.width}x${item.height} - 符合要求: ${isLargeEnough}`);
+                    console.log(`图片尺寸筛选: ${item.url} - ${item.width}x${item.height} - 符合要求: ${isLargeEnough}`);
                     return isLargeEnough;
                 }
                 // 视频不进行尺寸筛选
                 return true;
             });
             
-            console.log(`筛选前媒体数量: ${mediaData.media.length}, 筛选后: ${filteredMedia.length}`);
+            console.log(`尺寸筛选前媒体数量: ${mediaData.media.length}, 尺寸筛选后: ${sizeFilteredMedia.length}`);
+            
+            // 第二步：检查本地已存在的媒体文件，避免重复下载
+            const finalFilteredMedia = await this.filterExistingMedia(goodsId, sizeFilteredMedia);
+            
+            console.log(`本地去重前媒体数量: ${sizeFilteredMedia.length}, 本地去重后: ${finalFilteredMedia.length}`);
             
             // 发送下载请求到App
             const downloadData = {
                 goodsId: goodsId,
-                mediaList: filteredMedia
+                mediaList: finalFilteredMedia
             };
             
             const response = await fetch('http://localhost:3001/api/download-media', {
@@ -128,7 +133,7 @@ class CollectionManager {
                     
                     // 更新进度：所有媒体文件下载完成
                     if (window.collectionProgressDialog) {
-                        window.collectionProgressDialog.updateProgress(filteredMedia.length + 1); // +1 for JSON
+                        window.collectionProgressDialog.updateProgress(finalFilteredMedia.length + 1); // +1 for JSON
                     }
                     
                     this.showDownloadCompleteNotification(result.downloadedFiles.length);
@@ -227,23 +232,28 @@ class CollectionManager {
         try {
             console.log('开始异步下载媒体文件...');
             
-            // 筛选符合尺寸要求的图片（最小800x800px）
-            const filteredMedia = mediaData.media.filter(item => {
+            // 第一步：筛选符合尺寸要求的图片（最小800x800px）
+            const sizeFilteredMedia = mediaData.media.filter(item => {
                 if (item.type === 'image') {
                     const isLargeEnough = item.width >= 800 && item.height >= 800;
-                    console.log(`图片筛选: ${item.url} - ${item.width}x${item.height} - 符合要求: ${isLargeEnough}`);
+                    console.log(`图片尺寸筛选: ${item.url} - ${item.width}x${item.height} - 符合要求: ${isLargeEnough}`);
                     return isLargeEnough;
                 }
                 // 视频不进行尺寸筛选
                 return true;
             });
             
-            console.log(`筛选前媒体数量: ${mediaData.media.length}, 筛选后: ${filteredMedia.length}`);
+            console.log(`尺寸筛选前媒体数量: ${mediaData.media.length}, 尺寸筛选后: ${sizeFilteredMedia.length}`);
+            
+            // 第二步：检查本地已存在的媒体文件，避免重复下载
+            const finalFilteredMedia = await this.filterExistingMedia(goodsInfoData.goodsId, sizeFilteredMedia);
+            
+            console.log(`本地去重前媒体数量: ${sizeFilteredMedia.length}, 本地去重后: ${finalFilteredMedia.length}`);
             
             // 发送下载请求到App
             const downloadData = {
                 goodsId: goodsInfoData.goodsId,
-                mediaList: filteredMedia
+                mediaList: finalFilteredMedia
             };
             
             const response = await fetch('http://localhost:3001/api/download-media', {
@@ -432,6 +442,61 @@ class CollectionManager {
         } catch (error) {
             console.error('检查App连接失败:', error);
             return false;
+        }
+    }
+
+    // 检查本地已存在的媒体文件，避免重复下载
+    async filterExistingMedia(goodsId, mediaList) {
+        try {
+            console.log(`开始检查商品 ${goodsId} 的本地媒体文件...`);
+            
+            // 调用App API检查本地media.json文件
+            const response = await fetch('http://localhost:3001/api/check-existing-media', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    goodsId: goodsId,
+                    mediaUrls: mediaList.map(item => item.url)
+                })
+            });
+            
+            if (!response.ok) {
+                console.warn('检查本地媒体文件失败，将下载所有媒体文件');
+                return mediaList;
+            }
+            
+            const result = await response.json();
+            if (!result.success) {
+                console.warn('检查本地媒体文件失败:', result.error);
+                return mediaList;
+            }
+            
+            const existingUrls = new Set(result.existingUrls || []);
+            console.log(`本地已存在的媒体文件数量: ${existingUrls.size}`);
+            console.log('已存在的URLs:', Array.from(existingUrls));
+            
+            // 筛选出不存在的媒体文件
+            const filteredMedia = mediaList.filter(item => {
+                const urlExists = existingUrls.has(item.url);
+                if (urlExists) {
+                    console.log(`跳过已存在的媒体文件: ${item.url}`);
+                }
+                return !urlExists;
+            });
+            
+            const skippedCount = mediaList.length - filteredMedia.length;
+            if (skippedCount > 0) {
+                this.showToast(`跳过 ${skippedCount} 个已存在的媒体文件`, 'info');
+            }
+            
+            return filteredMedia;
+            
+        } catch (error) {
+            console.error('检查本地媒体文件时出错:', error);
+            // 出错时返回原始列表，继续下载
+            return mediaList;
         }
     }
 

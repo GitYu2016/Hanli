@@ -2,8 +2,10 @@
 class MonitorCollectionManager {
     constructor() {
         this.products = [];
+        this.pendingProducts = []; // 今日未采集的商品
         this.isCollecting = false;
         this.isPaused = false;
+        this.isAutoCollecting = false; // 自动采集状态
         this.currentIndex = 0;
         this.completedCount = 0;
         this.failedCount = 0;
@@ -26,11 +28,20 @@ class MonitorCollectionManager {
         this.productCountEl = document.getElementById('product-count');
         this.productListContentEl = document.getElementById('product-list-content');
         this.logContentEl = document.getElementById('log-content');
+        this.autoCollectBtn = document.getElementById('auto-collect-btn');
+        this.pendingCountEl = document.getElementById('pending-count');
     }
 
     bindEvents() {
         // 监听monitoring.json修改事件，自动刷新状态
         this.setupAutoRefresh();
+        
+        // 绑定自动采集按钮事件
+        if (this.autoCollectBtn) {
+            this.autoCollectBtn.addEventListener('click', () => {
+                this.startAutoCollection();
+            });
+        }
     }
 
     async loadProducts() {
@@ -75,6 +86,7 @@ class MonitorCollectionManager {
         
         const today = new Date().toISOString().split('T')[0]; // 获取今日日期 YYYY-MM-DD
         let todayCollectedCount = 0;
+        this.pendingProducts = []; // 重置待采集商品列表
         
         for (let i = 0; i < this.products.length; i++) {
             const product = this.products[i];
@@ -105,24 +117,58 @@ class MonitorCollectionManager {
                         } else {
                             product.status = 'pending';
                             product.progress = '等待采集';
+                            // 添加到待采集列表（限制最多10个）
+                            if (this.pendingProducts.length < 10) {
+                                this.pendingProducts.push({
+                                    ...product,
+                                    originalIndex: i
+                                });
+                            }
                         }
                     } else {
                         product.status = 'pending';
                         product.progress = '等待采集';
+                        // 添加到待采集列表（限制最多10个）
+                        if (this.pendingProducts.length < 10) {
+                            this.pendingProducts.push({
+                                ...product,
+                                originalIndex: i
+                            });
+                        }
                     }
                 } else {
                     product.status = 'pending';
                     product.progress = '等待采集';
+                    // 添加到待采集列表（限制最多10个）
+                    if (this.pendingProducts.length < 10) {
+                        this.pendingProducts.push({
+                            ...product,
+                            originalIndex: i
+                        });
+                    }
                 }
             } catch (error) {
                 console.warn(`检查商品 ${product.goodsId} 的采集状态失败:`, error);
                 product.status = 'pending';
                 product.progress = '等待采集';
+                // 添加到待采集列表（限制最多10个）
+                if (this.pendingProducts.length < 10) {
+                    this.pendingProducts.push({
+                        ...product,
+                        originalIndex: i
+                    });
+                }
             }
         }
         
         this.completedCount = todayCollectedCount;
         this.log(`今日采集状态检查完成，已采集 ${todayCollectedCount}/${this.products.length} 个商品`);
+        this.log(`筛选出 ${this.pendingProducts.length} 个今日未采集的任务`);
+        
+        // 更新待采集任务数量显示
+        if (this.pendingCountEl) {
+            this.pendingCountEl.textContent = this.pendingProducts.length;
+        }
     }
 
     // 自动加载商品清单
@@ -354,8 +400,251 @@ class MonitorCollectionManager {
     }
 
     async performMonitoringDataCollection(product, index) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                // 方法1: 优先通过DOM事件模拟点击触发
+                this.log(`尝试通过DOM点击触发采集: ${product.title}`);
+                const clickResult = await this.triggerCollectionByClick(product, index);
+                if (clickResult.success) {
+                    this.log(`DOM点击触发采集成功: ${product.title}`, 'success');
+                    resolve(clickResult.data);
+                    return;
+                }
+            } catch (error) {
+                this.log(`DOM点击触发失败: ${product.title} - ${error.message}`, 'warning');
+            }
+
+            try {
+                // 方法2: 通过localStorage和自定义事件触发
+                this.log(`尝试通过事件触发采集: ${product.title}`);
+                const eventResult = await this.triggerCollectionByEvent(product, index);
+                if (eventResult.success) {
+                    this.log(`事件触发采集成功: ${product.title}`, 'success');
+                    resolve(eventResult.data);
+                    return;
+                }
+            } catch (error) {
+                this.log(`事件触发失败: ${product.title} - ${error.message}`, 'warning');
+            }
+
+            // 方法3: 直接调用插件函数（fallback）
+            this.log(`其他方法失败，尝试直接调用插件函数: ${product.title}`);
+            try {
+                const directResult = await this.triggerCollectionDirectly(product, index);
+                if (directResult.success) {
+                    this.log(`直接调用插件函数成功: ${product.title}`, 'success');
+                    resolve(directResult.data);
+                    return;
+                }
+            } catch (error) {
+                this.log(`直接调用插件函数也失败: ${product.title} - ${error.message}`, 'error');
+            }
+
+            // 所有方法都失败
+            reject(new Error(`所有采集方法都失败: ${product.title}`));
+        });
+    }
+
+    /**
+     * 通过DOM事件模拟点击触发采集（第一优先级）
+     */
+    async triggerCollectionByClick(product, index) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                this.log(`开始DOM点击触发采集: ${product.title}`);
+                
+                // 等待页面加载完成
+                await this.waitForPageLoad();
+                
+                // 查找监控按钮
+                const monitorButton = this.findMonitorButton();
+                if (!monitorButton) {
+                    throw new Error('未找到监控按钮');
+                }
+
+                this.log(`找到监控按钮，准备点击: ${product.title}`);
+                
+                // 监听采集完成事件
+                const handleComplete = (event) => {
+                    window.removeEventListener('hanliPopupMonitoringCollectionCompleted', handleComplete);
+                    window.removeEventListener('hanliPopupMonitoringCollectionError', handleError);
+                    
+                    if (event.detail && event.detail.monitoringData) {
+                        resolve({
+                            success: true,
+                            data: event.detail.monitoringData
+                        });
+                    } else {
+                        reject(new Error('采集完成但数据无效'));
+                    }
+                };
+
+                const handleError = (event) => {
+                    window.removeEventListener('hanliPopupMonitoringCollectionCompleted', handleComplete);
+                    window.removeEventListener('hanliPopupMonitoringCollectionError', handleError);
+                    reject(new Error(event.detail?.error || '采集失败'));
+                };
+
+                // 注册事件监听器
+                window.addEventListener('hanliPopupMonitoringCollectionCompleted', handleComplete, { once: true });
+                window.addEventListener('hanliPopupMonitoringCollectionError', handleError, { once: true });
+
+                // 设置超时
+                const timeoutId = setTimeout(() => {
+                    window.removeEventListener('hanliPopupMonitoringCollectionCompleted', handleComplete);
+                    window.removeEventListener('hanliPopupMonitoringCollectionError', handleError);
+                    reject(new Error('DOM点击触发超时'));
+                }, 15000);
+
+                // 模拟点击事件
+                this.simulateClick(monitorButton);
+                
+                this.log(`已模拟点击监控按钮: ${product.title}`);
+
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    /**
+     * 查找监控按钮
+     */
+    findMonitorButton() {
+        // 尝试多种选择器查找监控按钮
+        const selectors = [
+            '#hanli-button-container .monitor-btn',
+            '#hanli-button-container button[data-action="monitor"]',
+            '.hanli-monitor-button',
+            'button:contains("仅采集监控数据")',
+            'button:contains("监控数据")',
+            '[data-testid="monitor-button"]'
+        ];
+
+        for (const selector of selectors) {
+            try {
+                const button = document.querySelector(selector);
+                if (button) {
+                    this.log(`找到监控按钮: ${selector}`);
+                    return button;
+                }
+            } catch (e) {
+                // 忽略选择器错误
+            }
+        }
+
+        // 如果标准选择器找不到，尝试通过文本内容查找
+        const buttons = document.querySelectorAll('button');
+        for (const button of buttons) {
+            const text = button.textContent || button.innerText || '';
+            if (text.includes('监控') || text.includes('采集') || text.includes('monitor')) {
+                this.log(`通过文本内容找到按钮: ${text.trim()}`);
+                return button;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 等待页面加载完成
+     */
+    async waitForPageLoad(maxWaitTime = 10000) {
+        const startTime = Date.now();
+        
+        while (Date.now() - startTime < maxWaitTime) {
+            if (document.readyState === 'complete') {
+                // 额外等待一点时间确保所有脚本都加载完成
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                return;
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        throw new Error('页面加载超时');
+    }
+
+    /**
+     * 模拟点击事件
+     */
+    simulateClick(element) {
+        // 创建并分发鼠标事件
+        const events = [
+            new MouseEvent('mousedown', {
+                bubbles: true,
+                cancelable: true,
+                view: window,
+                button: 0
+            }),
+            new MouseEvent('mouseup', {
+                bubbles: true,
+                cancelable: true,
+                view: window,
+                button: 0
+            }),
+            new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+                view: window,
+                button: 0
+            })
+        ];
+
+        // 依次触发事件
+        events.forEach(event => {
+            element.dispatchEvent(event);
+        });
+
+        // 如果元素有focus方法，也调用它
+        if (typeof element.focus === 'function') {
+            element.focus();
+        }
+
+        // 如果元素有click方法，也调用它
+        if (typeof element.click === 'function') {
+            element.click();
+        }
+    }
+
+    /**
+     * 通过localStorage和自定义事件触发采集
+     */
+    async triggerCollectionByEvent(product, index) {
         return new Promise((resolve, reject) => {
-            // 发送采集请求到新标签页
+            const timeout = 15000; // 15秒超时
+            const timeoutId = setTimeout(() => {
+                reject(new Error('事件触发超时'));
+            }, timeout);
+
+            // 监听采集完成事件
+            const handleCollectionComplete = (event) => {
+                clearTimeout(timeoutId);
+                window.removeEventListener('hanliPopupMonitoringCollectionCompleted', handleCollectionComplete);
+                window.removeEventListener('hanliPopupMonitoringCollectionError', handleCollectionError);
+                
+                if (event.detail && event.detail.monitoringData) {
+                    resolve({
+                        success: true,
+                        data: event.detail.monitoringData
+                    });
+                } else {
+                    reject(new Error('采集完成但数据无效'));
+                }
+            };
+
+            // 监听采集失败事件
+            const handleCollectionError = (event) => {
+                clearTimeout(timeoutId);
+                window.removeEventListener('hanliPopupMonitoringCollectionCompleted', handleCollectionComplete);
+                window.removeEventListener('hanliPopupMonitoringCollectionError', handleCollectionError);
+                reject(new Error(event.detail?.error || '采集失败'));
+            };
+
+            // 注册事件监听器
+            window.addEventListener('hanliPopupMonitoringCollectionCompleted', handleCollectionComplete, { once: true });
+            window.addEventListener('hanliPopupMonitoringCollectionError', handleCollectionError, { once: true });
+
+            // 发送采集请求
             const collectionRequest = {
                 action: 'startCollection',
                 taskId: index,
@@ -364,25 +653,113 @@ class MonitorCollectionManager {
                 timestamp: new Date().toISOString()
             };
 
-            // 通过localStorage与content script通信
+            this.log(`发送localStorage采集请求: ${product.title}`);
+            this.log(`请求详情: ${JSON.stringify(collectionRequest, null, 2)}`);
+            
+            // 通过localStorage发送请求
             localStorage.setItem('collectionRequest', JSON.stringify(collectionRequest));
-            this.log(`已发送采集请求: ${product.title}`);
+            
+            // 发送自定义事件
+            window.dispatchEvent(new CustomEvent('hanliMonitorCollectionRequest', {
+                detail: collectionRequest
+            }));
 
-            // 等待采集结果，设置超时时间为20秒
-            this.waitForCollectionResult(index, 20000)
-                .then(result => {
-                    if (result.success) {
-                        this.log(`采集数据成功: ${product.title}`, 'success');
-                        resolve(result.collectedData);
-                    } else {
-                        reject(new Error(result.error || '采集失败'));
-                    }
-                })
-                .catch(error => {
-                    this.log(`采集数据失败: ${product.title} - ${error.message}`, 'error');
-                    reject(error);
-                });
+            // 额外发送一个存储事件（某些情况下localStorage.setItem不会触发storage事件）
+            window.dispatchEvent(new CustomEvent('storage', {
+                detail: {
+                    key: 'collectionRequest',
+                    newValue: JSON.stringify(collectionRequest)
+                }
+            }));
         });
+    }
+
+    /**
+     * 直接调用插件函数（fallback方法）
+     */
+    async triggerCollectionDirectly(product, index) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                // 检查插件函数是否可用
+                if (typeof window.collectMonitoringDataOnly !== 'function') {
+                    this.log(`插件函数不可用，等待加载: ${product.title}`);
+                    await this.waitForPluginFunction();
+                }
+
+                if (typeof window.collectMonitoringDataOnly !== 'function') {
+                    throw new Error('插件函数不可用');
+                }
+
+                this.log(`直接调用插件函数: ${product.title}`);
+                
+                // 监听采集完成事件
+                const handleComplete = (event) => {
+                    window.removeEventListener('hanliPopupMonitoringCollectionCompleted', handleComplete);
+                    window.removeEventListener('hanliPopupMonitoringCollectionError', handleError);
+                    
+                    if (event.detail && event.detail.monitoringData) {
+                        resolve({
+                            success: true,
+                            data: event.detail.monitoringData
+                        });
+                    } else {
+                        reject(new Error('采集完成但数据无效'));
+                    }
+                };
+
+                const handleError = (event) => {
+                    window.removeEventListener('hanliPopupMonitoringCollectionCompleted', handleComplete);
+                    window.removeEventListener('hanliPopupMonitoringCollectionError', handleError);
+                    reject(new Error(event.detail?.error || '采集失败'));
+                };
+
+                // 注册事件监听器
+                window.addEventListener('hanliPopupMonitoringCollectionCompleted', handleComplete, { once: true });
+                window.addEventListener('hanliPopupMonitoringCollectionError', handleError, { once: true });
+
+                // 设置超时
+                const timeoutId = setTimeout(() => {
+                    window.removeEventListener('hanliPopupMonitoringCollectionCompleted', handleComplete);
+                    window.removeEventListener('hanliPopupMonitoringCollectionError', handleError);
+                    reject(new Error('直接调用插件函数超时'));
+                }, 15000);
+
+                // 直接调用插件函数
+                const result = await window.collectMonitoringDataOnly();
+                
+                // 如果函数直接返回结果（同步）
+                if (result && result.monitoringData) {
+                    clearTimeout(timeoutId);
+                    window.removeEventListener('hanliPopupMonitoringCollectionCompleted', handleComplete);
+                    window.removeEventListener('hanliPopupMonitoringCollectionError', handleError);
+                    resolve({
+                        success: true,
+                        data: result.monitoringData
+                    });
+                }
+                // 否则等待事件触发
+
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    /**
+     * 等待插件函数加载
+     */
+    async waitForPluginFunction(maxWaitTime = 5000) {
+        const startTime = Date.now();
+        
+        while (Date.now() - startTime < maxWaitTime) {
+            if (typeof window.collectMonitoringDataOnly === 'function') {
+                this.log('插件函数已加载');
+                return;
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        throw new Error('等待插件函数加载超时');
     }
 
     async waitForCollectionResult(taskId, timeout = 20000) {
@@ -601,6 +978,120 @@ class MonitorCollectionManager {
 
     sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // 开始自动采集
+    async startAutoCollection() {
+        if (this.isAutoCollecting) {
+            this.log('自动采集已在进行中，请稍候...', 'warning');
+            return;
+        }
+
+        if (this.pendingProducts.length === 0) {
+            this.log('没有待采集的任务', 'warning');
+            this.showError('没有待采集的任务');
+            return;
+        }
+
+        this.log(`开始自动采集 ${this.pendingProducts.length} 个任务`);
+        this.isAutoCollecting = true;
+        this.updateAutoCollectButton(true);
+
+        try {
+            // 逐个处理待采集的商品
+            for (let i = 0; i < this.pendingProducts.length; i++) {
+                const pendingProduct = this.pendingProducts[i];
+                const originalIndex = pendingProduct.originalIndex;
+                
+                this.log(`自动采集任务 ${i + 1}/${this.pendingProducts.length}: ${pendingProduct.title}`);
+                
+                try {
+                    // 更新商品状态为采集中
+                    this.updateProductStatus(originalIndex, 'collecting', '自动采集中...');
+                    
+                    // 打开新标签页
+                    const newTab = window.open(pendingProduct.collectUrl, '_blank');
+                    
+                    if (!newTab) {
+                        throw new Error('无法打开新标签页，可能被浏览器阻止');
+                    }
+
+                    this.log(`已打开商品页面: ${pendingProduct.collectUrl}`);
+                    
+                    // 等待2-5秒随机时间
+                    const randomDelay = Math.floor(Math.random() * 3000) + 2000; // 2-5秒
+                    this.log(`等待 ${randomDelay/1000} 秒后执行采集...`);
+                    await this.sleep(randomDelay);
+                    
+                    // 执行监控数据采集
+                    const collectedData = await this.performMonitoringDataCollection(pendingProduct, originalIndex);
+                    
+                    // 更新monitoring.json数据
+                    await this.updateMonitoringData(pendingProduct.goodsId, collectedData);
+                    
+                    // 关闭标签页
+                    if (newTab && !newTab.closed) {
+                        newTab.close();
+                        this.log(`已关闭商品页面: ${pendingProduct.title}`);
+                    }
+                    
+                    // 更新状态为已完成
+                    this.completedCount++;
+                    this.updateProductStatus(originalIndex, 'completed', '今日已采集');
+                    this.log(`任务 ${i + 1} 采集成功: ${pendingProduct.title}`, 'success');
+                    
+                    // 通知其他页面monitoring.json已更新
+                    localStorage.setItem('monitoringDataUpdated', Date.now().toString());
+                    
+                } catch (error) {
+                    this.failedCount++;
+                    this.updateProductStatus(originalIndex, 'failed', '采集失败');
+                    this.log(`任务 ${i + 1} 采集失败: ${pendingProduct.title} - ${error.message}`, 'error');
+                }
+
+                this.updateUI();
+                
+                // 如果不是最后一个任务，等待2-5秒后继续下一个
+                if (i < this.pendingProducts.length - 1) {
+                    const nextDelay = Math.floor(Math.random() * 3000) + 2000; // 2-5秒
+                    this.log(`等待 ${nextDelay/1000} 秒后开始下一个任务...`);
+                    await this.sleep(nextDelay);
+                }
+            }
+
+            this.log(`自动采集完成！成功: ${this.completedCount - this.failedCount}, 失败: ${this.failedCount}`, 'success');
+            
+            // 重新检查今日采集状态，更新待采集任务列表
+            await this.checkTodayCollectionStatus();
+            this.updateUI();
+            
+        } catch (error) {
+            this.log(`自动采集过程中发生错误: ${error.message}`, 'error');
+            this.showError('自动采集失败: ' + error.message);
+        } finally {
+            this.isAutoCollecting = false;
+            this.updateAutoCollectButton(false);
+        }
+    }
+
+    // 更新自动采集按钮状态
+    updateAutoCollectButton(isCollecting) {
+        if (!this.autoCollectBtn) return;
+        
+        const btnText = this.autoCollectBtn.querySelector('.btn-text');
+        const btnLoading = this.autoCollectBtn.querySelector('.btn-loading');
+        
+        if (isCollecting) {
+            this.autoCollectBtn.disabled = true;
+            btnText.classList.add('hidden');
+            btnLoading.classList.remove('hidden');
+            this.autoCollectBtn.style.opacity = '0.6';
+        } else {
+            this.autoCollectBtn.disabled = false;
+            btnText.classList.remove('hidden');
+            btnLoading.classList.add('hidden');
+            this.autoCollectBtn.style.opacity = '1';
+        }
     }
 
 }

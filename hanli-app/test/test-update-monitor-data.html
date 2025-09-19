@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="../renderer/icons-fixed.css">
     <script src="../renderer/config.js"></script>
     <script src="../renderer/components/Common/Button.js"></script>
-    <script src="../renderer/components/Index/MonitorCard.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -146,16 +145,9 @@
     <script>
         let monitorCardInstance = null;
         
-        // 初始化监控卡片
+        // 初始化监控卡片（已移除）
         function initMonitorCard() {
-            const container = document.getElementById('monitor-card-container');
-            if (container && !monitorCardInstance) {
-                monitorCardInstance = new MonitorCard();
-                // 模拟首页的初始化方式，只显示生成采集任务按钮
-                monitorCardInstance.container = container;
-                monitorCardInstance.render(false);
-                logResult('info', '监控卡片已初始化（首页版本）');
-            }
+            logResult('warning', 'MonitorCard组件已移除，不再初始化');
         }
         
         // 测试生成采集任务功能
@@ -246,49 +238,9 @@
             }
         }
         
-        // 测试监控卡片UI
+        // 测试监控卡片UI（已移除）
         function testMonitorCardUI() {
-            logResult('info', '测试监控卡片UI...');
-            
-            // 检查监控卡片是否存在
-            const monitorCard = document.getElementById('monitor-card');
-            if (!monitorCard) {
-                logResult('error', '监控卡片元素不存在');
-                return;
-            }
-            
-            // 检查生成采集任务按钮
-            const taskBtn = document.getElementById('scan-url-btn') || 
-                           monitorCard.querySelector('.btn[data-button-type="generate-task"]') ||
-                           monitorCard.querySelector('.btn');
-            
-            if (!taskBtn) {
-                logResult('error', '生成采集任务按钮不存在');
-                return;
-            }
-            
-            // 检查按钮文本（支持Button组件和传统按钮）
-            const buttonText = taskBtn.querySelector('.btn-text') || taskBtn.querySelector('span');
-            if (!buttonText || !buttonText.textContent.includes('生成采集任务')) {
-                logResult('error', '按钮文本不正确，应为"生成采集任务"');
-                return;
-            }
-            
-            // 检查是否使用了Button组件
-            const isButtonComponent = taskBtn.classList.contains('btn');
-            if (isButtonComponent) {
-                logResult('info', '检测到使用了Button组件');
-            } else {
-                logResult('info', '使用传统按钮样式');
-            }
-            
-            // 检查更新监控数据按钮（首页版本应该不存在）
-            const updateBtn = document.getElementById('update-monitor-btn');
-            if (updateBtn) {
-                logResult('warning', '首页版本不应该显示更新监控数据按钮');
-            }
-            
-            logResult('success', '监控卡片UI测试通过！\n- 监控卡片存在\n- 生成采集任务按钮存在且文本正确\n- 首页版本正确隐藏了更新监控数据按钮\n- 图标已更新为滑块图标\n- 按钮已使用Button组件（如果可用）');
+            logResult('warning', 'MonitorCard组件已移除，UI测试不可用');
         }
         
         // 生成测试HTML

@@ -85,8 +85,7 @@
         </div>
     </div>
 
-    <!-- 引入MonitorCard脚本 -->
-    <script src="../renderer/components/Index/MonitorCard.js"></script>
+    <!-- MonitorCard脚本已移除 -->
 
     <script>
         function showResult(content, type = 'info') {
@@ -105,34 +104,10 @@
             
             const result = [];
             result.push('=== MonitorCard调试信息 ===');
-            result.push(`monitorCardInstance类型: ${typeof monitorCardInstance}`);
-            result.push(`monitorCardInstance值: ${monitorCardInstance}`);
-            result.push(`scanUrls方法类型: ${typeof monitorCardInstance?.scanUrls}`);
-            result.push(`init方法类型: ${typeof monitorCardInstance?.init}`);
+            result.push('❌ MonitorCard组件已移除，不再可用');
+            result.push('请使用其他监控相关功能');
             
-            const monitorSection = document.getElementById('monitor-section');
-            result.push(`monitor-section元素: ${!!monitorSection}`);
-            
-            if (typeof monitorCardInstance !== 'undefined' && monitorCardInstance) {
-                result.push('✅ MonitorCard实例存在');
-                
-                if (monitorSection) {
-                    result.push('✅ monitor-section元素存在');
-                    
-                    try {
-                        monitorCardInstance.init(monitorSection);
-                        result.push('✅ MonitorCard初始化成功');
-                    } catch (error) {
-                        result.push(`❌ MonitorCard初始化失败: ${error.message}`);
-                    }
-                } else {
-                    result.push('❌ monitor-section元素不存在');
-                }
-            } else {
-                result.push('❌ MonitorCard实例不存在');
-            }
-            
-            showResult(result.join('\n'), 'info');
+            showResult(result.join('\n'), 'warning');
         }
 
         async function testScanUrls() {

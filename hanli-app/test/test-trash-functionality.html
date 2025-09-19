@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>废纸篓功能测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .test-item {
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #f9f9f9;
+            transition: background 0.2s;
+        }
+        
+        .test-item:hover {
+            background: #e9e9e9;
+        }
+        
+        .test-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .test-description {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        /* 右键菜单样式 */
+        .context-menu {
+            position: fixed;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 4px 0;
+            min-width: 160px;
+            z-index: 10000;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .context-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            white-space: nowrap;
+        }
+        
+        .context-menu-item:hover {
+            background: #f0f0f0;
+        }
+        
+        .context-menu-item-danger {
+            color: #dc2626 !important;
+        }
+        
+        .context-menu-item-danger:hover {
+            background: rgba(220, 38, 38, 0.1) !important;
+            color: #dc2626 !important;
+        }
+        
+        .context-menu-item span {
+            font-weight: 500;
+        }
+        
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+        }
+        
+        .log-error {
+            color: #dc3545;
+        }
+        
+        .log-success {
+            color: #28a745;
+        }
+        
+        .log-warning {
+            color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>废纸篓功能测试</h1>
+        
+        <div class="test-section">
+            <h2>测试说明</h2>
+            <p>在以下测试项目上右键点击，应该会显示包含"移到废纸篓"选项的右键菜单。</p>
+            <p><strong>注意：</strong>这只是UI测试，不会实际删除文件。</p>
+        </div>
+        
+        <div class="test-section">
+            <h2>图片文件测试</h2>
+            <div class="test-item" 
+                 oncontextmenu="showImageContextMenu(event, 0, 'product-image-1.jpg', '/path/to/product-image-1.jpg')"
+                 data-image-index="0"
+                 data-image-name="product-image-1.jpg"
+                 data-image-path="/path/to/product-image-1.jpg">
+                <div class="test-title">🖼️ product-image-1.jpg</div>
+                <div class="test-description">产品图片 1 - 右键测试移到废纸篓功能</div>
+            </div>
+            
+            <div class="test-item" 
+                 oncontextmenu="showImageContextMenu(event, 1, 'product-image-2.png', '/path/to/product-image-2.png')"
+                 data-image-index="1"
+                 data-image-name="product-image-2.png"
+                 data-image-path="/path/to/product-image-2.png">
+                <div class="test-title">🖼️ product-image-2.png</div>
+                <div class="test-description">产品图片 2 - 右键测试移到废纸篓功能</div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>视频文件测试</h2>
+            <div class="test-item" 
+                 oncontextmenu="showVideoContextMenu(event, 0, 'product-video-1.mp4', '/path/to/product-video-1.mp4')"
+                 data-video-index="0"
+                 data-video-name="product-video-1.mp4"
+                 data-video-path="/path/to/product-video-1.mp4">
+                <div class="test-title">🎥 product-video-1.mp4</div>
+                <div class="test-description">产品视频 1 - 右键测试移到废纸篓功能</div>
+            </div>
+            
+            <div class="test-item" 
+                 oncontextmenu="showVideoContextMenu(event, 1, 'product-video-2.mov', '/path/to/product-video-2.mov')"
+                 data-video-index="1"
+                 data-video-name="product-video-2.mov"
+                 data-video-path="/path/to/product-video-2.mov">
+                <div class="test-title">🎥 product-video-2.mov</div>
+                <div class="test-description">产品视频 2 - 右键测试移到废纸篓功能</div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>测试结果</h2>
+            <div class="log" id="test-log">
+                <div class="log-entry">等待测试...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 日志记录函数
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('test-log');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        // 隐藏右键菜单
+        function hideContextMenu() {
+            const menus = ['image-context-menu', 'video-context-menu'];
+            menus.forEach(id => {
+                const menu = document.getElementById(id);
+                if (menu) {
+                    menu.remove();
+                }
+            });
+        }
+        
+        // 图片右键菜单
+        function showImageContextMenu(event, index, fileName, filePath) {
+            event.preventDefault();
+            hideContextMenu();
+            
+            const contextMenu = document.createElement('div');
+            contextMenu.className = 'context-menu';
+            contextMenu.id = 'image-context-menu';
+            
+            const platform = navigator.platform.toLowerCase();
+            const showInFinderText = platform.includes('mac') ? '在 Finder 中显示' : '在文件夹中显示';
+            
+            contextMenu.innerHTML = `
+                <div class="context-menu-item" onclick="showInFinder('${fileName}', '${filePath}')">
+                    <span>${showInFinderText}</span>
+                </div>
+                <div class="context-menu-item" onclick="saveAs('${fileName}', '${filePath}')">
+                    <span>另存为</span>
+                </div>
+                <div class="context-menu-item context-menu-item-danger" onclick="moveToTrash('${fileName}', '${filePath}')">
+                    <span>移到废纸篓</span>
+                </div>
+            `;
+            
+            contextMenu.style.position = 'fixed';
+            contextMenu.style.left = event.clientX + 'px';
+            contextMenu.style.top = event.clientY + 'px';
+            contextMenu.style.zIndex = '10000';
+            
+            document.body.appendChild(contextMenu);
+            
+            setTimeout(() => {
+                document.addEventListener('click', hideContextMenu, { once: true });
+            }, 0);
+            
+            log(`显示图片右键菜单: ${fileName}`, 'info');
+        }
+        
+        // 视频右键菜单
+        function showVideoContextMenu(event, index, fileName, filePath) {
+            event.preventDefault();
+            hideContextMenu();
+            
+            const contextMenu = document.createElement('div');
+            contextMenu.className = 'context-menu';
+            contextMenu.id = 'video-context-menu';
+            
+            const platform = navigator.platform.toLowerCase();
+            const showInFinderText = platform.includes('mac') ? '在 Finder 中显示' : '在文件夹中显示';
+            
+            contextMenu.innerHTML = `
+                <div class="context-menu-item" onclick="showInFinder('${fileName}', '${filePath}')">
+                    <span>${showInFinderText}</span>
+                </div>
+                <div class="context-menu-item" onclick="saveAs('${fileName}', '${filePath}')">
+                    <span>另存为</span>
+                </div>
+                <div class="context-menu-item context-menu-item-danger" onclick="moveToTrash('${fileName}', '${filePath}')">
+                    <span>移到废纸篓</span>
+                </div>
+            `;
+            
+            contextMenu.style.position = 'fixed';
+            contextMenu.style.left = event.clientX + 'px';
+            contextMenu.style.top = event.clientY + 'px';
+            contextMenu.style.zIndex = '10000';
+            
+            document.body.appendChild(contextMenu);
+            
+            setTimeout(() => {
+                document.addEventListener('click', hideContextMenu, { once: true });
+            }, 0);
+            
+            log(`显示视频右键菜单: ${fileName}`, 'info');
+        }
+        
+        // 显示在 Finder/文件夹中
+        function showInFinder(fileName, filePath) {
+            log(`点击"在 Finder 中显示": ${fileName} (${filePath})`, 'info');
+            hideContextMenu();
+        }
+        
+        // 另存为
+        function saveAs(fileName, filePath) {
+            log(`点击"另存为": ${fileName} (${filePath})`, 'info');
+            hideContextMenu();
+        }
+        
+        // 移到废纸篓
+        function moveToTrash(fileName, filePath) {
+            log(`点击"移到废纸篓": ${fileName} (${filePath})`, 'warning');
+            
+            // 模拟确认对话框
+            const confirmed = confirm(`确定要将文件 "${fileName}" 移到废纸篓吗？\n\n此操作不可撤销。`);
+            if (confirmed) {
+                log(`用户确认删除文件: ${fileName}`, 'success');
+                // 在实际应用中，这里会调用 Electron API
+                // await window.electronAPI.fileAPI.moveToTrash(filePath);
+            } else {
+                log(`用户取消删除文件: ${fileName}`, 'info');
+            }
+            
+            hideContextMenu();
+        }
+        
+        // 页面加载完成
+        document.addEventListener('DOMContentLoaded', function() {
+            log('废纸篓功能测试页面已加载', 'success');
+            log('请在图片或视频项目上右键点击测试功能', 'info');
+        });
+    </script>
+</body>
+</html>

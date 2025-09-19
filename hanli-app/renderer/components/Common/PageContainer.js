@@ -7,6 +7,12 @@ class PageContainer {
         this.currentPage = null;
         this.pageContent = null;
         this.productCharts = null;
+        this.paginationData = {
+            totalItems: 0,
+            currentPage: 1,
+            itemsPerPage: 100,
+            totalPages: 1
+        };
         this.init();
     }
 
@@ -26,6 +32,22 @@ class PageContainer {
                 <div class="page-content">
                     <!-- 页面内容将动态渲染在这里 -->
                 </div>
+                <div id="pagination-container" class="pagination-container" style="display: none;">
+                    <div class="pagination-content">
+                        <span class="pagination-total">共 <strong id="pagination-total">0</strong> 条</span>
+                        <div class="pagination-controls" id="pagination-controls" style="display: none;">
+                            <button id="pagination-prev" class="pagination-btn" disabled>
+                                <i class="ph ph-caret-left"></i> 上一页
+                            </button>
+                            <div class="pagination-jump">
+                                跳转到 <input type="number" id="pagination-input" min="1" max="1" value="1"> 页
+                            </div>
+                            <button id="pagination-next" class="pagination-btn" disabled>
+                                下一页 <i class="ph ph-caret-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
 
@@ -42,6 +64,7 @@ class PageContainer {
         }
 
         this.pageContent = document.querySelector('.page-content');
+        this.bindPaginationEvents();
     }
 
     /**
@@ -62,6 +85,7 @@ class PageContainer {
         }
 
         this.currentPage = 'home';
+        this.hidePagination();
     }
 
     /**
@@ -78,12 +102,19 @@ class PageContainer {
         // 使用ProductLibrary组件
         if (typeof productLibraryComponentInstance !== 'undefined') {
             await productLibraryComponentInstance.init(this.pageContent);
+            // 如果有数据，直接设置到组件中
+            if (products && products.length > 0) {
+                productLibraryComponentInstance.setProducts(products, totalCount);
+            }
         } else {
             console.error('ProductLibraryComponent组件未加载');
             this.pageContent.innerHTML = '<div class="error-page">组件加载失败</div>';
         }
 
         this.currentPage = 'product-library';
+        
+        // 显示翻页组件
+        this.showPagination();
     }
 
     /**
@@ -105,6 +136,7 @@ class PageContainer {
         }
 
         this.currentPage = 'product-detail';
+        this.hidePagination();
     }
 
     /**
@@ -127,6 +159,7 @@ class PageContainer {
         `;
 
         this.currentPage = 'error';
+        this.hidePagination();
     }
 
     /**
@@ -146,6 +179,7 @@ class PageContainer {
         `;
 
         this.currentPage = 'loading';
+        this.hidePagination();
     }
 
 
@@ -182,6 +216,7 @@ class PageContainer {
             this.pageContent.innerHTML = '';
         }
         this.currentPage = null;
+        this.hidePagination();
     }
 
     /**
@@ -193,6 +228,138 @@ class PageContainer {
     }
 
 
+
+    /**
+     * 绑定翻页事件
+     */
+    bindPaginationEvents() {
+        // 上一页按钮
+        const prevBtn = document.getElementById('pagination-prev');
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                this.goToPage(this.paginationData.currentPage - 1);
+            });
+        }
+
+        // 下一页按钮
+        const nextBtn = document.getElementById('pagination-next');
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                this.goToPage(this.paginationData.currentPage + 1);
+            });
+        }
+
+        // 跳转输入框
+        const jumpInput = document.getElementById('pagination-input');
+        if (jumpInput) {
+            jumpInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const page = parseInt(e.target.value);
+                    if (page >= 1 && page <= this.paginationData.totalPages) {
+                        this.goToPage(page);
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * 更新翻页数据
+     * @param {Object} data - 翻页数据
+     */
+    updatePagination(data) {
+        this.paginationData = {
+            totalItems: data.totalItems || 0,
+            currentPage: data.currentPage || 1,
+            itemsPerPage: data.itemsPerPage || 100,
+            totalPages: Math.ceil((data.totalItems || 0) / (data.itemsPerPage || 100))
+        };
+
+        this.renderPagination();
+    }
+
+    /**
+     * 渲染翻页组件
+     */
+    renderPagination() {
+        const container = document.getElementById('pagination-container');
+        const totalEl = document.getElementById('pagination-total');
+        const controlsEl = document.getElementById('pagination-controls');
+        const prevBtn = document.getElementById('pagination-prev');
+        const nextBtn = document.getElementById('pagination-next');
+        const inputEl = document.getElementById('pagination-input');
+
+        if (!container) return;
+
+        // 更新总数
+        if (totalEl) {
+            totalEl.textContent = this.paginationData.totalItems.toLocaleString();
+        }
+
+        // 如果只有一页，隐藏翻页控件
+        if (this.paginationData.totalPages <= 1) {
+            container.style.display = 'none';
+            return;
+        }
+
+        // 显示翻页控件
+        container.style.display = 'block';
+        if (controlsEl) {
+            controlsEl.style.display = 'flex';
+        }
+
+        // 更新按钮状态
+        if (prevBtn) {
+            prevBtn.disabled = this.paginationData.currentPage <= 1;
+        }
+        if (nextBtn) {
+            nextBtn.disabled = this.paginationData.currentPage >= this.paginationData.totalPages;
+        }
+
+        // 更新输入框
+        if (inputEl) {
+            inputEl.value = this.paginationData.currentPage;
+            inputEl.max = this.paginationData.totalPages;
+        }
+    }
+
+    /**
+     * 跳转到指定页面
+     * @param {number} page - 页码
+     */
+    goToPage(page) {
+        if (page < 1 || page > this.paginationData.totalPages) return;
+
+        this.paginationData.currentPage = page;
+        this.renderPagination();
+
+        // 通知当前页面组件进行翻页
+        if (this.currentPage === 'product-library' && typeof productLibraryComponentInstance !== 'undefined') {
+            productLibraryComponentInstance.currentPage = page;
+            productLibraryComponentInstance.updateProductTable();
+            productLibraryComponentInstance.updateSummary();
+        }
+    }
+
+    /**
+     * 显示翻页组件
+     */
+    showPagination() {
+        const container = document.getElementById('pagination-container');
+        if (container) {
+            container.style.display = 'block';
+        }
+    }
+
+    /**
+     * 隐藏翻页组件
+     */
+    hidePagination() {
+        const container = document.getElementById('pagination-container');
+        if (container) {
+            container.style.display = 'none';
+        }
+    }
 
     /**
      * 销毁组件
