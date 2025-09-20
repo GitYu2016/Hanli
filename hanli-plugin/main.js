@@ -299,7 +299,6 @@ class HanliPlugin {
             }, 100);
             
             // 显示toast提示
-            this.showToast('App已成功唤起！', 'success');
         } catch (e) {
             console.warn('无法唤起App:', e);
             this.showToast('唤起App失败，请手动打开', 'error');
@@ -364,7 +363,6 @@ class HanliPlugin {
     // 显示下载完成通知
     showDownloadCompleteNotification(fileCount) {
         console.log(`媒体文件下载完成，共下载 ${fileCount} 个文件`);
-        this.showToast(`媒体文件下载完成！共下载 ${fileCount} 个文件`, 'success');
     }
 
     // 发送数据到hanli-app（保留原方法作为备用）

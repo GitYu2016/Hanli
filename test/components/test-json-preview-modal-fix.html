@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON预览弹窗修复测试</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .test-title {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+        
+        .test-section h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        
+        .test-button:hover {
+            background: #0056b3;
+        }
+        
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .test-result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .test-result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .test-data {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 10px 0;
+            border: 1px solid #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="test-title">JSON预览弹窗修复测试</h1>
+        
+        <div class="test-section">
+            <h3>测试1: 关闭按钮功能</h3>
+            <p>测试关闭按钮是否能正确关闭弹窗</p>
+            <button class="test-button" onclick="testCloseButton()">打开JSON预览弹窗</button>
+            <div id="close-test-result" class="test-result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>测试2: 按钮组件使用</h3>
+            <p>验证所有按钮都使用了MPrimaryButton组件</p>
+            <button class="test-button" onclick="testButtonComponents()">检查按钮组件</button>
+            <div id="component-test-result" class="test-result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>测试3: 完整功能测试</h3>
+            <p>测试弹窗的所有功能是否正常工作</p>
+            <button class="test-button" onclick="testFullFunctionality()">完整功能测试</button>
+            <div id="full-test-result" class="test-result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>测试数据</h3>
+            <div class="test-data" id="test-data">
+                {
+                    "name": "测试产品",
+                    "id": "123456789012",
+                    "price": 99.99,
+                    "description": "这是一个测试产品",
+                    "features": ["功能1", "功能2", "功能3"],
+                    "metadata": {
+                        "created": "2024-01-01T00:00:00",
+                        "updated": "2024-01-02T00:00:00"
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入必要的依赖 -->
+    <script src="../../hanli-app/renderer/config.js"></script>
+    <script src="../../hanli-app/renderer/components/Common/StyleManager.js"></script>
+    <script src="../../hanli-app/renderer/components/Common/MPrimaryButton.js"></script>
+    <script src="../../hanli-app/renderer/components/Common/Icon.js"></script>
+    <script src="../../hanli-app/renderer/components/Common/KeyboardShortcutManager.js"></script>
+    <script src="../../hanli-app/renderer/components/Modal/JsonPreviewModal.js"></script>
+    <script src="../../hanli-app/renderer/components/Modal/JsonPreviewIntegration.js"></script>
+
+    <script>
+        // 测试数据
+        const testData = {
+            name: "测试产品",
+            id: "123456789012",
+            price: 99.99,
+            description: "这是一个测试产品",
+            features: ["功能1", "功能2", "功能3"],
+            metadata: {
+                created: "2024-01-01T00:00:00",
+                updated: "2024-01-02T00:00:00"
+            }
+        };
+
+        let testModal = null;
+
+        // 初始化测试环境
+        function initTest() {
+            // 等待组件加载
+            setTimeout(() => {
+                if (window.jsonPreviewIntegration) {
+                    testModal = window.jsonPreviewIntegration.modal;
+                    console.log('测试环境初始化完成');
+                } else {
+                    console.error('JSON预览组件未加载');
+                }
+            }, 100);
+        }
+
+        // 测试关闭按钮功能
+        function testCloseButton() {
+            const resultDiv = document.getElementById('close-test-result');
+            
+            try {
+                // 打开弹窗
+                window.jsonPreviewIntegration.preview(testData, '关闭按钮测试');
+                
+                // 检查弹窗是否打开
+                const modal = document.getElementById('json-preview-modal');
+                if (!modal) {
+                    throw new Error('弹窗未正确创建');
+                }
+                
+                // 检查关闭按钮是否存在
+                const closeButton = document.getElementById('json-preview-close-btn');
+                if (!closeButton) {
+                    throw new Error('关闭按钮未找到');
+                }
+                
+                // 模拟点击关闭按钮
+                closeButton.click();
+                
+                // 检查弹窗是否关闭
+                setTimeout(() => {
+                    const modalAfterClose = document.getElementById('json-preview-modal');
+                    if (modalAfterClose) {
+                        resultDiv.innerHTML = '❌ 关闭按钮测试失败：弹窗未关闭';
+                        resultDiv.className = 'test-result error';
+                    } else {
+                        resultDiv.innerHTML = '✅ 关闭按钮测试成功：弹窗已正确关闭';
+                        resultDiv.className = 'test-result success';
+                    }
+                    resultDiv.style.display = 'block';
+                }, 100);
+                
+            } catch (error) {
+                resultDiv.innerHTML = `❌ 关闭按钮测试失败：${error.message}`;
+                resultDiv.className = 'test-result error';
+                resultDiv.style.display = 'block';
+            }
+        }
+
+        // 测试按钮组件使用
+        function testButtonComponents() {
+            const resultDiv = document.getElementById('component-test-result');
+            
+            try {
+                // 打开弹窗
+                window.jsonPreviewIntegration.preview(testData, '按钮组件测试');
+                
+                // 检查所有按钮是否使用了MPrimaryButton
+                const buttons = document.querySelectorAll('.json-toolbar-btn, .modal-btn-close, .modal-btn-copy');
+                let allCorrect = true;
+                let errorMessages = [];
+                
+                buttons.forEach((button, index) => {
+                    if (!button.classList.contains('m-primary-btn')) {
+                        allCorrect = false;
+                        errorMessages.push(`按钮 ${index + 1} 未使用MPrimaryButton组件`);
+                    }
+                });
+                
+                if (allCorrect) {
+                    resultDiv.innerHTML = `✅ 按钮组件测试成功：所有 ${buttons.length} 个按钮都使用了MPrimaryButton组件`;
+                    resultDiv.className = 'test-result success';
+                } else {
+                    resultDiv.innerHTML = `❌ 按钮组件测试失败：${errorMessages.join(', ')}`;
+                    resultDiv.className = 'test-result error';
+                }
+                
+                resultDiv.style.display = 'block';
+                
+                // 关闭弹窗
+                setTimeout(() => {
+                    const closeButton = document.getElementById('json-preview-close-btn');
+                    if (closeButton) {
+                        closeButton.click();
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                resultDiv.innerHTML = `❌ 按钮组件测试失败：${error.message}`;
+                resultDiv.className = 'test-result error';
+                resultDiv.style.display = 'block';
+            }
+        }
+
+        // 测试完整功能
+        function testFullFunctionality() {
+            const resultDiv = document.getElementById('full-test-result');
+            
+            try {
+                // 打开弹窗
+                window.jsonPreviewIntegration.preview(testData, '完整功能测试');
+                
+                let testResults = [];
+                
+                // 检查弹窗元素
+                const modal = document.getElementById('json-preview-modal');
+                const closeButton = document.getElementById('json-preview-close-btn');
+                const formatButton = document.getElementById('format-json-btn');
+                const copyButton = document.getElementById('copy-json-btn');
+                const downloadButton = document.getElementById('download-json-btn');
+                
+                if (modal) testResults.push('✅ 弹窗容器存在');
+                else testResults.push('❌ 弹窗容器不存在');
+                
+                if (closeButton) testResults.push('✅ 关闭按钮存在');
+                else testResults.push('❌ 关闭按钮不存在');
+                
+                if (formatButton) testResults.push('✅ 格式化按钮存在');
+                else testResults.push('❌ 格式化按钮不存在');
+                
+                if (copyButton) testResults.push('✅ 复制按钮存在');
+                else testResults.push('❌ 复制按钮不存在');
+                
+                if (downloadButton) testResults.push('✅ 下载按钮存在');
+                else testResults.push('❌ 下载按钮不存在');
+                
+                // 检查JSON内容
+                const jsonText = document.getElementById('json-text');
+                if (jsonText && jsonText.textContent.includes('测试产品')) {
+                    testResults.push('✅ JSON内容正确显示');
+                } else {
+                    testResults.push('❌ JSON内容显示异常');
+                }
+                
+                resultDiv.innerHTML = testResults.join('<br>');
+                resultDiv.className = 'test-result success';
+                resultDiv.style.display = 'block';
+                
+                // 关闭弹窗
+                setTimeout(() => {
+                    if (closeButton) {
+                        closeButton.click();
+                    }
+                }, 3000);
+                
+            } catch (error) {
+                resultDiv.innerHTML = `❌ 完整功能测试失败：${error.message}`;
+                resultDiv.className = 'test-result error';
+                resultDiv.style.display = 'block';
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initTest);
+    </script>
+</body>
+</html>

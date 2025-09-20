@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>主页面图标测试</title>
+    
+    <!-- 完全复制主页面的样式引用 -->
+    <link rel="stylesheet" href="../renderer/globals.css">
+    <link rel="stylesheet" href="../renderer/theme/light/colors.css" id="theme-colors">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- SVG 图标样式 -->
+    <link rel="stylesheet" href="../renderer/icons-svg.css">
+    
+    <!-- 图标组件 -->
+    <script src="../renderer/components/Common/Icon.js"></script>
+    
+    <!-- 样式管理器 -->
+    <script src="../renderer/components/Common/StyleManager.js"></script>
+    
+    <!-- TopBar 组件 -->
+    <script src="../renderer/components/Common/TopBar.js"></script>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--color-background-primary);
+            color: var(--color-text-primary);
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: var(--color-surface-primary);
+            border-radius: 8px;
+            border: 1px solid var(--color-border-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>主页面图标测试</h1>
+        <p>使用与主页面完全相同的样式和组件</p>
+        
+        <!-- 直接测试图标 -->
+        <div class="test-section">
+            <h2>直接 SVG 测试</h2>
+            
+            <div style="display: flex; align-items: center; gap: 15px; margin: 15px 0;">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z"/>
+                </svg>
+                <span>搜索图标</span>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 15px; margin: 15px 0;">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"/>
+                </svg>
+                <span>设置图标</span>
+            </div>
+        </div>
+        
+        <!-- 测试 TopBar 组件 -->
+        <div class="test-section">
+            <h2>TopBar 组件测试</h2>
+            <div id="top-bar-test"></div>
+        </div>
+        
+        <!-- 测试 Icon.render 方法 -->
+        <div class="test-section">
+            <h2>Icon.render 方法测试</h2>
+            <div id="icon-render-test"></div>
+        </div>
+    </div>
+    
+    <script>
+        // 等待页面加载完成
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('页面加载完成，开始测试...');
+            
+            // 测试 TopBar 组件
+            try {
+                const topBar = new TopBar();
+                const topBarElement = document.getElementById('top-bar-test');
+                topBarElement.innerHTML = `
+                    <h3>TopBar 组件渲染结果：</h3>
+                    <div style="border: 1px solid var(--color-border-primary); padding: 10px; border-radius: 4px;">
+                        ${topBar.render()}
+                    </div>
+                `;
+                console.log('TopBar 组件创建成功');
+            } catch (error) {
+                console.error('TopBar 组件创建失败:', error);
+                document.getElementById('top-bar-test').innerHTML = `<p style="color: red;">TopBar 组件创建失败: ${error.message}</p>`;
+            }
+            
+            // 测试 Icon.render 方法
+            try {
+                const iconRenderElement = document.getElementById('icon-render-test');
+                iconRenderElement.innerHTML = `
+                    <h3>Icon.render 方法测试：</h3>
+                    <div style="display: flex; align-items: center; gap: 15px; margin: 15px 0;">
+                        ${Icon.render('search')}
+                        <span>搜索图标 (Icon.render)</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px; margin: 15px 0;">
+                        ${Icon.render('settings')}
+                        <span>设置图标 (Icon.render)</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px; margin: 15px 0;">
+                        ${Icon.render('home', { size: 'large' })}
+                        <span>首页图标 (Icon.render with size)</span>
+                    </div>
+                `;
+                console.log('Icon.render 方法测试成功');
+            } catch (error) {
+                console.error('Icon.render 方法测试失败:', error);
+                document.getElementById('icon-render-test').innerHTML = `<p style="color: red;">Icon.render 方法测试失败: ${error.message}</p>`;
+            }
+            
+            // 检查 CSS 变量
+            const root = document.documentElement;
+            const computedStyle = getComputedStyle(root);
+            
+            console.log('CSS 变量检查:');
+            console.log('--color-icon-primary:', computedStyle.getPropertyValue('--color-icon-primary'));
+            console.log('--color-icon-hover:', computedStyle.getPropertyValue('--color-icon-hover'));
+            
+            // 检查图标元素
+            const icons = document.querySelectorAll('.icon');
+            console.log('找到图标数量:', icons.length);
+            
+            icons.forEach((icon, index) => {
+                const computed = getComputedStyle(icon);
+                console.log(`图标 ${index + 1}:`, {
+                    width: computed.width,
+                    height: computed.height,
+                    color: computed.color,
+                    stroke: computed.stroke,
+                    fill: computed.fill,
+                    display: computed.display,
+                    visibility: computed.visibility
+                });
+            });
+        });
+    </script>
+</body>
+</html>

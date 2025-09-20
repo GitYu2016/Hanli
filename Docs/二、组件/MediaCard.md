@@ -171,17 +171,25 @@ const options = {
 
 ```css
 :root {
-    --color-primary: #007bff;
-    --color-primary-light: #e3f2fd;
-    --color-muted: #f8f9fa;
-    --color-border: #dee2e6;
-    --color-text: #212529;
-    --color-text-secondary: #6c757d;
-    --color-error: #dc3545;
-    --radius-small: 4px;
+    --color-primary: rgba(0, 0, 0, 0.8);
+    --color-secondary: rgba(0, 0, 0, 0.5);
+    --color-focused: rgba(0, 0, 0, 1.0);
+    --color-disabled: rgba(0, 0, 0, 0.3);
+    --color-background-normal: rgba(0, 0, 0, 0.1);
+    --color-background-focused: rgba(0, 0, 0, 0.2);
+    --color-border-normal: rgba(0, 0, 0, 0.1);
+    --color-border-focused: rgba(0, 0, 0, 0.3);
+    --color-success: rgba(34, 197, 94, 1.0);
+    --color-warning: rgba(245, 158, 11, 1.0);
+    --color-error: rgba(239, 68, 68, 1.0);
+    --color-info: rgba(59, 130, 246, 1.0);
+    --radius-small: 6px;
     --radius-medium: 8px;
+    --radius-large: 12px;
 }
 ```
+
+**注意**: 组件使用半透明色规范，所有颜色都使用RGBA格式，支持主题切换。
 
 ## 示例
 

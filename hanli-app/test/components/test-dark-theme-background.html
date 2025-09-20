@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>深色主题背景色测试</title>
+    <link rel="stylesheet" href="../../renderer/globals.css">
+    <link rel="stylesheet" href="../../renderer/theme/light/colors.css" id="theme-colors">
+    <style>
+        .test-container {
+            padding: 20px;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .theme-test {
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--color-border-normal);
+        }
+        
+        .theme-test h3 {
+            margin: 0 0 10px 0;
+            color: var(--color-primary);
+        }
+        
+        .background-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+        
+        .bg-sample {
+            padding: 16px;
+            border-radius: 6px;
+            text-align: center;
+            color: var(--color-primary);
+            border: 1px solid var(--color-border-normal);
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .bg-sample h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .bg-sample p {
+            margin: 0;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .theme-controls {
+            margin: 20px 0;
+            padding: 16px;
+            background: var(--color-background-normal);
+            border-radius: 6px;
+            border: 1px solid var(--color-border-normal);
+        }
+        
+        .theme-controls h3 {
+            margin: 0 0 16px 0;
+            color: var(--color-primary);
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        .control-group label {
+            font-weight: 500;
+            color: var(--color-primary);
+            min-width: 80px;
+        }
+        
+        .control-group select {
+            padding: 6px 12px;
+            border: 1px solid var(--color-border-normal);
+            border-radius: 4px;
+            background: var(--color-background-normal);
+            color: var(--color-primary);
+            font-size: 14px;
+        }
+        
+        .status {
+            margin: 16px 0;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .status.success {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--color-success);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+        
+        .status.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-error);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>深色主题背景色测试</h1>
+        
+        <div class="theme-controls">
+            <h3>主题控制</h3>
+            <div class="control-group">
+                <label>主题:</label>
+                <select id="theme-selector">
+                    <option value="light">浅色主题</option>
+                    <option value="dark">深色主题</option>
+                    <option value="auto">跟随系统</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>背景色:</label>
+                <select id="background-selector">
+                    <option value="default">默认</option>
+                    <option value="blue">蓝色</option>
+                    <option value="green">绿色</option>
+                    <option value="purple">紫色</option>
+                    <option value="orange">橙色</option>
+                    <option value="pink">粉色</option>
+                    <option value="gray">灰色</option>
+                    <option value="indigo">靛蓝</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="status" class="status" style="display: none;"></div>
+        
+        <div class="theme-test">
+            <h3>当前主题背景色预览</h3>
+            <div class="background-preview">
+                <div class="bg-sample bg-body-default">
+                    <h4>默认背景</h4>
+                    <p>--color-body-bg-default</p>
+                </div>
+                <div class="bg-sample bg-body-blue">
+                    <h4>蓝色背景</h4>
+                    <p>--color-body-bg-blue</p>
+                </div>
+                <div class="bg-sample bg-body-green">
+                    <h4>绿色背景</h4>
+                    <p>--color-body-bg-green</p>
+                </div>
+                <div class="bg-sample bg-body-purple">
+                    <h4>紫色背景</h4>
+                    <p>--color-body-bg-purple</p>
+                </div>
+                <div class="bg-sample bg-body-orange">
+                    <h4>橙色背景</h4>
+                    <p>--color-body-bg-orange</p>
+                </div>
+                <div class="bg-sample bg-body-pink">
+                    <h4>粉色背景</h4>
+                    <p>--color-body-bg-pink</p>
+                </div>
+                <div class="bg-sample bg-body-gray">
+                    <h4>灰色背景</h4>
+                    <p>--color-body-bg-gray</p>
+                </div>
+                <div class="bg-sample bg-body-indigo">
+                    <h4>靛蓝背景</h4>
+                    <p>--color-body-bg-indigo</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="theme-test">
+            <h3>CSS变量值检查</h3>
+            <div id="css-variables"></div>
+        </div>
+    </div>
+
+    <script>
+        // 主题管理器（简化版）
+        class TestThemeManager {
+            constructor() {
+                this.currentTheme = 'light';
+                this.validThemes = ['light', 'dark', 'auto'];
+                this.validBackgroundColors = ['default', 'blue', 'green', 'purple', 'orange', 'pink', 'gray', 'indigo'];
+            }
+            
+            setTheme(theme) {
+                if (!this.validThemes.includes(theme)) {
+                    console.error('❌ 无效的主题:', theme);
+                    return;
+                }
+                
+                this.currentTheme = theme;
+                const themeColors = document.getElementById('theme-colors');
+                const root = document.documentElement;
+                
+                if (!themeColors) {
+                    console.error('❌ 找不到主题样式链接元素');
+                    return;
+                }
+                
+                // 移除现有主题类
+                root.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+                
+                if (theme === 'auto') {
+                    // 跟随系统主题
+                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    const actualTheme = prefersDark ? 'dark' : 'light';
+                    themeColors.href = `../../renderer/theme/${actualTheme}/colors.css`;
+                    root.classList.add(`theme-${actualTheme}`);
+                } else {
+                    // 使用指定主题
+                    themeColors.href = `../../renderer/theme/${theme}/colors.css`;
+                    root.classList.add(`theme-${theme}`);
+                }
+                
+                // 重新应用背景色
+                this._applyStoredBackgroundColor();
+                
+                this.updateStatus(`主题已切换到: ${theme}`, 'success');
+                this.updateCSSVariables();
+            }
+            
+            setBackgroundColor(bgColor) {
+                if (!this.validBackgroundColors.includes(bgColor)) {
+                    console.error('❌ 无效的背景色:', bgColor);
+                    return;
+                }
+                
+                const root = document.documentElement;
+                const body = document.body;
+                
+                // 移除现有背景色类
+                this.validBackgroundColors.forEach(color => {
+                    root.classList.remove(`bg-body-${color}`);
+                    body.classList.remove(`bg-body-${color}`);
+                });
+                
+                // 添加新背景色类
+                root.classList.add(`bg-body-${bgColor}`);
+                body.classList.add(`bg-body-${bgColor}`);
+                
+                this.updateStatus(`背景色已切换到: ${bgColor}`, 'success');
+                this.updateCSSVariables();
+            }
+            
+            _applyStoredBackgroundColor() {
+                const savedBgColor = localStorage.getItem('app-background-color') || 'default';
+                this.setBackgroundColor(savedBgColor);
+            }
+            
+            updateStatus(message, type) {
+                const statusEl = document.getElementById('status');
+                statusEl.textContent = message;
+                statusEl.className = `status ${type}`;
+                statusEl.style.display = 'block';
+                
+                // 3秒后隐藏状态
+                setTimeout(() => {
+                    statusEl.style.display = 'none';
+                }, 3000);
+            }
+            
+            updateCSSVariables() {
+                const variablesEl = document.getElementById('css-variables');
+                const root = getComputedStyle(document.documentElement);
+                
+                const variables = [
+                    '--color-body-bg-default',
+                    '--color-body-bg-blue',
+                    '--color-body-bg-green',
+                    '--color-body-bg-purple',
+                    '--color-body-bg-orange',
+                    '--color-body-bg-pink',
+                    '--color-body-bg-gray',
+                    '--color-body-bg-indigo'
+                ];
+                
+                let html = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: monospace; font-size: 12px;">';
+                
+                variables.forEach(variable => {
+                    const value = root.getPropertyValue(variable).trim();
+                    html += `<div><strong>${variable}:</strong></div>`;
+                    html += `<div style="color: var(--color-secondary); word-break: break-all;">${value || '未定义'}</div>`;
+                });
+                
+                html += '</div>';
+                variablesEl.innerHTML = html;
+            }
+        }
+        
+        // 初始化
+        const themeManager = new TestThemeManager();
+        
+        // 绑定事件
+        document.getElementById('theme-selector').addEventListener('change', (e) => {
+            themeManager.setTheme(e.target.value);
+        });
+        
+        document.getElementById('background-selector').addEventListener('change', (e) => {
+            themeManager.setBackgroundColor(e.target.value);
+        });
+        
+        // 初始化显示
+        themeManager.updateCSSVariables();
+    </script>
+</body>
+</html>

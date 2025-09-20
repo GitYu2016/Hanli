@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试首页Tab图标</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .test-container {
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin: 10px 0;
+        }
+        .top-bar-tab-icon {
+            display: flex;
+            align-items: center;
+            width: 20px;
+            height: 20px;
+        }
+        .svg-icon {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            vertical-align: middle;
+            opacity: 0.8;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>测试首页Tab图标</h1>
+    
+    <div class="test-container">
+        <h3>测试Icon.render('house')</h3>
+        <div id="icon-test"></div>
+    </div>
+    
+    <div class="test-container">
+        <h3>测试getPageIcon('home')</h3>
+        <div id="page-icon-test"></div>
+    </div>
+    
+    <div class="test-container">
+        <h3>测试Tab元素</h3>
+        <div id="tab-test"></div>
+    </div>
+
+    <script src="../renderer/components/Common/Icon.js"></script>
+    <script>
+        // 初始化图标系统
+        Icon.init();
+        
+        // 测试Icon.render
+        const iconHTML = Icon.render('house', { className: 'svg-icon', style: 'bold' });
+        document.getElementById('icon-test').innerHTML = iconHTML;
+        console.log('Icon.render结果:', iconHTML);
+        
+        // 测试getPageIcon逻辑
+        const PAGE_ICONS = {
+            home: Icon.render('house', { className: 'svg-icon', style: 'bold' }),
+            productDetail: Icon.render('image', { className: 'svg-icon', style: 'bold' }),
+            goodsList: Icon.render('package', { className: 'svg-icon', style: 'bold' })
+        };
+        const pageIcon = PAGE_ICONS['home'] || PAGE_ICONS.home;
+        document.getElementById('page-icon-test').innerHTML = pageIcon;
+        console.log('getPageIcon结果:', pageIcon);
+        
+        // 测试Tab元素
+        const tabDiv = document.createElement('div');
+        tabDiv.className = 'top-bar-tab';
+        tabDiv.innerHTML = `
+            <div class="top-bar-tab-content">
+                <div class="top-bar-tab-icon">${pageIcon}</div>
+                <div class="top-bar-tab-title">首页</div>
+            </div>
+        `;
+        document.getElementById('tab-test').appendChild(tabDiv);
+    </script>
+</body>
+</html>

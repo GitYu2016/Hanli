@@ -1,23 +1,166 @@
 /**
  * Toast 通知组件
- * 负责显示各种类型的通知消息
+ * 负责显示简单的文字通知消息，从右往左滑出
+ * 样式定义在JavaScript中，通过StyleManager管理
  */
-class Toast {
+class Toast extends BaseComponent {
     constructor() {
+        super('Toast');
         this.container = null;
         this.toasts = [];
         this.maxToasts = 3;
         this.defaultDuration = 2000;
+        this.initStyles();
+    }
+
+    /**
+     * 初始化Toast样式
+     */
+    initStyles() {
+        // 定义Toast样式
+        const toastStyles = {
+            // Toast容器
+            '.toast-container': {
+                'position': 'fixed',
+                'top': '20px',
+                'right': '20px',
+                'z-index': '10000',
+                'display': 'flex',
+                'flex-direction': 'column',
+                'gap': '12px',
+                'pointer-events': 'none'
+            },
+
+            // Toast基础样式
+            '.toast': {
+                'background-color': 'var(--color-toast-background)',
+                'border': '1px solid var(--color-border-normal)',
+                'border-radius': 'var(--radius-lg)',
+                'box-shadow': 'var(--shadow-lg)',
+                'min-width': '300px',
+                'max-width': '400px',
+                'opacity': '0',
+                'transform': 'translateX(100%)',
+                'transition': 'all 0.3s ease',
+                'pointer-events': 'auto',
+                'overflow': 'hidden'
+            },
+
+            // Toast类型样式 - 使用状态颜色作为背景色
+            '.toast-success': {
+                'background-color': 'var(--color-success)',
+                'color': 'white'
+            },
+
+            '.toast-error': {
+                'background-color': 'var(--color-error)',
+                'color': 'white'
+            },
+
+            '.toast-warning': {
+                'background-color': 'var(--color-warning)',
+                'color': 'white'
+            },
+
+            '.toast-info': {
+                'background-color': 'var(--color-info)',
+                'color': 'white'
+            },
+
+            '.toast.show': {
+                'opacity': '1',
+                'transform': 'translateX(0)'
+            },
+
+            '.toast.hide': {
+                'opacity': '0',
+                'transform': 'translateX(100%)'
+            },
+
+            // Toast内容
+            '.toast-content': {
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'space-between',
+                'padding': '16px 20px'
+            },
+
+            // Toast消息
+            '.toast-message': {
+                'flex': '1',
+                'font-size': '14px',
+                'font-weight': '500',
+                'line-height': '1.4',
+                'word-wrap': 'break-word'
+            },
+
+            // 默认Toast消息颜色
+            '.toast .toast-message': {
+                'color': 'var(--color-text-primary)'
+            },
+
+            // 类型Toast消息颜色（白色文字）
+            '.toast-success .toast-message, .toast-error .toast-message, .toast-warning .toast-message, .toast-info .toast-message': {
+                'color': 'white'
+            },
+
+            // Toast关闭按钮
+            '.toast-close': {
+                'background': 'none',
+                'border': 'none',
+                'color': 'var(--color-text-secondary)',
+                'cursor': 'pointer',
+                'padding': '4px',
+                'border-radius': 'var(--radius-small)',
+                'transition': 'all 0.2s ease',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'flex-shrink': '0',
+                'margin-left': '12px'
+            },
+
+            '.toast-close:hover': {
+                'background-color': 'var(--color-background-focused)',
+                'color': 'var(--color-text-primary)'
+            },
+
+            // 类型Toast关闭按钮颜色
+            '.toast-success .toast-close, .toast-error .toast-close, .toast-warning .toast-close, .toast-info .toast-close': {
+                'color': 'rgba(255, 255, 255, 0.8)'
+            },
+
+            '.toast-success .toast-close:hover, .toast-error .toast-close:hover, .toast-warning .toast-close:hover, .toast-info .toast-close:hover': {
+                'background-color': 'rgba(255, 255, 255, 0.2)',
+                'color': 'white'
+            },
+
+            // 响应式设计
+            '@media (max-width: 768px)': {
+                '.toast-container': {
+                    'top': '10px',
+                    'right': '10px',
+                    'left': '10px'
+                },
+                '.toast': {
+                    'min-width': 'auto',
+                    'max-width': 'none'
+                }
+            }
+        };
+
+        // 使用基础组件的样式注册方法
+        super.initStyles(toastStyles);
     }
 
     /**
      * 初始化Toast组件
      */
     init() {
-        // 创建Toast容器
-        this.container = document.createElement('div');
-        this.container.id = 'toast-container';
-        this.container.className = 'toast-container';
+        // 使用基础组件的方法创建Toast容器
+        this.container = this.createStyledElement('div', 'toast-container', '', {
+            id: 'toast-container'
+        });
         document.body.appendChild(this.container);
     }
 
@@ -39,32 +182,28 @@ class Toast {
         });
 
         if (existingToast) {
-            console.log('Toast: 重复消息，跳过显示:', message);
             return existingToast.dataset.toastId;
         }
 
-        // 创建Toast元素
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        
-        // 添加图标
-        const iconClass = this.getIconClass(type);
-        toast.innerHTML = `
+        // 使用基础组件的方法创建Toast元素
+        const toast = this.createStyledElement('div', `toast toast-${type}`, `
             <div class="toast-content">
-                <i class="ph ph-${iconClass}"></i>
                 <span class="toast-message">${message}</span>
-                <button class="toast-close" onclick="toastInstance.closeToast('${Date.now()}')">
-                    <i class="ph ph-x"></i>
-                </button>
+                ${window.iconButtonInstance.render('x', {
+                    variant: 'ghost',
+                    size: 'small',
+                    title: '关闭',
+                    className: 'toast-close'
+                })}
             </div>
-        `;
+        `);
 
         // 设置唯一ID
         const toastId = Date.now().toString();
         toast.id = `toast-${toastId}`;
         toast.dataset.toastId = toastId;
 
-        // 修复关闭按钮的onclick事件，使用正确的toastId
+        // 设置关闭按钮事件
         const closeButton = toast.querySelector('.toast-close');
         if (closeButton) {
             closeButton.onclick = () => {
@@ -100,20 +239,6 @@ class Toast {
         return toastId;
     }
 
-    /**
-     * 根据类型获取图标类名
-     * @param {string} type - 类型
-     * @returns {string} 图标类名
-     */
-    getIconClass(type) {
-        const iconMap = {
-            success: 'check-circle',
-            error: 'warning-circle',
-            info: 'info',
-            warning: 'warning'
-        };
-        return iconMap[type] || 'info';
-    }
 
     /**
      * 关闭Toast
@@ -178,10 +303,14 @@ class Toast {
         return this.show(message, 'warning', duration);
     }
 
+
     /**
      * 销毁组件
      */
     destroy() {
+        // 调用基础组件的销毁方法
+        super.destroy();
+        
         if (this.container) {
             this.container.remove();
             this.container = null;
@@ -192,6 +321,9 @@ class Toast {
 
 // 创建全局实例
 const toastInstance = new Toast();
+
+// 暴露到全局作用域
+window.toastInstance = toastInstance;
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {

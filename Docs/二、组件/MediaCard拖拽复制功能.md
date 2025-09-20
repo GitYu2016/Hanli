@@ -150,7 +150,7 @@ hanli-app/
 │   ├── components/Detail/
 │   │   ├── MediaCard.js           # 媒体卡片组件（含拖拽功能）
 │   │   └── MediaSelection.js      # 媒体选择组件
-│   └── styles.css                 # 样式文件（含拖拽样式）
+│   └── globals.css                 # 样式文件（含拖拽样式）
 ├── main.js                        # 主进程（含文件复制API）
 ├── preload.js                     # 预加载脚本（含API暴露）
 └── test/

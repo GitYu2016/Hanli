@@ -5,18 +5,48 @@
 class SettingsModal {
     constructor() {
         this.isOpen = false;
+        this.activeSection = 'general'; // 当前激活的设置区域
         this.settings = {
             theme: 'auto',
-            language: 'zh-CN',
-            autoRefresh: true,
-            showCollectTime: true,
-            backgroundColor: 'default'
+            backgroundColor: 'default',
         };
         this.callbacks = {
             onSave: null,
             onCancel: null,
-            onThemeChange: null
+            onThemeChange: null,
+            onBackgroundColorChange: null
         };
+        
+        // 初始化主题选择器组件
+        this.themeSelector = new Select({
+            options: [
+                { value: 'light', label: '浅色主题' },
+                { value: 'dark', label: '深色主题' },
+                { value: 'auto', label: '跟随系统' }
+            ],
+            value: this.settings.theme,
+            placeholder: '请选择主题',
+            className: 'theme-select',
+            onChange: (theme) => {
+                this.settings.theme = theme;
+                this.previewTheme(theme);
+                if (this.callbacks.onThemeChange) {
+                    this.callbacks.onThemeChange(theme);
+                }
+            }
+        });
+
+        // 初始化背景色选择器组件
+        this.backgroundColorSelector = new BackgroundColorSelector({
+            currentBackgroundColor: this.settings.backgroundColor,
+            onBackgroundColorChange: (bgColor) => {
+                this.settings.backgroundColor = bgColor;
+                if (this.callbacks.onBackgroundColorChange) {
+                    this.callbacks.onBackgroundColorChange(bgColor);
+                }
+            }
+        });
+
     }
 
     /**
@@ -33,6 +63,15 @@ class SettingsModal {
      */
     setSettings(settings) {
         this.settings = { ...this.settings, ...settings };
+        // 同步主题选择器
+        if (settings.theme) {
+            this.themeSelector.setValue(settings.theme);
+        }
+        
+        // 同步背景色选择器
+        if (settings.backgroundColor) {
+            this.backgroundColorSelector.setBackgroundColor(settings.backgroundColor);
+        }
     }
 
     /**
@@ -56,6 +95,13 @@ class SettingsModal {
     }
 
     /**
+     * 显示设置弹窗（open方法的别名）
+     */
+    show() {
+        this.open();
+    }
+
+    /**
      * 关闭设置弹窗
      */
     close() {
@@ -70,47 +116,157 @@ class SettingsModal {
      * 渲染设置弹窗HTML
      */
     render() {
+        // 如果弹窗已存在，先移除
+        this.removeModal();
+        
         const modalHTML = `
             <div class="settings-modal" id="settings-modal">
                 <div class="modal-overlay" onclick="window.settingsModalInstance.close()">
                     <div class="modal-content settings-modal-content" onclick="event.stopPropagation()">
                         <div class="modal-header">
                             <h2 class="modal-title">系统设置</h2>
-                            <button class="modal-close" onclick="window.settingsModalInstance.close()">
-                                <i class="ph ph-x"></i>
-                            </button>
                         </div>
                         
-                        <div class="modal-body">
-                            ${this.renderSettingsContent()}
+                        <div class="settings-modal-body">
+                            <div class="settings-sidebar">
+                                ${this.renderSidebarMenu()}
+                            </div>
+                            
+                            <div class="settings-content">
+                                ${this.renderSettingsContent()}
+                            </div>
                         </div>
                         
                         <style>
+                            /* 模态框固定高度样式 */
+                            .settings-modal-content {
+                                height: 600px;
+                                max-height: 80vh;
+                                display: flex;
+                                flex-direction: column;
+                            }
+                            
+                            .settings-modal-body {
+                                flex: 1;
+                                display: flex;
+                                overflow: hidden;
+                            }
+                            
+                            .settings-sidebar {
+                                width: 200px;
+                                flex-shrink: 0;
+                                border-right: 1px solid var(--color-border-normal);
+                                padding: 16px 16px;
+                                overflow-y: auto;
+                            }
+                            
+                            .settings-menu {
+                                padding: 0;
+                            }
+                            
+                            .settings-content {
+                                flex: 1;
+                                padding: 16px 24px;
+                                overflow-y: auto;
+                            }
+                            
+                            .modal-footer {
+                                padding: 16px 24px;
+                                border-top: 1px solid var(--color-border-normal);
+                                display: flex;
+                                justify-content: flex-end;
+                                background: var(--color-surface-primary);
+                            }
+                            
+                            /* 侧边栏项目样式 - 与SidebarItem组件保持一致 */
+                            .sidebar-item {
+                                position: relative;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                                border-radius: 6px;
+                                margin-bottom: 2px;
+                                user-select: none;
+                                height: 40px;
+                                padding: 0 12px;
+                            }
+
+                            .sidebar-item:hover:not(.disabled) {
+                                background: var(--color-background-focused);
+                            }
+
+                            .sidebar-item.active {
+                                background: var(--color-background-focused);
+                            }
+
+                            .sidebar-item.disabled {
+                                opacity: 0.5;
+                                cursor: not-allowed;
+                            }
+
+                            .sidebar-item-content {
+                                display: flex;
+                                align-items: center;
+                                gap: 12px;
+                                height: 100%;
+                            }
+
+                            .sidebar-item-icon {
+                                width: 20px;
+                                height: 20px;
+                                flex-shrink: 0;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                color: var(--color-secondary);
+                                transition: color 0.2s ease;
+                            }
+
+                            .sidebar-item.active .sidebar-item-icon {
+                                color: var(--color-primary);
+                            }
+
+                            .sidebar-item-label {
+                                font-size: 14px;
+                                font-weight: 500;
+                                color: var(--color-primary);
+                                transition: color 0.2s ease;
+                                line-height: 1.4;
+                            }
+
+                            .sidebar-item.active .sidebar-item-label {
+                                color: var(--color-primary);
+                            }
+
+                            /* Phosphor 图标样式 */
+                            .sidebar-item-icon .ph {
+                                font-size: 20px;
+                                opacity: 0.8;
+                            }
+
+                            .sidebar-item.active .sidebar-item-icon .ph {
+                                opacity: 1;
+                            }
+
+                            /* 响应式设计 */
+                            @media (max-width: 768px) {
+                                .sidebar-item-content {
+                                    gap: 10px;
+                                }
+
+                                .sidebar-item-label {
+                                    font-size: 13px;
+                                }
+                            }
+
                             .shortcuts-list {
                                 max-height: 300px;
                                 overflow-y: auto;
                                 padding: 12px;
-                                background: var(--color-background-secondary);
-                                border-radius: 8px;
-                                border: 1px solid var(--color-border);
+                                background: var(--color-surface-secondary);
+                                border-radius: var(--radius-lg);
+                                border: 1px solid var(--color-border-normal);
                             }
                             
-                            .shortcut-category {
-                                margin-bottom: 20px;
-                            }
-                            
-                            .shortcut-category:last-child {
-                                margin-bottom: 0;
-                            }
-                            
-                            .shortcut-category-title {
-                                font-size: 14px;
-                                font-weight: 600;
-                                color: var(--color-text-primary);
-                                margin: 0 0 8px 0;
-                                padding-bottom: 4px;
-                                border-bottom: 1px solid var(--color-border);
-                            }
                             
                             .shortcuts-empty {
                                 display: flex;
@@ -137,24 +293,24 @@ class SettingsModal {
                                 align-items: center;
                                 justify-content: space-between;
                                 padding: 8px 12px;
-                                background: var(--color-background-primary);
-                                border-radius: 6px;
-                                border: 1px solid var(--color-border);
+                                background: var(--color-surface-primary);
+                                border-radius: var(--radius-md);
+                                border: 1px solid var(--color-border-normal);
                                 transition: all 0.2s ease;
                             }
                             
                             .shortcut-item:hover {
-                                background: var(--color-background-hover);
-                                border-color: var(--color-primary);
+                                background: var(--color-background-focused);
+                                border-color: var(--color-info);
                             }
                             
                             .shortcut-key {
                                 display: inline-flex;
                                 align-items: center;
                                 padding: 4px 8px;
-                                background: var(--color-background-secondary);
-                                border: 1px solid var(--color-border);
-                                border-radius: 4px;
+                                background: var(--color-surface-secondary);
+                                border: 1px solid var(--color-border-normal);
+                                border-radius: var(--radius-sm);
                                 font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
                                 font-size: 12px;
                                 font-weight: 600;
@@ -209,30 +365,45 @@ class SettingsModal {
      * 创建弹窗按钮
      */
     createButtons() {
-        if (!window.buttonInstance) return;
-
         // 创建footer按钮
         const footer = document.getElementById('settings-modal-footer');
         if (footer) {
-            // 创建取消按钮
-            const cancelButton = window.buttonInstance.secondary({
-                text: '取消',
-                size: 'M',
-                onClick: () => this.cancel(),
-                className: 'modal-btn-cancel'
-            });
-
-            // 创建保存按钮
-            const saveButton = window.buttonInstance.primary({
-                text: '保存设置',
-                size: 'M',
-                onClick: () => this.save(),
-                className: 'modal-btn-save'
-            });
-
-            // 添加按钮到footer
-            footer.appendChild(cancelButton);
-            footer.appendChild(saveButton);
+            // 使用MPrimaryButton组件创建完成按钮
+            if (window.mPrimaryButtonInstance) {
+                const completeButton = window.mPrimaryButtonInstance.create({
+                    text: '完成',
+                    onClick: () => this.save(),
+                    className: 'modal-btn-complete'
+                });
+                
+                footer.appendChild(completeButton);
+            } else {
+                // 备选方案：创建简单的完成按钮
+                const completeButton = document.createElement('button');
+                completeButton.textContent = '完成';
+                completeButton.className = 'btn btn-primary modal-btn-complete';
+                completeButton.style.cssText = `
+                    background: var(--color-primary);
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    font-weight: 500;
+                    transition: background-color 0.2s ease;
+                `;
+                completeButton.addEventListener('click', () => this.save());
+                completeButton.addEventListener('mouseenter', () => {
+                    completeButton.style.backgroundColor = 'var(--color-primary-hover)';
+                });
+                completeButton.addEventListener('mouseleave', () => {
+                    completeButton.style.backgroundColor = 'var(--color-primary)';
+                });
+                
+                footer.appendChild(completeButton);
+                console.warn('MPrimaryButton组件未加载，使用备选按钮');
+            }
         }
 
         // 创建打开文件夹按钮
@@ -247,17 +418,6 @@ class SettingsModal {
             openFolderContainer.appendChild(openFolderButton);
         }
 
-        // 创建清理缓存按钮
-        const clearCacheContainer = document.getElementById('clear-cache-btn-container');
-        if (clearCacheContainer) {
-            const clearCacheButton = window.buttonInstance.warning({
-                text: '清理缓存',
-                size: 'S',
-                onClick: () => this.clearCache(),
-                className: 'setting-btn'
-            });
-            clearCacheContainer.appendChild(clearCacheButton);
-        }
     }
 
     /**
@@ -265,117 +425,97 @@ class SettingsModal {
      * @returns {string} HTML字符串
      */
     renderShortcutsList() {
-        // 获取当前注册的快捷键
-        const registeredShortcuts = window.keyboardShortcutManager ? 
-            window.keyboardShortcutManager.getShortcuts() : [];
-        
-        // 静态快捷键列表（包括一些无法通过管理器获取的快捷键）
-        const staticShortcuts = [
-            {
-                category: 'Tab管理',
-                items: [
-                    { key: '⌘/Ctrl + W', description: '关闭当前Tab或窗口（有Tab时关闭Tab，无Tab时关闭窗口）' },
-                    { key: '⌘/Ctrl + Tab', description: '切换到下一个Tab' },
-                    { key: '⌘/Ctrl + Shift + Tab', description: '切换到上一个Tab' }
-                ]
+        // 直接显示快捷键项目，去掉分类嵌套
+        const shortcuts = [
+            { key: '⌘/Ctrl + F', description: '打开搜索框' },
+            { key: '⌘/Ctrl + W', description: '关闭当前Tab或窗口' }
+        ];
+
+        return `
+            <div class="shortcut-items">
+                ${shortcuts.map(item => `
+                    <div class="shortcut-item">
+                        <kbd class="shortcut-key">${item.key}</kbd>
+                        <span class="shortcut-description">${item.description}</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+
+
+    /**
+     * 渲染左侧菜单
+     * @returns {string} HTML字符串
+     */
+    renderSidebarMenu() {
+        const menuItems = [
+            { 
+                id: 'general', 
+                label: '通用', 
+                icon: 'ph-gear'
             },
-            {
-                category: '图片选择',
-                items: [
-                    { key: 'Shift', description: '按住进入多选模式' },
-                    { key: 'Shift + 点击', description: '多选图片（连续选择）' },
-                    { key: '点击空白', description: '取消所有选择' }
-                ]
-            },
-            {
-                category: '搜索功能',
-                items: [
-                    { key: '⌘/Ctrl + F', description: '打开搜索框' },
-                    { key: 'Enter', description: '执行搜索（在搜索框中）' },
-                    { key: 'ESC', description: '关闭搜索框' }
-                ]
-            },
-            {
-                category: '弹窗操作',
-                items: [
-                    { key: 'ESC', description: '关闭当前弹窗' },
-                    { key: 'ESC', description: '关闭设置弹窗' },
-                    { key: 'ESC', description: '关闭关于弹窗' },
-                    { key: 'ESC', description: '关闭商品详情弹窗' }
-                ]
-            },
-            {
-                category: '通用操作',
-                items: [
-                    { key: '点击遮罩', description: '关闭弹窗' },
-                    { key: '点击关闭按钮', description: '关闭弹窗' }
-                ]
+            { 
+                id: 'function', 
+                label: '功能', 
+                icon: 'ph-sliders'
             }
         ];
 
-        // 如果有注册的快捷键，添加动态快捷键部分
-        if (registeredShortcuts.length > 0) {
-            const dynamicShortcuts = {
-                category: '当前注册的快捷键',
-                items: registeredShortcuts.map(shortcut => ({
-                    key: shortcut.key,
-                    description: shortcut.description || '无描述'
-                }))
-            };
-            staticShortcuts.unshift(dynamicShortcuts);
-        }
-
-        const shortcuts = staticShortcuts;
-
-        if (shortcuts.length === 0) {
-            return `
-                <div class="shortcuts-empty">
-                    <p>暂无快捷键信息</p>
-                </div>
-            `;
-        }
-
-        return shortcuts.map(category => `
-            <div class="shortcut-category">
-                <h4 class="shortcut-category-title">${category.category}</h4>
-                <div class="shortcut-items">
-                    ${category.items.map(item => `
-                        <div class="shortcut-item">
-                            <kbd class="shortcut-key">${item.key}</kbd>
-                            <span class="shortcut-description">${item.description}</span>
+        return `
+            <div class="settings-menu">
+                ${menuItems.map(item => `
+                    <div class="sidebar-item ${this.activeSection === item.id ? 'active' : ''}" 
+                         id="settings-${item.id}" 
+                         data-section="${item.id}"
+                         onclick="window.settingsModalInstance.switchSection('${item.id}')">
+                        <div class="sidebar-item-content">
+                            <div class="sidebar-item-icon">
+                                <i class="ph ${item.icon}"></i>
+                            </div>
+                            <div class="sidebar-item-label">${item.label}</div>
                         </div>
-                    `).join('')}
-                </div>
+                    </div>
+                `).join('')}
             </div>
-        `).join('');
+        `;
+    }
+
+
+    /**
+     * 切换设置区域
+     * @param {string} sectionId - 区域ID
+     */
+    switchSection(sectionId) {
+        this.activeSection = sectionId;
+        
+        // 更新菜单状态
+        this.updateMenuState(sectionId);
+        
+        // 更新内容区域
+        const contentArea = document.querySelector('.settings-content');
+        if (contentArea) {
+            contentArea.innerHTML = this.renderSettingsContent();
+            this.bindContentEvents();
+        }
     }
 
     /**
-     * 渲染背景色选项
-     * @returns {string} HTML字符串
+     * 更新菜单状态
+     * @param {string} activeSectionId - 激活的区域ID
      */
-    renderBackgroundColorOptions() {
-        const backgroundColors = [
-            { value: 'default', name: '默认', light: 'rgba(255, 255, 255, 0.95)', dark: 'rgba(0, 0, 0, 0.95)' },
-            { value: 'blue', name: '海洋蓝', light: 'rgba(59, 130, 246, 0.08)', dark: 'rgba(12, 18, 32, 0.95)' },
-            { value: 'green', name: '森林绿', light: 'rgba(34, 197, 94, 0.08)', dark: 'rgba(12, 26, 12, 0.95)' },
-            { value: 'purple', name: '紫罗兰', light: 'rgba(147, 51, 234, 0.08)', dark: 'rgba(26, 12, 26, 0.95)' },
-            { value: 'orange', name: '夕阳橙', light: 'rgba(249, 115, 22, 0.08)', dark: 'rgba(26, 12, 12, 0.95)' },
-            { value: 'pink', name: '樱花粉', light: 'rgba(236, 72, 153, 0.08)', dark: 'rgba(26, 12, 20, 0.95)' },
-            { value: 'gray', name: '石墨灰', light: 'rgba(107, 114, 128, 0.08)', dark: 'rgba(10, 10, 10, 0.95)' },
-            { value: 'indigo', name: '靛青', light: 'rgba(99, 102, 241, 0.08)', dark: 'rgba(12, 12, 26, 0.95)' }
-        ];
+    updateMenuState(activeSectionId) {
+        const modal = document.getElementById('settings-modal');
+        if (!modal) return;
 
-        return backgroundColors.map(color => `
-            <label class="bg-color-option ${this.settings.backgroundColor === color.value ? 'active' : ''}" data-bg-color="${color.value}">
-                <input type="radio" name="backgroundColor" value="${color.value}" ${this.settings.backgroundColor === color.value ? 'checked' : ''}>
-                <span class="bg-color-preview">
-                    <div class="preview-light" style="background-color: ${color.light}"></div>
-                    <div class="preview-dark" style="background-color: ${color.dark}"></div>
-                </span>
-                <span class="bg-color-name">${color.name}</span>
-            </label>
-        `).join('');
+        const menuItems = modal.querySelectorAll('.sidebar-item');
+        menuItems.forEach(item => {
+            item.classList.remove('active');
+            if (item.dataset.section === activeSectionId) {
+                item.classList.add('active');
+            }
+        });
     }
 
     /**
@@ -383,105 +523,51 @@ class SettingsModal {
      * @returns {string} HTML字符串
      */
     renderSettingsContent() {
+        switch (this.activeSection) {
+            case 'general':
+                return this.renderGeneralSettings();
+            case 'function':
+                return this.renderFunctionSettings();
+            default:
+                return this.renderGeneralSettings();
+        }
+    }
+
+    /**
+     * 渲染通用设置内容
+     * @returns {string} HTML字符串
+     */
+    renderGeneralSettings() {
         return `
             <div class="settings-section">
                 <h3 class="section-title">外观设置</h3>
                 
                 <div class="setting-item">
-                    <label class="setting-label">主题模式</label>
+                    <label class="setting-label">主题设置</label>
                     <div class="setting-control">
-                        <div class="theme-selector">
-                            <label class="theme-option ${this.settings.theme === 'light' ? 'active' : ''}" data-theme="light">
-                                <input type="radio" name="theme" value="light" ${this.settings.theme === 'light' ? 'checked' : ''}>
-                                <span class="theme-preview light-theme">
-                                    <div class="preview-header"></div>
-                                    <div class="preview-content"></div>
-                                </span>
-                                <span class="theme-name">浅色主题</span>
-                            </label>
-                            
-                            <label class="theme-option ${this.settings.theme === 'dark' ? 'active' : ''}" data-theme="dark">
-                                <input type="radio" name="theme" value="dark" ${this.settings.theme === 'dark' ? 'checked' : ''}>
-                                <span class="theme-preview dark-theme">
-                                    <div class="preview-header"></div>
-                                    <div class="preview-content"></div>
-                                </span>
-                                <span class="theme-name">深色主题</span>
-                            </label>
-                            
-                            <label class="theme-option ${this.settings.theme === 'auto' ? 'active' : ''}" data-theme="auto">
-                                <input type="radio" name="theme" value="auto" ${this.settings.theme === 'auto' ? 'checked' : ''}>
-                                <span class="theme-preview auto-theme">
-                                    <div class="preview-header"></div>
-                                    <div class="preview-content"></div>
-                                </span>
-                                <span class="theme-name">跟随系统</span>
-                            </label>
-                        </div>
+                        ${this.themeSelector.render()}
                     </div>
                 </div>
                 
                 <div class="setting-item">
-                    <label class="setting-label">主题色</label>
+                    <label class="setting-label">背景色设置</label>
                     <div class="setting-control">
-                        <div class="background-color-selector">
-                            ${this.renderBackgroundColorOptions()}
-                        </div>
+                        ${this.backgroundColorSelector.render()}
                     </div>
                 </div>
                 
-                <div class="setting-item">
-                    <label class="setting-label">语言设置</label>
-                    <div class="setting-control">
-                        <select class="setting-select" id="language-select">
-                            <option value="zh-CN" ${this.settings.language === 'zh-CN' ? 'selected' : ''}>简体中文</option>
-                            <option value="en-US" ${this.settings.language === 'en-US' ? 'selected' : ''}>English</option>
-                        </select>
-                    </div>
-                </div>
             </div>
-            
+        `;
+    }
+
+    /**
+     * 渲染功能设置内容
+     * @returns {string} HTML字符串
+     */
+    renderFunctionSettings() {
+        return `
             <div class="settings-section">
-                <h3 class="section-title">功能设置</h3>
-                
-                <div class="setting-item">
-                    <label class="setting-label">自动刷新产品数据</label>
-                    <div class="setting-control">
-                        <label class="switch">
-                            <input type="checkbox" id="auto-refresh" ${this.settings.autoRefresh ? 'checked' : ''}>
-                            <span class="slider"></span>
-                        </label>
-                        <span class="setting-description">在首页时每5秒自动刷新产品总数</span>
-                    </div>
-                </div>
-                
-                <div class="setting-item">
-                    <label class="setting-label">显示采集时间</label>
-                    <div class="setting-control">
-                        <label class="switch">
-                            <input type="checkbox" id="show-collect-time" ${this.settings.showCollectTime ? 'checked' : ''}>
-                            <span class="slider"></span>
-                        </label>
-                        <span class="setting-description">在产品列表中显示采集时间</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="settings-section">
-                <h3 class="section-title">快捷键设置</h3>
-                
-                <div class="setting-item">
-                    <label class="setting-label">支持的快捷键</label>
-                    <div class="setting-control">
-                        <div class="shortcuts-list" id="shortcuts-list">
-                            ${this.renderShortcutsList()}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="settings-section">
-                <h3 class="section-title">数据设置</h3>
+                <h3 class="section-title">数据存储</h3>
                 
                 <div class="setting-item">
                     <label class="setting-label">数据存储路径</label>
@@ -490,17 +576,11 @@ class SettingsModal {
                         <div id="open-folder-btn-container"></div>
                     </div>
                 </div>
-                
-                <div class="setting-item">
-                    <label class="setting-label">缓存管理</label>
-                    <div class="setting-control">
-                        <div id="clear-cache-btn-container"></div>
-                        <span class="setting-description">清理临时文件和缓存数据</span>
-                    </div>
-                </div>
             </div>
+            
         `;
     }
+
 
     /**
      * 绑定事件监听器
@@ -509,63 +589,69 @@ class SettingsModal {
         const modal = document.getElementById('settings-modal');
         if (!modal) return;
 
-        // 主题选择事件
-        const themeOptions = modal.querySelectorAll('.theme-option');
-        themeOptions.forEach(option => {
-            option.addEventListener('click', (e) => {
+        // X按钮已移除，无需绑定关闭按钮事件
+
+        // 绑定 SidebarItem 组件事件
+        this.bindSidebarEvents();
+
+        // 绑定内容区域事件
+        this.bindContentEvents();
+    }
+
+    /**
+     * 绑定侧边栏事件
+     */
+    bindSidebarEvents() {
+        const modal = document.getElementById('settings-modal');
+        if (!modal) return;
+
+        const settingsMenu = modal.querySelector('.settings-menu');
+        if (settingsMenu) {
+            this.bindMenuEvents(settingsMenu);
+        }
+    }
+
+    /**
+     * 绑定菜单事件
+     * @param {HTMLElement} settingsMenu - 设置菜单容器
+     */
+    bindMenuEvents(settingsMenu) {
+        const menuItems = settingsMenu.querySelectorAll('.sidebar-item');
+        menuItems.forEach(item => {
+            item.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                // 移除其他选项的active类
-                themeOptions.forEach(opt => opt.classList.remove('active'));
-                // 添加当前选项的active类
-                option.classList.add('active');
-                // 选中对应的radio
-                const radio = option.querySelector('input[type="radio"]');
-                if (radio) {
-                    radio.checked = true;
-                    // 预览主题效果
-                    this.previewTheme(radio.value);
+                const sectionId = item.dataset.section;
+                if (sectionId) {
+                    this.switchSection(sectionId);
                 }
             });
         });
+    }
 
-        // 语言选择事件
-        const languageSelect = modal.querySelector('#language-select');
-        if (languageSelect) {
-            languageSelect.addEventListener('change', (e) => {
-                console.log('语言设置变更:', e.target.value);
-            });
+    /**
+     * 绑定内容区域事件
+     */
+    bindContentEvents() {
+        const modal = document.getElementById('settings-modal');
+        if (!modal) return;
+
+        // 绑定主题选择器事件
+        const themeSelectorContainer = modal.querySelector('.theme-select');
+        if (themeSelectorContainer) {
+            this.themeSelector.bindEvents(themeSelectorContainer);
         }
 
-        // 背景色选择事件
-        const bgColorOptions = modal.querySelectorAll('.bg-color-option');
-        bgColorOptions.forEach(option => {
-            option.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                // 移除其他选项的active类
-                bgColorOptions.forEach(opt => opt.classList.remove('active'));
-                // 添加当前选项的active类
-                option.classList.add('active');
-                // 选中对应的radio
-                const radio = option.querySelector('input[type="radio"]');
-                if (radio) {
-                    radio.checked = true;
-                    // 预览背景色效果
-                    this.previewBackgroundColor(radio.value);
-                }
-            });
-        });
+        // 绑定背景色选择器事件
+        const backgroundColorSelectorContainer = modal.querySelector('.background-color-selector');
+        if (backgroundColorSelectorContainer) {
+            this.backgroundColorSelector.bindEvents(backgroundColorSelectorContainer);
+        }
 
-        // 开关事件
-        const switches = modal.querySelectorAll('.switch input[type="checkbox"]');
-        switches.forEach(switchEl => {
-            switchEl.addEventListener('change', (e) => {
-                console.log('设置变更:', e.target.id, e.target.checked);
-            });
-        });
+
+
+
 
         // 注册ESC键关闭快捷键
         this.registerShortcuts();
@@ -596,20 +682,6 @@ class SettingsModal {
     }
 
     /**
-     * 预览背景色效果
-     * @param {string} bgColor - 背景色名称
-     */
-    previewBackgroundColor(bgColor) {
-        const body = document.body;
-        
-        // 移除现有背景色类
-        body.classList.remove('bg-default', 'bg-blue', 'bg-green', 'bg-purple', 'bg-orange', 'bg-pink', 'bg-gray', 'bg-indigo');
-        
-        // 添加新背景色类
-        body.classList.add(`bg-${bgColor}`);
-    }
-
-    /**
      * 预览主题效果
      * @param {string} theme - 主题名称
      */
@@ -633,6 +705,22 @@ class SettingsModal {
         }
     }
 
+    /**
+     * 预览背景色效果
+     * @param {string} bgColor - 背景色名称
+     */
+    previewBackgroundColor(bgColor) {
+        const body = document.body;
+        
+        // 移除现有背景色类
+        body.classList.remove('bg-default', 'bg-blue', 'bg-green', 'bg-purple', 'bg-orange', 'bg-pink', 'bg-gray', 'bg-indigo');
+        
+        // 添加新背景色类
+        body.classList.add(`bg-${bgColor}`);
+    }
+
+
+
 
     /**
      * 加载当前设置
@@ -640,17 +728,11 @@ class SettingsModal {
     loadCurrentSettings() {
         // 从localStorage加载设置
         const savedTheme = localStorage.getItem('app-theme') || 'auto';
-        const savedLanguage = localStorage.getItem('app-language') || 'zh-CN';
-        const savedAutoRefresh = localStorage.getItem('app-auto-refresh') !== 'false';
-        const savedShowCollectTime = localStorage.getItem('app-show-collect-time') !== 'false';
         const savedBackgroundColor = localStorage.getItem('app-background-color') || 'default';
 
         this.settings = {
             theme: savedTheme,
-            language: savedLanguage,
-            autoRefresh: savedAutoRefresh,
-            showCollectTime: savedShowCollectTime,
-            backgroundColor: savedBackgroundColor
+            backgroundColor: savedBackgroundColor,
         };
 
         // 更新UI
@@ -664,54 +746,15 @@ class SettingsModal {
         const modal = document.getElementById('settings-modal');
         if (!modal) return;
 
-        // 更新主题选择
-        const themeRadios = modal.querySelectorAll('input[name="theme"]');
-        themeRadios.forEach(radio => {
-            radio.checked = radio.value === this.settings.theme;
-        });
+        // 更新主题选择器
+        this.themeSelector.setValue(this.settings.theme);
 
-        // 更新主题选项样式
-        const themeOptions = modal.querySelectorAll('.theme-option');
-        themeOptions.forEach(option => {
-            option.classList.remove('active');
-            const radio = option.querySelector('input[type="radio"]');
-            if (radio && radio.checked) {
-                option.classList.add('active');
-            }
-        });
+        // 更新背景色选择器
+        this.backgroundColorSelector.setBackgroundColor(this.settings.backgroundColor);
 
-        // 更新语言选择
-        const languageSelect = modal.querySelector('#language-select');
-        if (languageSelect) {
-            languageSelect.value = this.settings.language;
-        }
 
-        // 更新背景色选择
-        const bgColorRadios = modal.querySelectorAll('input[name="backgroundColor"]');
-        bgColorRadios.forEach(radio => {
-            radio.checked = radio.value === this.settings.backgroundColor;
-        });
 
-        // 更新背景色选项样式
-        const bgColorOptions = modal.querySelectorAll('.bg-color-option');
-        bgColorOptions.forEach(option => {
-            option.classList.remove('active');
-            const radio = option.querySelector('input[type="radio"]');
-            if (radio && radio.checked) {
-                option.classList.add('active');
-            }
-        });
 
-        // 更新开关状态
-        const autoRefreshCheckbox = modal.querySelector('#auto-refresh');
-        const showCollectTimeCheckbox = modal.querySelector('#show-collect-time');
-        
-        if (autoRefreshCheckbox) {
-            autoRefreshCheckbox.checked = this.settings.autoRefresh;
-        }
-        if (showCollectTimeCheckbox) {
-            showCollectTimeCheckbox.checked = this.settings.showCollectTime;
-        }
     }
 
     /**
@@ -722,40 +765,15 @@ class SettingsModal {
         if (!modal) return;
 
         try {
-            // 获取主题设置
-            const selectedThemeRadio = modal.querySelector('input[name="theme"]:checked');
-            if (selectedThemeRadio) {
-                this.settings.theme = selectedThemeRadio.value;
-                localStorage.setItem('app-theme', this.settings.theme);
-            }
+            // 主题设置已由ThemeSelector组件处理
+            localStorage.setItem('app-theme', this.settings.theme);
 
-            // 获取语言设置
-            const languageSelect = modal.querySelector('#language-select');
-            if (languageSelect) {
-                this.settings.language = languageSelect.value;
-                localStorage.setItem('app-language', this.settings.language);
-            }
+            // 背景色设置已由BackgroundColorSelector组件处理
+            localStorage.setItem('app-background-color', this.settings.backgroundColor);
 
-            // 获取背景色设置
-            const selectedBgColorRadio = modal.querySelector('input[name="backgroundColor"]:checked');
-            if (selectedBgColorRadio) {
-                this.settings.backgroundColor = selectedBgColorRadio.value;
-                localStorage.setItem('app-background-color', this.settings.backgroundColor);
-            }
 
-            // 获取功能设置
-            const autoRefreshCheckbox = modal.querySelector('#auto-refresh');
-            const showCollectTimeCheckbox = modal.querySelector('#show-collect-time');
-            
-            if (autoRefreshCheckbox) {
-                this.settings.autoRefresh = autoRefreshCheckbox.checked;
-                localStorage.setItem('app-auto-refresh', this.settings.autoRefresh.toString());
-            }
-            
-            if (showCollectTimeCheckbox) {
-                this.settings.showCollectTime = showCollectTimeCheckbox.checked;
-                localStorage.setItem('app-show-collect-time', this.settings.showCollectTime.toString());
-            }
+
+
 
             // 触发保存回调
             if (this.callbacks.onSave) {
@@ -829,16 +847,6 @@ class SettingsModal {
         this.showToast('正在打开数据文件夹...');
     }
 
-    /**
-     * 清理缓存
-     */
-    clearCache() {
-        if (confirm('确定要清理缓存吗？这将删除所有临时文件。')) {
-            // 这里应该调用主进程API清理缓存
-            console.log('清理缓存');
-            this.showToast('缓存清理完成');
-        }
-    }
 
     /**
      * 显示Toast通知
@@ -871,10 +879,10 @@ class SettingsModal {
         
         // 根据类型设置背景色
         const colors = {
-            success: '#28a745',
-            error: '#dc3545',
-            warning: '#ffc107',
-            info: '#17a2b8'
+            success: 'var(--color-success)',
+            error: 'var(--color-error)',
+            warning: 'var(--color-warning)',
+            info: 'var(--color-info)'
         };
         toast.style.backgroundColor = colors[type] || colors.info;
         
@@ -919,6 +927,15 @@ class SettingsModal {
      */
     destroy() {
         this.close();
+        
+        // 销毁子组件
+        if (this.themeSelector) {
+            this.themeSelector.destroy();
+        }
+        if (this.backgroundColorSelector) {
+            this.backgroundColorSelector.destroy();
+        }
+        
         this.callbacks = {};
     }
 }

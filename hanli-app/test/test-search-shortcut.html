@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>搜索快捷键测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .test-description {
+            color: #666;
+            margin-bottom: 15px;
+        }
+        .test-button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: #0056CC;
+        }
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .shortcut-list {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .shortcut-item:last-child {
+            border-bottom: none;
+        }
+        .shortcut-key {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .shortcut-desc {
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>搜索快捷键测试</h1>
+        
+        <div class="test-section">
+            <div class="test-title">快捷键列表</div>
+            <div class="test-description">当前支持的快捷键：</div>
+            <div class="shortcut-list">
+                <div class="shortcut-item">
+                    <span class="shortcut-key">⌘/Ctrl + F</span>
+                    <span class="shortcut-desc">打开搜索弹窗</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">⌘/Ctrl + W</span>
+                    <span class="shortcut-desc">关闭当前Tab或窗口</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">⌘/Ctrl + Tab</span>
+                    <span class="shortcut-desc">切换到下一个Tab</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">⌘/Ctrl + Shift + Tab</span>
+                    <span class="shortcut-desc">切换到上一个Tab</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">Shift</span>
+                    <span class="shortcut-desc">按住进入多选模式</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">Enter</span>
+                    <span class="shortcut-desc">执行搜索（在搜索框中）</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">ESC</span>
+                    <span class="shortcut-desc">关闭弹窗</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">快捷键测试</div>
+            <div class="test-description">测试CMD+F快捷键是否正常工作：</div>
+            <button class="test-button" onclick="testSearchShortcut()">测试搜索快捷键</button>
+            <div id="test-result" class="test-result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">键盘事件监听测试</div>
+            <div class="test-description">按下任意键查看事件信息：</div>
+            <div id="keyboard-events" class="test-result info">
+                等待键盘事件...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟KeyboardShortcutManager
+        class MockKeyboardShortcutManager {
+            constructor() {
+                this.shortcuts = new Map();
+                this.contexts = new Map();
+                this.currentContext = 'global';
+                this.isMultiSelectMode = false;
+                this.boundHandlers = new Map();
+                
+                this.init();
+            }
+
+            init() {
+                this.bindGlobalShortcuts();
+            }
+
+            bindGlobalShortcuts() {
+                document.addEventListener('keydown', (e) => {
+                    this.handleKeyDown(e);
+                });
+
+                document.addEventListener('keyup', (e) => {
+                    this.handleKeyUp(e);
+                });
+            }
+
+            handleKeyDown(e) {
+                const key = this.getKeyIdentifier(e);
+                const context = this.getCurrentContext();
+                
+                // 处理Shift键多选模式
+                if (e.key === 'Shift') {
+                    this.isMultiSelectMode = true;
+                    this.notifyMultiSelectChange(true);
+                    return;
+                }
+
+                // 查找匹配的快捷键
+                const shortcut = this.findShortcut(key, context);
+                if (shortcut) {
+                    e.preventDefault();
+                    shortcut.handler(e);
+                }
+
+                // 显示键盘事件信息
+                this.showKeyboardEvent(e);
+            }
+
+            handleKeyUp(e) {
+                // 处理Shift键多选模式
+                if (e.key === 'Shift') {
+                    this.isMultiSelectMode = false;
+                    this.notifyMultiSelectChange(false);
+                }
+            }
+
+            getKeyIdentifier(e) {
+                const parts = [];
+                
+                // 在macOS上，Cmd键对应metaKey，在Windows/Linux上对应ctrlKey
+                if (e.ctrlKey || e.metaKey) parts.push('ctrl');
+                if (e.altKey) parts.push('alt');
+                if (e.shiftKey) parts.push('shift');
+                
+                // 特殊键处理
+                if (e.key === 'Tab') {
+                    parts.push('tab');
+                } else if (e.key === 'Enter') {
+                    parts.push('enter');
+                } else if (e.key === 'Escape') {
+                    parts.push('escape');
+                } else if (e.key === ' ') {
+                    parts.push('space');
+                } else if (e.key.length === 1) {
+                    parts.push(e.key.toLowerCase());
+                } else {
+                    parts.push(e.key.toLowerCase());
+                }
+                
+                return parts.join('+');
+            }
+
+            getCurrentContext() {
+                return this.currentContext;
+            }
+
+            findShortcut(key, context) {
+                // 首先在当前上下文中查找
+                const contextShortcuts = this.contexts.get(context);
+                if (contextShortcuts && contextShortcuts.has(key)) {
+                    return contextShortcuts.get(key);
+                }
+
+                // 然后在全局上下文中查找
+                const globalShortcuts = this.contexts.get('global');
+                if (globalShortcuts && globalShortcuts.has(key)) {
+                    return globalShortcuts.get(key);
+                }
+
+                return null;
+            }
+
+            register(key, handler, context = 'global', description = '') {
+                if (!this.contexts.has(context)) {
+                    this.contexts.set(context, new Map());
+                }
+
+                const contextShortcuts = this.contexts.get(context);
+                contextShortcuts.set(key, {
+                    handler,
+                    description,
+                    context
+                });
+
+                console.log(`注册快捷键: ${key} (${context}) - ${description}`);
+            }
+
+            showKeyboardEvent(e) {
+                const eventsDiv = document.getElementById('keyboard-events');
+                const key = this.getKeyIdentifier(e);
+                const timestamp = new Date().toLocaleTimeString();
+                
+                eventsDiv.innerHTML = `
+                    <div><strong>时间:</strong> ${timestamp}</div>
+                    <div><strong>按键:</strong> ${e.key}</div>
+                    <div><strong>按键标识符:</strong> ${key}</div>
+                    <div><strong>修饰键:</strong> Ctrl: ${e.ctrlKey}, Meta: ${e.metaKey}, Alt: ${e.altKey}, Shift: ${e.shiftKey}</div>
+                    <div><strong>多选模式:</strong> ${this.isMultiSelectMode ? '是' : '否'}</div>
+                `;
+            }
+
+            notifyMultiSelectChange(isMultiSelect) {
+                const event = new CustomEvent('multiSelectModeChange', {
+                    detail: { isMultiSelect }
+                });
+                document.dispatchEvent(event);
+            }
+        }
+
+        // 创建模拟的快捷键管理器
+        window.keyboardShortcutManager = new MockKeyboardShortcutManager();
+
+        // 注册测试快捷键
+        window.keyboardShortcutManager.register('ctrl+f', (e) => {
+            showTestResult('搜索快捷键被触发！', 'success');
+        }, 'global', '打开搜索弹窗');
+
+        window.keyboardShortcutManager.register('ctrl+w', (e) => {
+            showTestResult('关闭快捷键被触发！', 'success');
+        }, 'global', '关闭当前Tab或窗口');
+
+        function testSearchShortcut() {
+            showTestResult('请按下 CMD+F 或 Ctrl+F 来测试搜索快捷键', 'info');
+        }
+
+        function showTestResult(message, type) {
+            const resultDiv = document.getElementById('test-result');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.textContent = message;
+            resultDiv.style.display = 'block';
+        }
+
+        // 监听多选模式变化
+        document.addEventListener('multiSelectModeChange', (e) => {
+            console.log('多选模式变化:', e.detail.isMultiSelect);
+        });
+    </script>
+</body>
+</html>

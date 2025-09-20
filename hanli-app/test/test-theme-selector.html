@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThemeSelector 组件测试</title>
+    <link rel="stylesheet" href="../renderer/globals.css">
+    <link rel="stylesheet" href="../renderer/theme/light/colors.css" id="theme-colors">
+    <link rel="stylesheet" href="../renderer/icons-sprite.css">
+    <script src="../renderer/config.js"></script>
+    <script src="../renderer/components/Common/ThemeSelector.js"></script>
+</head>
+<body>
+    <div class="page-container">
+        <h1>ThemeSelector 组件测试</h1>
+        
+        <div class="test-section">
+            <h2>基本功能测试</h2>
+            <div id="theme-selector-container"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>当前主题状态</h2>
+            <p>当前主题: <span id="current-theme">light</span></p>
+            <button id="get-theme-btn">获取当前主题</button>
+            <button id="set-theme-btn">设置为深色主题</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>主题预览效果</h2>
+            <p>点击上面的主题选项可以看到主题切换效果</p>
+        </div>
+    </div>
+
+    <script>
+        // 创建主题选择器实例
+        const themeSelector = new ThemeSelector({
+            currentTheme: 'light',
+            onThemeChange: (theme) => {
+                console.log('主题已切换为:', theme);
+                document.getElementById('current-theme').textContent = theme;
+            }
+        });
+
+        // 渲染主题选择器
+        const container = document.getElementById('theme-selector-container');
+        container.innerHTML = themeSelector.render();
+        themeSelector.bindEvents(container);
+
+        // 测试按钮事件
+        document.getElementById('get-theme-btn').addEventListener('click', () => {
+            const currentTheme = themeSelector.getTheme();
+            alert('当前主题: ' + currentTheme);
+        });
+
+        document.getElementById('set-theme-btn').addEventListener('click', () => {
+            themeSelector.selectTheme('dark');
+        });
+    </script>
+
+    <style>
+        .page-container {
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-medium);
+            background: var(--color-background);
+        }
+
+        .test-section h2 {
+            margin-top: 0;
+            color: var(--color-text-primary);
+        }
+
+        .test-section p {
+            color: var(--color-text-secondary);
+        }
+
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-small);
+            background: var(--color-background);
+            color: var(--color-text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background: var(--color-hover);
+            border-color: var(--color-primary);
+        }
+    </style>
+</body>
+</html>

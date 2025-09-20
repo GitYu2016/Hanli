@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>资源加载诊断</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-title {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .test-item {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        .test-item.success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .test-item.error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .test-item.warning {
+            background: #fff3cd;
+            border-color: #ffeaa7;
+        }
+        .status-icon {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+        .test-result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="test-title">资源加载诊断</h1>
+        
+        <div id="test-results">
+            <div class="test-item">
+                <span class="status-icon">⏳</span>
+                <span>正在检查资源...</span>
+            </div>
+        </div>
+        
+        <div class="test-result" id="summary">
+            诊断进行中...
+        </div>
+    </div>
+
+    <script>
+        const testResults = {
+            css: [],
+            js: [],
+            svg: [],
+            errors: []
+        };
+
+        function addTestResult(type, name, status, message) {
+            const result = { name, status, message };
+            testResults[type].push(result);
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const container = document.getElementById('test-results');
+            const summary = document.getElementById('summary');
+            
+            let html = '';
+            let totalTests = 0;
+            let passedTests = 0;
+            
+            // CSS 文件测试
+            html += '<h3>CSS 文件</h3>';
+            testResults.css.forEach(result => {
+                totalTests++;
+                if (result.status === 'success') passedTests++;
+                html += `<div class="test-item ${result.status}">
+                    <span class="status-icon">${result.status === 'success' ? '✅' : result.status === 'error' ? '❌' : '⚠️'}</span>
+                    <span>${result.name}: ${result.message}</span>
+                </div>`;
+            });
+            
+            // JS 文件测试
+            html += '<h3>JavaScript 文件</h3>';
+            testResults.js.forEach(result => {
+                totalTests++;
+                if (result.status === 'success') passedTests++;
+                html += `<div class="test-item ${result.status}">
+                    <span class="status-icon">${result.status === 'success' ? '✅' : result.status === 'error' ? '❌' : '⚠️'}</span>
+                    <span>${result.name}: ${result.message}</span>
+                </div>`;
+            });
+            
+            // SVG 文件测试
+            html += '<h3>SVG 图标文件</h3>';
+            testResults.svg.forEach(result => {
+                totalTests++;
+                if (result.status === 'success') passedTests++;
+                html += `<div class="test-item ${result.status}">
+                    <span class="status-icon">${result.status === 'success' ? '✅' : result.status === 'error' ? '❌' : '⚠️'}</span>
+                    <span>${result.name}: ${result.message}</span>
+                </div>`;
+            });
+            
+            container.innerHTML = html;
+            
+            // 更新摘要
+            const successRate = totalTests > 0 ? (passedTests / totalTests * 100).toFixed(1) : 0;
+            let summaryClass = 'success';
+            let summaryText = `✅ 诊断完成！通过率: ${successRate}% (${passedTests}/${totalTests})`;
+            
+            if (successRate < 100) {
+                summaryClass = successRate < 50 ? 'error' : 'warning';
+                summaryText = successRate < 50 ? 
+                    `❌ 诊断失败！通过率: ${successRate}% (${passedTests}/${totalTests})` :
+                    `⚠️ 部分问题！通过率: ${successRate}% (${passedTests}/${totalTests})`;
+            }
+            
+            summary.textContent = summaryText;
+            summary.className = `test-result ${summaryClass}`;
+        }
+
+        async function testResource(url, type, name) {
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    addTestResult(type, name, 'success', '加载成功');
+                    return true;
+                } else {
+                    addTestResult(type, name, 'error', `HTTP ${response.status}: ${response.statusText}`);
+                    return false;
+                }
+            } catch (error) {
+                addTestResult(type, name, 'error', `网络错误: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function runDiagnostics() {
+            console.log('开始资源加载诊断...');
+            
+            // 测试 CSS 文件
+            await testResource('./globals.css', 'css', 'globals.css');
+            await testResource('./theme/light/colors.css', 'css', 'light/colors.css');
+            await testResource('./theme/dark/colors.css', 'css', 'dark/colors.css');
+            
+            // 测试 JavaScript 文件
+            const jsFiles = [
+                'config.js',
+                'components/Common/Icon.js',
+                'components/Common/StyleManager.js',
+                'components/Common/Button.js',
+                'components/Common/TabManager.js',
+                'components/Common/ThemeManager.js',
+                'components/ProductLibraryPage/ProductDataManager.js',
+                'components/Common/TopBarTabs.js',
+                'components/Common/TopBar.js',
+                'components/Common/SideBar.js',
+                'components/Common/Pagination.js',
+                'components/Common/PageContainer.js',
+                'components/Common/Toast.js',
+                'components/Common/KeyboardShortcutManager.js',
+                'components/Common/ThemeSelector.js',
+                'components/Common/BackgroundColorSelector.js',
+                'components/ProductDetailPage/ProductCharts.js',
+                'components/ProductDetailPage/AttachmentCard.js',
+                'components/ProductDetailPage/MediaSelection.js',
+                'components/ProductDetailPage/MediaCard.js',
+                'components/ProductDetailPage/ProductInfoCard.js',
+                'components/HomePage/HomePage.js',
+                'components/ProductLibraryPage/ProductLibrary.js',
+                'components/ProductDetailPage/ProductDetail.js',
+                'components/Modal/SettingsModal.js',
+                'components/Modal/SearchModal.js',
+                'components/Modal/MoreMenu.js',
+                'components/Modal/MoreMenuFixed.js',
+                'components/Modal/ProductMoreMenu.js',
+                'app.js'
+            ];
+            
+            for (const file of jsFiles) {
+                await testResource(`./${file}`, 'js', file);
+            }
+            
+            // 测试 SVG 图标文件
+            const svgFiles = [
+                'svgs/regular/magnifying-glass.svg',
+                'svgs/regular/gear.svg',
+                'svgs/regular/house.svg',
+                'svgs/regular/package.svg',
+                'svgs/regular/x.svg',
+                'svgs/regular/minus.svg',
+                'svgs/regular/arrows-out.svg'
+            ];
+            
+            for (const file of svgFiles) {
+                await testResource(`./${file}`, 'svg', file);
+            }
+            
+            console.log('资源加载诊断完成');
+        }
+
+        // 监听控制台错误
+        const originalError = console.error;
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            const errorMessage = args.join(' ');
+            if (errorMessage.includes('ERR_FILE_NOT_FOUND') || errorMessage.includes('404')) {
+                testResults.errors.push(errorMessage);
+                updateDisplay();
+            }
+        };
+
+        // 页面加载完成后开始诊断
+        document.addEventListener('DOMContentLoaded', () => {
+            runDiagnostics();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置页面测试</title>
+    
+    <!-- 引入主题样式 -->
+    <link rel="stylesheet" href="../../renderer/theme/light/colors.css" id="theme-colors">
+    <link rel="stylesheet" href="../../renderer/globals.css">
+    
+    <!-- 图标样式由 Icon.js 组件提供 -->
+    
+    <!-- 引入组件 -->
+    <script src="../../renderer/components/Common/Icon.js"></script>
+    <script src="../../renderer/components/Common/ThemeManager.js"></script>
+    <script src="../../renderer/components/Common/ThemeSelector.js"></script>
+    <script src="../../renderer/components/Common/BackgroundColorSelector.js"></script>
+    <script src="../../renderer/components/Common/Switch.js"></script>
+    <script src="../../renderer/components/Common/Toast.js"></script>
+    <script src="../../renderer/components/SettingsPage/SettingsPage.js"></script>
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-body-bg-default);
+            color: var(--color-primary);
+        }
+        
+        .test-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .test-header {
+            padding: 16px 24px;
+            background: var(--color-background-normal);
+            border-bottom: 1px solid var(--color-border-normal);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .test-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid var(--color-border-normal);
+            border-radius: 6px;
+            background: var(--color-background-normal);
+            color: var(--color-primary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn:hover {
+            background: var(--color-background-focused);
+        }
+        
+        .btn-primary {
+            background: var(--color-info);
+            color: white;
+            border-color: var(--color-info);
+        }
+        
+        .btn-primary:hover {
+            background: var(--color-info);
+            opacity: 0.9;
+        }
+        
+        .test-content {
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .theme-switcher {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .theme-btn {
+            padding: 4px 8px;
+            border: 1px solid var(--color-border-normal);
+            border-radius: 4px;
+            background: var(--color-background-normal);
+            color: var(--color-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .theme-btn.active {
+            background: var(--color-info);
+            color: white;
+            border-color: var(--color-info);
+        }
+        
+        .theme-btn:hover {
+            background: var(--color-background-focused);
+        }
+        
+        .theme-btn.active:hover {
+            background: var(--color-info);
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1 class="test-title">系统设置页面测试</h1>
+            
+            <div class="test-actions">
+                <div class="theme-switcher">
+                    <span style="font-size: 12px; color: var(--color-secondary); margin-right: 8px;">主题:</span>
+                    <button class="theme-btn" data-theme="light">浅色</button>
+                    <button class="theme-btn active" data-theme="dark">深色</button>
+                    <button class="theme-btn" data-theme="auto">自动</button>
+                </div>
+                
+                <button class="btn" onclick="loadSettings()">加载设置</button>
+                <button class="btn" onclick="resetSettings()">重置设置</button>
+                <button class="btn btn-primary" onclick="saveSettings()">保存设置</button>
+            </div>
+        </div>
+        
+        <div class="test-content" id="test-content">
+            <!-- 设置页面将在这里渲染 -->
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let settingsPage = null;
+        let themeManager = null;
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 开始初始化系统设置页面测试');
+            
+            // 初始化图标系统
+            Icon.init();
+            
+            // 初始化主题管理器
+            themeManager = new ThemeManager();
+            themeManager.init();
+            
+            // 创建设置页面
+            createSettingsPage();
+            
+            // 绑定主题切换事件
+            bindThemeEvents();
+            
+            console.log('✅ 系统设置页面测试初始化完成');
+        });
+        
+        /**
+         * 创建设置页面
+         */
+        function createSettingsPage() {
+            try {
+                settingsPage = new SettingsPage();
+                
+                // 设置回调函数
+                settingsPage.setCallbacks({
+                    onSave: (settings) => {
+                        console.log('💾 设置已保存:', settings);
+                        showToast('设置已保存', 'success');
+                    },
+                    onCancel: () => {
+                        console.log('❌ 设置已取消');
+                        showToast('设置已取消', 'info');
+                    },
+                    onThemeChange: (theme) => {
+                        console.log('🎨 主题已更改:', theme);
+                        if (themeManager) {
+                            themeManager.setTheme(theme);
+                        }
+                    },
+                    onBackgroundColorChange: (bgColor) => {
+                        console.log('🌈 背景色已更改:', bgColor);
+                        if (themeManager) {
+                            themeManager.setBackgroundColor(bgColor);
+                        }
+                    }
+                });
+                
+                // 渲染页面
+                const content = document.getElementById('test-content');
+                if (content) {
+                    content.innerHTML = settingsPage.render();
+                    
+                    // 绑定事件
+                    settingsPage.bindEvents();
+                    
+                    // 加载当前设置
+                    settingsPage.loadCurrentSettings();
+                    
+                    console.log('✅ 设置页面创建成功');
+                } else {
+                    console.error('❌ 找不到test-content容器');
+                }
+            } catch (error) {
+                console.error('❌ 创建设置页面时发生错误:', error);
+                showToast('创建设置页面失败', 'error');
+            }
+        }
+        
+        /**
+         * 绑定主题切换事件
+         */
+        function bindThemeEvents() {
+            const themeButtons = document.querySelectorAll('.theme-btn');
+            themeButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const theme = btn.dataset.theme;
+                    
+                    // 更新按钮状态
+                    themeButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    // 切换主题
+                    themeManager.setTheme(theme);
+                    
+                    console.log('🎨 主题已切换到:', theme);
+                });
+            });
+        }
+        
+        /**
+         * 加载设置
+         */
+        function loadSettings() {
+            if (settingsPage) {
+                settingsPage.loadCurrentSettings();
+                showToast('设置已加载', 'info');
+                console.log('📥 设置已加载');
+            }
+        }
+        
+        /**
+         * 重置设置
+         */
+        function resetSettings() {
+            if (confirm('确定要重置所有设置吗？')) {
+                // 清除localStorage中的设置
+                localStorage.removeItem('app-theme');
+                localStorage.removeItem('app-language');
+                localStorage.removeItem('app-auto-refresh');
+                localStorage.removeItem('app-show-collect-time');
+                localStorage.removeItem('app-background-color');
+                
+                // 重新创建设置页面
+                createSettingsPage();
+                
+                showToast('设置已重置', 'warning');
+                console.log('🔄 设置已重置');
+            }
+        }
+        
+        /**
+         * 保存设置
+         */
+        function saveSettings() {
+            if (settingsPage) {
+                settingsPage.save();
+                console.log('💾 设置已保存');
+            }
+        }
+        
+        /**
+         * 显示Toast通知
+         */
+        function showToast(message, type = 'info') {
+            // 创建toast元素
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            
+            // 添加样式
+            Object.assign(toast.style, {
+                position: 'fixed',
+                top: '20px',
+                right: '20px',
+                padding: '12px 20px',
+                borderRadius: '6px',
+                color: 'white',
+                fontSize: '14px',
+                fontWeight: '500',
+                zIndex: '10000',
+                opacity: '0',
+                transform: 'translateX(100%)',
+                transition: 'all 0.3s ease',
+                maxWidth: '300px',
+                wordWrap: 'break-word'
+            });
+            
+            // 根据类型设置背景色
+            const colors = {
+                success: 'var(--color-success)',
+                error: 'var(--color-error)',
+                warning: 'var(--color-warning)',
+                info: 'var(--color-info)'
+            };
+            toast.style.backgroundColor = colors[type] || colors.info;
+            
+            // 添加到页面
+            document.body.appendChild(toast);
+            
+            // 显示动画
+            setTimeout(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // 自动隐藏
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        // 监听主题变化事件
+        document.addEventListener('themeChanged', (event) => {
+            console.log('🎨 主题变化事件:', event.detail);
+        });
+        
+        // 监听背景色变化事件
+        document.addEventListener('backgroundChanged', (event) => {
+            console.log('🌈 背景色变化事件:', event.detail);
+        });
+    </script>
+</body>
+</html>

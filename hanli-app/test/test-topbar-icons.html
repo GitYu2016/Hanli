@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TopBar 图标测试</title>
+    
+    <!-- 主题样式 -->
+    <link rel="stylesheet" href="../renderer/theme/light/colors.css" id="theme-colors">
+    
+    <!-- SVG 图标样式 -->
+    <link rel="stylesheet" href="../renderer/icons-svg.css">
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--color-background-primary);
+            color: var(--color-text-primary);
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: var(--color-surface-primary);
+            border-radius: 8px;
+            border: 1px solid var(--color-border-primary);
+        }
+        
+        .icon-test {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 15px 0;
+            padding: 15px;
+            background-color: var(--color-surface-secondary);
+            border-radius: 6px;
+        }
+        
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: var(--color-surface-primary);
+            border: 1px solid var(--color-border-primary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .theme-toggle:hover {
+            background-color: var(--color-surface-hover);
+        }
+        
+        /* 模拟 TopBar 样式 */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+            background-color: var(--color-surface-primary);
+            border-bottom: 1px solid var(--color-border-primary);
+            padding: 0 20px;
+            margin-bottom: 20px;
+        }
+        
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .top-bar-center {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            justify-content: center;
+        }
+        
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .search-icon, .settings-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .search-icon:hover, .settings-icon:hover {
+            background-color: var(--color-surface-hover);
+        }
+        
+        .logo {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TopBar 图标测试</h1>
+        <p>测试 TopBar 组件中的图标显示效果</p>
+        
+        <!-- 主题切换按钮 -->
+        <div class="theme-toggle" onclick="toggleTheme()">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/>
+            </svg>
+            <span id="theme-text">切换到暗色主题</span>
+        </div>
+        
+        <!-- 模拟 TopBar -->
+        <div class="test-section">
+            <h2>模拟 TopBar 组件</h2>
+            <div class="top-bar">
+                <div class="top-bar-left">
+                    <div class="logo">Hanli</div>
+                </div>
+                <div class="top-bar-center">
+                    <div class="search-icon" id="search-btn">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="top-bar-right">
+                    <div class="settings-icon" id="settings-btn">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 单独图标测试 -->
+        <div class="test-section">
+            <h2>单独图标测试</h2>
+            
+            <div class="icon-test">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z"/>
+                </svg>
+                <span>搜索图标 (search)</span>
+            </div>
+            
+            <div class="icon-test">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"/>
+                </svg>
+                <span>设置图标 (settings)</span>
+            </div>
+            
+            <div class="icon-test">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z"/>
+                </svg>
+                <span>首页图标 (home)</span>
+            </div>
+        </div>
+        
+        <!-- 尺寸测试 -->
+        <div class="test-section">
+            <h2>尺寸测试</h2>
+            
+            <div class="icon-test">
+                <svg class="icon small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z"/>
+                </svg>
+                <span>small (0.75em)</span>
+            </div>
+            
+            <div class="icon-test">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z"/>
+                </svg>
+                <span>normal (1em)</span>
+            </div>
+            
+            <div class="icon-test">
+                <svg class="icon large" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z"/>
+                </svg>
+                <span>large (1.25em)</span>
+            </div>
+        </div>
+        
+        <!-- 状态测试 -->
+        <div class="test-section">
+            <h2>状态测试</h2>
+            
+            <div class="icon-test">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z"/>
+                </svg>
+                <span>normal</span>
+            </div>
+            
+            <div class="icon-test">
+                <svg class="icon secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z"/>
+                </svg>
+                <span>secondary</span>
+            </div>
+            
+            <div class="icon-test">
+                <svg class="icon success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12C21.9988 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.7088 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4881 2.02168 11.3363C2.16356 9.18455 2.99721 7.13631 4.39828 5.49706C5.79935 3.85781 7.69279 2.71537 9.79619 2.24013C11.8996 1.7649 14.1003 1.98232 16.07 2.85999"/>
+                </svg>
+                <span>success</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 主题切换功能
+        let isDarkTheme = false;
+        
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            const themeColors = document.getElementById('theme-colors');
+            const themeText = document.getElementById('theme-text');
+            
+            if (isDarkTheme) {
+                themeColors.href = '../renderer/theme/dark/colors.css';
+                themeText.textContent = '切换到亮色主题';
+            } else {
+                themeColors.href = '../renderer/theme/light/colors.css';
+                themeText.textContent = '切换到暗色主题';
+            }
+        }
+    </script>
+</body>
+</html>

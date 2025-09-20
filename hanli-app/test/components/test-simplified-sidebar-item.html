@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简化版 SidebarItem 组件测试</title>
+    <link rel="stylesheet" href="../../../renderer/globals.css">
+    <link rel="stylesheet" href="../../../renderer/theme/light/colors.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: var(--color-background-primary);
+            color: var(--color-primary);
+        }
+
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .test-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background: var(--color-background-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--color-border-primary);
+        }
+
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--color-primary);
+        }
+
+        .sidebar-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 300px;
+        }
+
+        .demo-controls {
+            margin-top: 16px;
+            padding: 16px;
+            background: var(--color-background-tertiary);
+            border-radius: 6px;
+            border: 1px solid var(--color-border-secondary);
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        .control-label {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .control-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--color-border-primary);
+            border-radius: 4px;
+            background: var(--color-background-primary);
+            color: var(--color-primary);
+            font-size: 14px;
+        }
+
+        .control-button {
+            padding: 8px 16px;
+            background: var(--color-primary);
+            color: var(--color-primary-reverse);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .control-button:hover {
+            background: var(--color-primary-hover);
+        }
+
+        .log-output {
+            margin-top: 16px;
+            padding: 12px;
+            background: var(--color-background-primary);
+            border: 1px solid var(--color-border-primary);
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>简化版 SidebarItem 组件测试</h1>
+        
+        <div class="test-section">
+            <div class="test-title">1. Phosphor 图标示例</div>
+            <div class="sidebar-container" id="phosphor-examples">
+                <!-- 通过 JavaScript 动态生成 -->
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">2. 本地 SVG 图标示例</div>
+            <div class="sidebar-container" id="svg-examples">
+                <!-- 通过 JavaScript 动态生成 -->
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">3. 动态创建组件</div>
+            <div class="demo-controls">
+                <div class="control-group">
+                    <label class="control-label">标签文本:</label>
+                    <input type="text" class="control-input" id="label-input" placeholder="输入标签文本" value="自定义项目">
+                </div>
+                <div class="control-group">
+                    <label class="control-label">图标 (Phosphor 类名或 SVG 路径):</label>
+                    <input type="text" class="control-input" id="icon-input" placeholder="ph-gear 或 /path/to/icon.svg" value="ph-gear">
+                </div>
+                <div class="control-group">
+                    <button class="control-button" onclick="createDynamicItem()">创建项目</button>
+                    <button class="control-button" onclick="clearDynamicItems()">清空</button>
+                    <button class="control-button" onclick="toggleActiveState()">切换激活状态</button>
+                </div>
+            </div>
+            <div class="sidebar-container" id="dynamic-examples">
+                <!-- 动态生成的组件 -->
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">4. 事件日志</div>
+            <div class="log-output" id="event-log">
+                点击组件查看事件日志...
+            </div>
+        </div>
+    </div>
+
+    <script src="../../../renderer/components/Common/List/SidebarItem.js"></script>
+    <script>
+        // 全局变量
+        let dynamicItems = [];
+        let activeItem = null;
+
+        // 日志函数
+        function log(message) {
+            const logOutput = document.getElementById('event-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logOutput.innerHTML += `[${timestamp}] ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        // 创建 Phosphor 图标示例
+        function createPhosphorExamples() {
+            const container = document.getElementById('phosphor-examples');
+            const examples = [
+                { label: '首页', icon: 'ph-house', isActive: true },
+                { label: '产品库', icon: 'ph-package', isActive: false },
+                { label: '设置', icon: 'ph-gear', isActive: false },
+                { label: '帮助', icon: 'ph-question', isActive: false }
+            ];
+
+            examples.forEach((config, index) => {
+                const item = new SidebarItem({
+                    id: `phosphor-item-${index}`,
+                    label: config.label,
+                    icon: config.icon,
+                    isActive: config.isActive,
+                    onClick: (id, label) => {
+                        log(`点击了 Phosphor 图标项目: ${label}`);
+                        // 设置激活状态
+                        examples.forEach((_, i) => {
+                            const item = document.getElementById(`phosphor-item-${i}`);
+                            if (item) item.classList.remove('active');
+                        });
+                        document.getElementById(id).classList.add('active');
+                    },
+                    onHover: (id, label, eventType) => {
+                        log(`鼠标${eventType === 'enter' ? '进入' : '离开'} Phosphor 项目: ${label}`);
+                    }
+                });
+
+                container.innerHTML += item.render();
+            });
+
+            // 绑定事件
+            examples.forEach((_, index) => {
+                const item = new SidebarItem();
+                Object.assign(item, {
+                    id: `phosphor-item-${index}`,
+                    label: examples[index].label,
+                    icon: examples[index].icon,
+                    isActive: examples[index].isActive,
+                    onClick: (id, label) => {
+                        log(`点击了 Phosphor 图标项目: ${label}`);
+                        // 设置激活状态
+                        examples.forEach((_, i) => {
+                            const item = document.getElementById(`phosphor-item-${i}`);
+                            if (item) item.classList.remove('active');
+                        });
+                        document.getElementById(id).classList.add('active');
+                    },
+                    onHover: (id, label, eventType) => {
+                        log(`鼠标${eventType === 'enter' ? '进入' : '离开'} Phosphor 项目: ${label}`);
+                    }
+                });
+                item.bindEvents(container);
+            });
+        }
+
+        // 创建本地 SVG 图标示例（使用项目中现有的 SVG）
+        function createSVGExamples() {
+            const container = document.getElementById('svg-examples');
+            const examples = [
+                { label: '用户管理', icon: '../../../renderer/assets/svgs/regular/user.svg', isActive: false },
+                { label: '文件管理', icon: '../../../renderer/assets/svgs/regular/folder.svg', isActive: false },
+                { label: '消息通知', icon: '../../../renderer/assets/svgs/regular/bell.svg', isActive: false }
+            ];
+
+            examples.forEach((config, index) => {
+                const item = new SidebarItem({
+                    id: `svg-item-${index}`,
+                    label: config.label,
+                    icon: config.icon,
+                    isActive: config.isActive,
+                    onClick: (id, label) => {
+                        log(`点击了 SVG 图标项目: ${label}`);
+                        // 设置激活状态
+                        examples.forEach((_, i) => {
+                            const item = document.getElementById(`svg-item-${i}`);
+                            if (item) item.classList.remove('active');
+                        });
+                        document.getElementById(id).classList.add('active');
+                    },
+                    onHover: (id, label, eventType) => {
+                        log(`鼠标${eventType === 'enter' ? '进入' : '离开'} SVG 项目: ${label}`);
+                    }
+                });
+
+                container.innerHTML += item.render();
+            });
+
+            // 绑定事件
+            examples.forEach((_, index) => {
+                const item = new SidebarItem();
+                Object.assign(item, {
+                    id: `svg-item-${index}`,
+                    label: examples[index].label,
+                    icon: examples[index].icon,
+                    isActive: examples[index].isActive,
+                    onClick: (id, label) => {
+                        log(`点击了 SVG 图标项目: ${label}`);
+                        // 设置激活状态
+                        examples.forEach((_, i) => {
+                            const item = document.getElementById(`svg-item-${i}`);
+                            if (item) item.classList.remove('active');
+                        });
+                        document.getElementById(id).classList.add('active');
+                    },
+                    onHover: (id, label, eventType) => {
+                        log(`鼠标${eventType === 'enter' ? '进入' : '离开'} SVG 项目: ${label}`);
+                    }
+                });
+                item.bindEvents(container);
+            });
+        }
+
+        // 动态创建组件
+        function createDynamicItem() {
+            const label = document.getElementById('label-input').value.trim();
+            const icon = document.getElementById('icon-input').value.trim();
+
+            if (!label) {
+                alert('请输入标签文本');
+                return;
+            }
+
+            const container = document.getElementById('dynamic-examples');
+            const itemId = `dynamic-item-${Date.now()}`;
+
+            const item = new SidebarItem({
+                id: itemId,
+                label: label,
+                icon: icon,
+                isActive: false,
+                onClick: (id, label) => {
+                    log(`点击了动态创建的项目: ${label}`);
+                    // 设置激活状态
+                    dynamicItems.forEach(item => {
+                        const element = document.getElementById(item.id);
+                        if (element) element.classList.remove('active');
+                    });
+                    document.getElementById(id).classList.add('active');
+                    activeItem = id;
+                },
+                onHover: (id, label, eventType) => {
+                    log(`鼠标${eventType === 'enter' ? '进入' : '离开'}动态项目: ${label}`);
+                }
+            });
+
+            container.innerHTML += item.render();
+            item.bindEvents(container);
+            dynamicItems.push(item);
+
+            log(`创建了新的 SidebarItem: ${label} (${icon})`);
+        }
+
+        // 清空动态组件
+        function clearDynamicItems() {
+            const container = document.getElementById('dynamic-examples');
+            container.innerHTML = '';
+            dynamicItems.forEach(item => item.destroy());
+            dynamicItems = [];
+            activeItem = null;
+            log('清空了所有动态创建的项目');
+        }
+
+        // 切换激活状态
+        function toggleActiveState() {
+            if (activeItem) {
+                const element = document.getElementById(activeItem);
+                if (element) {
+                    element.classList.toggle('active');
+                    log(`切换了项目激活状态: ${element.dataset.label}`);
+                }
+            } else {
+                log('没有激活的项目可以切换');
+            }
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            log('页面加载完成，开始初始化示例...');
+            createPhosphorExamples();
+            createSVGExamples();
+            log('示例初始化完成');
+        });
+    </script>
+</body>
+</html>

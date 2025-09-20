@@ -5,13 +5,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const collectBtn = document.getElementById('collectBtn');
     const monitorCollectBtn = document.getElementById('monitorCollectBtn');
     const refreshBtn = document.getElementById('refreshBtn');
-    const currentPage = document.getElementById('currentPage');
+    const settingsBtn = document.getElementById('settingsBtn');
+    
+    // 设置相关元素
+    const settingsPanel = document.getElementById('settingsPanel');
+    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    const autoOpenAppToggle = document.getElementById('autoOpenAppToggle');
 
     // 获取当前标签页信息
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab) {
-        currentPage.textContent = `当前页面: ${tab.url}`;
-    }
 
     // 检查连接状态
     async function checkConnection() {
@@ -143,12 +145,48 @@ document.addEventListener('DOMContentLoaded', async () => {
         refreshBtn.disabled = false;
         refreshBtn.textContent = '刷新状态';
     }
+    
+    // 设置相关功能
+    function loadSettings() {
+        // 从chrome.storage加载设置
+        chrome.storage.sync.get(['autoOpenApp'], (result) => {
+            autoOpenAppToggle.checked = result.autoOpenApp || false;
+        });
+    }
+    
+    function saveSettings() {
+        // 保存设置到chrome.storage
+        chrome.storage.sync.set({
+            autoOpenApp: autoOpenAppToggle.checked
+        }, () => {
+            console.log('设置已保存:', { autoOpenApp: autoOpenAppToggle.checked });
+        });
+    }
+    
+    function showSettings() {
+        settingsPanel.style.display = 'flex';
+    }
+    
+    function hideSettings() {
+        settingsPanel.style.display = 'none';
+    }
 
     // 绑定事件
     collectBtn.addEventListener('click', executeCollection);
     monitorCollectBtn.addEventListener('click', openMonitorCollectionPage);
     refreshBtn.addEventListener('click', refreshStatus);
+    settingsBtn.addEventListener('click', showSettings);
+    closeSettingsBtn.addEventListener('click', hideSettings);
+    autoOpenAppToggle.addEventListener('change', saveSettings);
+    
+    // 点击设置面板外部关闭
+    settingsPanel.addEventListener('click', (e) => {
+        if (e.target === settingsPanel) {
+            hideSettings();
+        }
+    });
 
     // 初始检查
     await checkConnection();
+    loadSettings();
 });

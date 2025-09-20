@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图表主题色测试</title>
+    <link rel="stylesheet" href="../renderer/globals.css">
+    <link rel="stylesheet" href="../renderer/icons-sprite.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            background-color: var(--color-background);
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--color-text-primary);
+        }
+        
+        .test-description {
+            color: var(--color-text-secondary);
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        
+        .theme-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .theme-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .theme-btn:hover {
+            background-color: var(--color-hover);
+        }
+        
+        .theme-btn.active {
+            background-color: var(--color-primary);
+            color: var(--color-primary-foreground);
+        }
+        
+        .chart-container {
+            background: var(--color-card-background);
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            padding: 20px;
+            margin: 15px 0;
+        }
+        
+        .chart-item {
+            margin-bottom: 30px;
+        }
+        
+        .chart-item-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: 15px;
+        }
+        
+        .chart-canvas {
+            width: 100%;
+            height: 300px;
+        }
+        
+        .color-palette {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        
+        .color-swatch {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            background-color: var(--color-hover);
+            font-size: 12px;
+        }
+        
+        .color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .log-area {
+            background-color: var(--color-hover);
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        
+        .log-success {
+            color: #28ca42;
+        }
+        
+        .log-warning {
+            color: #ffbd2e;
+        }
+        
+        .log-error {
+            color: #ff5f57;
+        }
+        
+        .log-info {
+            color: var(--color-text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>图表主题色适配测试</h1>
+        
+        <!-- 主题切换控制 -->
+        <div class="test-section">
+            <div class="test-title">主题切换</div>
+            <div class="test-description">
+                切换主题查看图表颜色是否正确适配
+            </div>
+            
+            <div class="theme-controls">
+                <button class="theme-btn active" onclick="switchTheme('light')">浅色主题</button>
+                <button class="theme-btn" onclick="switchTheme('dark')">深色主题</button>
+                <button class="theme-btn" onclick="switchTheme('auto')">自动主题</button>
+            </div>
+            
+            <div class="color-palette">
+                <div class="color-swatch">
+                    <div class="color-dot" style="background-color: var(--color-primary);"></div>
+                    <span>主色调</span>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-dot" style="background-color: var(--color-success);"></div>
+                    <span>成功色</span>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-dot" style="background-color: var(--color-warning);"></div>
+                    <span>警告色</span>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-dot" style="background-color: var(--color-info);"></div>
+                    <span>信息色</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 销量图表测试 -->
+        <div class="test-section">
+            <div class="test-title">销量图表</div>
+            <div class="test-description">
+                测试销量图表的主题色适配
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-item">
+                    <h5 class="chart-item-title">销量趋势</h5>
+                    <canvas id="sales-chart" class="chart-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 价格图表测试 -->
+        <div class="test-section">
+            <div class="test-title">价格图表</div>
+            <div class="test-description">
+                测试价格图表的主题色适配
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-item">
+                    <h5 class="chart-item-title">价格趋势</h5>
+                    <canvas id="price-chart" class="chart-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 评分图表测试 -->
+        <div class="test-section">
+            <div class="test-title">评分图表</div>
+            <div class="test-description">
+                测试评分图表的主题色适配
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-item">
+                    <h5 class="chart-item-title">评分趋势</h5>
+                    <canvas id="rating-chart" class="chart-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 功能测试 -->
+        <div class="test-section">
+            <div class="test-title">功能测试</div>
+            <div class="test-description">
+                测试图表功能
+            </div>
+            
+            <button class="theme-btn" onclick="testChartColors()">测试图表颜色</button>
+            <button class="theme-btn" onclick="regenerateCharts()">重新生成图表</button>
+            <button class="theme-btn" onclick="clearLog()">清除日志</button>
+        </div>
+        
+        <!-- 日志区域 -->
+        <div class="test-section">
+            <div class="test-title">测试日志</div>
+            <div id="test-log" class="log-area">
+                <div class="log-entry log-info">测试日志将显示在这里...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTheme = 'light';
+        let salesChart, priceChart, ratingChart;
+        let logEntries = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = `[${timestamp}] ${message}`;
+            logEntries.push({ message: entry, type });
+            
+            const logArea = document.getElementById('test-log');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = entry;
+            logArea.appendChild(logEntry);
+            
+            // 滚动到底部
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('test-log').innerHTML = '';
+            logEntries = [];
+            log('日志已清除', 'info');
+        }
+        
+        function switchTheme(theme) {
+            currentTheme = theme;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 应用主题
+            document.body.className = `theme-${theme}`;
+            
+            log(`切换到${theme}主题`, 'info');
+            
+            // 重新生成图表
+            setTimeout(() => {
+                regenerateCharts();
+            }, 100);
+        }
+        
+        function generateTestData() {
+            const labels = [];
+            const sales = [];
+            const promoPrice = [];
+            const normalPrice = [];
+            const rating = [];
+            
+            // 生成7天的测试数据
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                labels.push(date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }));
+                
+                sales.push(Math.floor(Math.random() * 100) + 50);
+                promoPrice.push(Math.floor(Math.random() * 50) + 20);
+                normalPrice.push(Math.floor(Math.random() * 50) + 40);
+                rating.push((Math.random() * 2 + 3).toFixed(1));
+            }
+            
+            return {
+                labels,
+                sales,
+                promoPrice,
+                normalPrice,
+                rating
+            };
+        }
+        
+        function createSalesChart() {
+            const ctx = document.getElementById('sales-chart');
+            if (!ctx) return;
+            
+            // 销毁现有图表
+            if (salesChart) {
+                salesChart.destroy();
+            }
+            
+            const data = generateTestData();
+            
+            salesChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: '销量',
+                        data: data.sales,
+                        borderColor: 'var(--color-primary)',
+                        backgroundColor: 'transparent',
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: 'var(--color-primary)',
+                        pointBorderColor: 'var(--color-primary)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    font: {
+                        family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: '日期',
+                                font: {
+                                    family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                },
+                                color: 'var(--color-text-secondary)'
+                            },
+                            ticks: {
+                                color: 'var(--color-text-secondary)'
+                            },
+                            grid: {
+                                color: 'var(--color-border)'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: '销量',
+                                font: {
+                                    family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                },
+                                color: 'var(--color-text-secondary)'
+                            },
+                            ticks: {
+                                color: 'var(--color-text-secondary)'
+                            },
+                            grid: {
+                                color: 'var(--color-border)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                },
+                                color: 'var(--color-text-secondary)',
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function createPriceChart() {
+            const ctx = document.getElementById('price-chart');
+            if (!ctx) return;
+            
+            // 销毁现有图表
+            if (priceChart) {
+                priceChart.destroy();
+            }
+            
+            const data = generateTestData();
+            
+            priceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: '促销价',
+                            data: data.promoPrice,
+                            borderColor: 'var(--color-warning)',
+                            backgroundColor: 'transparent',
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: 'var(--color-warning)',
+                            pointBorderColor: 'var(--color-warning)',
+                            borderWidth: 2
+                        },
+                        {
+                            label: '原价',
+                            data: data.normalPrice,
+                            borderColor: 'var(--color-success)',
+                            backgroundColor: 'transparent',
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: 'var(--color-success)',
+                            pointBorderColor: 'var(--color-success)',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    font: {
+                        family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: '日期',
+                                font: {
+                                    family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                },
+                                color: 'var(--color-text-secondary)'
+                            },
+                            ticks: {
+                                color: 'var(--color-text-secondary)'
+                            },
+                            grid: {
+                                color: 'var(--color-border)'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: '价格 (元)',
+                                font: {
+                                    family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                },
+                                color: 'var(--color-text-secondary)'
+                            },
+                            ticks: {
+                                color: 'var(--color-text-secondary)'
+                            },
+                            grid: {
+                                color: 'var(--color-border)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                },
+                                color: 'var(--color-text-secondary)',
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function createRatingChart() {
+            const ctx = document.getElementById('rating-chart');
+            if (!ctx) return;
+            
+            // 销毁现有图表
+            if (ratingChart) {
+                ratingChart.destroy();
+            }
+            
+            const data = generateTestData();
+            
+            ratingChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: '评分',
+                        data: data.rating,
+                        borderColor: 'var(--color-info)',
+                        backgroundColor: 'transparent',
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: 'var(--color-info)',
+                        pointBorderColor: 'var(--color-info)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    font: {
+                        family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: '日期',
+                                font: {
+                                    family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                },
+                                color: 'var(--color-text-secondary)'
+                            },
+                            ticks: {
+                                color: 'var(--color-text-secondary)'
+                            },
+                            grid: {
+                                color: 'var(--color-border)'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: '评分',
+                                font: {
+                                    family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                },
+                                color: 'var(--color-text-secondary)'
+                            },
+                            ticks: {
+                                color: 'var(--color-text-secondary)'
+                            },
+                            grid: {
+                                color: 'var(--color-border)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                },
+                                color: 'var(--color-text-secondary)',
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function regenerateCharts() {
+            log('重新生成图表...', 'info');
+            createSalesChart();
+            createPriceChart();
+            createRatingChart();
+            log('图表重新生成完成', 'success');
+        }
+        
+        function testChartColors() {
+            log('测试图表颜色...', 'info');
+            
+            // 检查CSS变量
+            const computedStyle = getComputedStyle(document.documentElement);
+            const primaryColor = computedStyle.getPropertyValue('--color-primary');
+            const successColor = computedStyle.getPropertyValue('--color-success');
+            const warningColor = computedStyle.getPropertyValue('--color-warning');
+            const infoColor = computedStyle.getPropertyValue('--color-info');
+            const textColor = computedStyle.getPropertyValue('--color-text-secondary');
+            const borderColor = computedStyle.getPropertyValue('--color-border');
+            
+            log(`主色调: ${primaryColor}`, 'info');
+            log(`成功色: ${successColor}`, 'info');
+            log(`警告色: ${warningColor}`, 'info');
+            log(`信息色: ${infoColor}`, 'info');
+            log(`文本色: ${textColor}`, 'info');
+            log(`边框色: ${borderColor}`, 'info');
+            
+            // 检查图表实例
+            if (salesChart) {
+                log('✅ 销量图表已创建', 'success');
+            } else {
+                log('❌ 销量图表未创建', 'error');
+            }
+            
+            if (priceChart) {
+                log('✅ 价格图表已创建', 'success');
+            } else {
+                log('❌ 价格图表未创建', 'error');
+            }
+            
+            if (ratingChart) {
+                log('✅ 评分图表已创建', 'success');
+            } else {
+                log('❌ 评分图表未创建', 'error');
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            log('页面加载完成，开始初始化图表...', 'info');
+            
+            // 设置默认主题
+            document.body.className = 'theme-light';
+            
+            // 创建图表
+            setTimeout(() => {
+                createSalesChart();
+                createPriceChart();
+                createRatingChart();
+                log('图表初始化完成', 'success');
+            }, 500);
+        });
+    </script>
+</body>
+</html>

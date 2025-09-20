@@ -1,12 +1,175 @@
 /**
  * SideBar 组件
  * 负责侧边栏的渲染和交互逻辑
+ * 样式定义在JavaScript中，通过StyleManager管理
  */
 class SideBar {
     constructor() {
         this.isResizing = false;
         this.navigationCallback = null;
+        this.initStyles();
         this.init();
+    }
+
+    /**
+     * 初始化SideBar样式
+     */
+    initStyles() {
+        // 确保StyleManager已加载
+        if (typeof window.styleManager === 'undefined') {
+            console.error('StyleManager未加载，请确保已引入StyleManager.js');
+            return;
+        }
+
+        // 定义SideBar样式
+        const sidebarStyles = {
+            // SideBar容器
+            '.sidebar': {
+                'width': '220px',
+                'height': '100%',
+                'border-right': '1px solid var(--color-border-normal)',
+                'overflow-y': 'auto',
+                'overflow-x': 'hidden',
+                'z-index': '100',
+                'transition': 'width 0.3s ease, transform 0.3s ease',
+                'user-select': 'none'
+            },
+
+            // SideBar内容
+            '.sidebar-content': {
+                'padding': '20px 12px',
+                'display': 'flex',
+                'flex-direction': 'column',
+                'transition': 'background-color 0.2s ease'
+            },
+
+
+            '.sidebar-content.active': {
+                'background-color': 'var(--color-background-focused)'
+            },
+
+            // SideBar项目
+            '.sidebar-item': {
+                'display': 'flex',
+                'align-items': 'center',
+                'padding': '12px 12px',
+                'cursor': 'pointer',
+                'transition': 'all 0.2s ease',
+                'position': 'relative',
+                'color': 'var(--color-secondary)',
+                'background-color': 'transparent',
+                'border-radius': '6px'
+            },
+
+            '.sidebar-item:hover': {
+                'background-color': 'var(--color-background-normal-reverse)',
+                'color': 'var(--color-primary)'
+            },
+
+            '.sidebar-item.active': {
+                'background-color': 'var(--color-background-normal-reverse)',
+                'color': 'var(--color-primary)',
+                'font-weight': '600'
+            },
+
+
+            // SideBar项目内容
+            '.sidebar-item-content': {
+                'display': 'flex',
+                'align-items': 'center',
+                'gap': '8px',
+                'width': '100%'
+            },
+
+            '.sidebar-item-icon': {
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'width': '20px',
+                'height': '20px',
+                'flex-shrink': '0'
+            },
+
+            '.sidebar-item-icon .svg-icon': {
+                'width': '16px',
+                'height': '16px',
+                'color': 'var(--color-secondary)',
+                'transition': 'color 0.2s ease'
+            },
+
+            '.sidebar-item:hover .sidebar-item-icon .svg-icon, .sidebar-item.active .sidebar-item-icon .svg-icon': {
+                'color': 'var(--color-focused)'
+            },
+
+            '.sidebar-item-text': {
+                'font-size': '14px',
+                'font-weight': '500',
+                'flex': '1'
+            },
+
+            // SideBar分组
+            '.sidebar-group': {
+                'margin-top': '12px'
+            },
+
+            '.sidebar-group:first-child': {
+                'margin-top': '0'
+            },
+
+            '.sidebar-group-title': {
+                'padding': '8px 12px 8px',
+                'font-size': '12px',
+                'font-weight': '600',
+                'color': 'var(--color-secondary)',
+                'text-transform': 'uppercase',
+                'letter-spacing': '0.5px',
+                'transition': 'color 0.2s ease'
+            },
+
+            // 调整手柄
+            '.sidebar-resize-handle': {
+                'position': 'absolute',
+                'top': '0',
+                'right': '0',
+                'width': '4px',
+                'height': '100%',
+                'background-color': 'transparent',
+                'cursor': 'col-resize',
+                'transition': 'background-color 0.2s ease'
+            },
+
+            '.sidebar-resize-handle:hover': {
+                'background-color': 'var(--color-interactive-focus)'
+            },
+
+            // 响应式设计
+            '@media (max-width: 768px)': {
+                '.sidebar': {
+                    'width': '200px',
+                    'transform': 'translateX(-100%)'
+                },
+                '.sidebar.open': {
+                    'transform': 'translateX(0)'
+                },
+                '.sidebar-content': {
+                    'padding': '16px 0'
+                },
+                '.sidebar-item': {
+                    'padding': '10px 16px'
+                },
+                '.sidebar-group-title': {
+                    'padding': '6px 16px 10px'
+                }
+            },
+
+            // 隐藏状态
+            '.sidebar.hidden': {
+                'transform': 'translateX(-100%)'
+            }
+        };
+
+        // 注册样式到StyleManager
+        window.styleManager.defineStyles('SideBar', sidebarStyles);
     }
 
     /**
@@ -35,7 +198,7 @@ class SideBar {
                     <div class="sidebar-item active" data-page="home">
                         <div class="sidebar-item-content">
                             <div class="sidebar-item-icon">
-                                <i class="ph ph-house"></i>
+                                ${Icon.render('home', { className: 'svg-icon', style: 'bold' })}
                             </div>
                             <div class="sidebar-item-text">首页</div>
                         </div>
@@ -46,7 +209,7 @@ class SideBar {
                         <div class="sidebar-item" data-page="product-library">
                             <div class="sidebar-item-content">
                                 <div class="sidebar-item-icon">
-                                    <i class="ph ph-package"></i>
+                                    ${Icon.render('package', { className: 'svg-icon', style: 'bold' })}
                                 </div>
                                 <div class="sidebar-item-text">产品库</div>
                             </div>
@@ -116,6 +279,8 @@ class SideBar {
         const maxWidth = 320;
         
         if (newWidth >= minWidth && newWidth <= maxWidth) {
+            // 使用CSS变量而不是内联样式
+            sidebar.style.setProperty('--sidebar-width', newWidth + 'px');
             sidebar.style.width = newWidth + 'px';
         }
     }
@@ -196,6 +361,7 @@ class SideBar {
     setWidth(width) {
         const sidebar = document.getElementById('sidebar');
         if (sidebar) {
+            sidebar.style.setProperty('--sidebar-width', width + 'px');
             sidebar.style.width = width + 'px';
         }
     }
@@ -219,7 +385,11 @@ class SideBar {
     setVisible(visible) {
         const sidebar = document.getElementById('sidebar');
         if (sidebar) {
-            sidebar.style.display = visible ? 'block' : 'none';
+            if (visible) {
+                sidebar.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('hidden');
+            }
         }
     }
 
@@ -251,7 +421,7 @@ class SideBar {
             <div class="sidebar-item" data-page="${page}">
                 <div class="sidebar-item-content">
                     <div class="sidebar-item-icon">
-                        <i class="ph ${icon}"></i>
+                        <div class="svg-icon" data-icon="${icon.replace('ph-', '')}" data-filled="false" data-style="bold"></div>
                     </div>
                     <div class="sidebar-item-text">${text}</div>
                 </div>

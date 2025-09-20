@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图标测试</title>
+    <!-- Phosphor Icons CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .icon-test {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .icon-test i {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .icon-test span {
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Phosphor Icons 测试</h1>
+    
+    <h2>基础图标测试</h2>
+    <div class="icon-test">
+        <i class="ph ph-house"></i>
+        <span>ph-house</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-package"></i>
+        <span>ph-package</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-gear"></i>
+        <span>ph-gear</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-magnifying-glass"></i>
+        <span>ph-magnifying-glass</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-download"></i>
+        <span>ph-download</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-copy"></i>
+        <span>ph-copy</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-eye"></i>
+        <span>ph-eye</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-x"></i>
+        <span>ph-x</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-arrow-clockwise"></i>
+        <span>ph-arrow-clockwise</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-dots-three-vertical"></i>
+        <span>ph-dots-three-vertical</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-sun"></i>
+        <span>ph-sun</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-moon"></i>
+        <span>ph-moon</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-warning"></i>
+        <span>ph-warning</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-check-circle"></i>
+        <span>ph-check-circle</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-question"></i>
+        <span>ph-question</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-minus"></i>
+        <span>ph-minus</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-arrows-out"></i>
+        <span>ph-arrows-out</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-image"></i>
+        <span>ph-image</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-info"></i>
+        <span>ph-info</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-spinner"></i>
+        <span>ph-spinner</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-warning-circle"></i>
+        <span>ph-warning-circle</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-caret-left"></i>
+        <span>ph-caret-left</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph ph-caret-right"></i>
+        <span>ph-caret-right</span>
+    </div>
+    
+    <h2>填充样式测试</h2>
+    <div class="icon-test">
+        <i class="ph-fill ph-house"></i>
+        <span>ph-fill ph-house</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph-fill ph-package"></i>
+        <span>ph-fill ph-package</span>
+    </div>
+    
+    <div class="icon-test">
+        <i class="ph-fill ph-heart"></i>
+        <span>ph-fill ph-heart</span>
+    </div>
+    
+    <h2>网络状态检查</h2>
+    <div id="network-status">
+        <p>检查 CDN 加载状态...</p>
+    </div>
+    
+    <script>
+        // 检查 CDN 是否加载成功
+        function checkCDNStatus() {
+            const regularLink = document.querySelector('link[href*="regular/style.css"]');
+            const fillLink = document.querySelector('link[href*="fill/style.css"]');
+            
+            const statusDiv = document.getElementById('network-status');
+            
+            if (regularLink && fillLink) {
+                statusDiv.innerHTML = `
+                    <p style="color: green;">✓ CDN 链接已加载</p>
+                    <p>Regular: ${regularLink.href}</p>
+                    <p>Fill: ${fillLink.href}</p>
+                `;
+            } else {
+                statusDiv.innerHTML = '<p style="color: red;">✗ CDN 链接加载失败</p>';
+            }
+        }
+        
+        // 页面加载完成后检查
+        window.addEventListener('load', checkCDNStatus);
+        
+        // 检查 CSS 是否加载
+        setTimeout(() => {
+            const testElement = document.querySelector('.ph-house');
+            if (testElement) {
+                const computedStyle = window.getComputedStyle(testElement);
+                const fontFamily = computedStyle.fontFamily;
+                console.log('Font family:', fontFamily);
+                
+                if (fontFamily.includes('Phosphor')) {
+                    console.log('✓ Phosphor Icons 字体已加载');
+                } else {
+                    console.log('✗ Phosphor Icons 字体未加载');
+                }
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

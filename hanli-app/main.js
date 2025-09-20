@@ -51,7 +51,7 @@ function createWindow() {
         titleBarStyle: 'hidden', // 完全隐藏标题栏
         trafficLightPosition: { x: -1000, y: -1000 }, // 将原生按钮移到屏幕外
         show: false, // 先不显示，等加载完成后再显示
-        icon: path.join(__dirname, 'assets/icon.png'), // 应用图标
+        // icon: path.join(__dirname, 'assets/icon.png'), // 应用图标 - 暂时注释掉，避免文件不存在错误
         fullscreenable: true, // 允许全屏
         maximizable: true, // 允许最大化
         minimizable: true, // 允许最小化

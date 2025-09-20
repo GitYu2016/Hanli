@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置图标测试 - Bold样式同步加载</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .test-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        
+        .test-section h2 {
+            color: #555;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .icon-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fafafa;
+        }
+        
+        .icon-item .icon {
+            margin-right: 15px;
+            font-size: 24px;
+        }
+        
+        .icon-item .label {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .icon-item .status {
+            margin-left: auto;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status.loading {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .test-info {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .test-info h3 {
+            margin-top: 0;
+            color: #0066cc;
+        }
+        
+        .performance-info {
+            background: #f0f8f0;
+            border: 1px solid #c3e6c3;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .performance-info h3 {
+            margin-top: 0;
+            color: #2d5a2d;
+        }
+        
+        .performance-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .stat-item {
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>系统设置图标测试 - Bold样式同步加载</h1>
+        
+        <div class="test-info">
+            <h3>测试说明</h3>
+            <p>此测试验证系统设置相关图标是否正确使用Bold样式，并确保同步加载正常工作。</p>
+            <ul>
+                <li>所有系统设置相关图标自动使用Bold样式</li>
+                <li>图标通过同步XMLHttpRequest加载，确保立即显示</li>
+                <li>测试包括设置按钮、关闭按钮、主题图标等</li>
+            </ul>
+        </div>
+        
+        <div class="test-section">
+            <h2>系统设置相关图标测试</h2>
+            <div id="settings-icons" class="icon-grid">
+                <!-- 系统设置图标将通过JavaScript动态加载 -->
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>IconButton组件测试</h2>
+            <div id="icon-button-test" class="icon-grid">
+                <!-- IconButton组件测试将通过JavaScript动态加载 -->
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>样式对比测试</h2>
+            <div id="style-comparison" class="icon-grid">
+                <!-- 样式对比测试将通过JavaScript动态加载 -->
+            </div>
+        </div>
+        
+        <div class="performance-info">
+            <h3>性能统计</h3>
+            <div class="performance-stats">
+                <div class="stat-item">
+                    <div class="stat-label">总图标数量</div>
+                    <div class="stat-value" id="total-icons">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">成功加载</div>
+                    <div class="stat-value" id="success-count">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">加载失败</div>
+                    <div class="stat-value" id="error-count">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">平均加载时间</div>
+                    <div class="stat-value" id="avg-load-time">0ms</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入Icon组件 -->
+    <script src="./components/Common/Icon.js"></script>
+    <script src="./components/Common/IconButton.js"></script>
+    
+    <script>
+        // 系统设置相关图标列表
+        const settingsIcons = [
+            'settings', 'gear', 'x', 'sun', 'moon', 'check-circle', 'warning-circle', 
+            'info', 'help', 'database', 'folder-plus', 'folder-minus', 'refresh',
+            'arrow-clockwise', 'sync', 'update', 'download', 'upload', 'copy',
+            'eye', 'warning', 'success', 'error', 'loading', 'spinner'
+        ];
+        
+        // 性能统计
+        const performanceStats = {
+            totalIcons: 0,
+            successCount: 0,
+            errorCount: 0,
+            loadTimes: []
+        };
+        
+        function updatePerformanceStats() {
+            document.getElementById('total-icons').textContent = performanceStats.totalIcons;
+            document.getElementById('success-count').textContent = performanceStats.successCount;
+            document.getElementById('error-count').textContent = performanceStats.errorCount;
+            
+            if (performanceStats.loadTimes.length > 0) {
+                const avgTime = performanceStats.loadTimes.reduce((a, b) => a + b, 0) / performanceStats.loadTimes.length;
+                document.getElementById('avg-load-time').textContent = Math.round(avgTime) + 'ms';
+            }
+        }
+        
+        function createIconItem(iconName, iconHtml, status = 'success') {
+            const iconItem = document.createElement('div');
+            iconItem.className = 'icon-item';
+            iconItem.innerHTML = `
+                <div class="icon">${iconHtml}</div>
+                <div class="label">${iconName}</div>
+                <div class="status ${status}">${status === 'success' ? '✓' : '✗'}</div>
+            `;
+            return iconItem;
+        }
+        
+        // 测试系统设置图标
+        function testSettingsIcons() {
+            const container = document.getElementById('settings-icons');
+            
+            settingsIcons.forEach(iconName => {
+                const startTime = performance.now();
+                
+                try {
+                    const iconHtml = Icon.render(iconName, { 
+                        size: 'large',
+                        className: 'test-icon'
+                    });
+                    
+                    const endTime = performance.now();
+                    const loadTime = endTime - startTime;
+                    
+                    performanceStats.totalIcons++;
+                    performanceStats.successCount++;
+                    performanceStats.loadTimes.push(loadTime);
+                    
+                    const iconItem = createIconItem(iconName, iconHtml, 'success');
+                    container.appendChild(iconItem);
+                    
+                } catch (error) {
+                    performanceStats.totalIcons++;
+                    performanceStats.errorCount++;
+                    
+                    const iconItem = createIconItem(iconName, '加载失败', 'error');
+                    container.appendChild(iconItem);
+                    
+                    console.error(`图标 ${iconName} 加载失败:`, error);
+                }
+            });
+            
+            updatePerformanceStats();
+        }
+        
+        // 测试IconButton组件
+        function testIconButton() {
+            const container = document.getElementById('icon-button-test');
+            const testIcons = ['settings', 'x', 'search', 'gear'];
+            
+            testIcons.forEach(iconName => {
+                try {
+                    const buttonHtml = window.iconButtonInstance.render(iconName, { 
+                        title: `测试 ${iconName} 按钮` 
+                    });
+                    
+                    const buttonItem = document.createElement('div');
+                    buttonItem.className = 'icon-item';
+                    buttonItem.innerHTML = `
+                        <div class="icon">${buttonHtml}</div>
+                        <div class="label">${iconName} (IconButton)</div>
+                        <div class="status success">✓</div>
+                    `;
+                    container.appendChild(buttonItem);
+                    
+                } catch (error) {
+                    const buttonItem = document.createElement('div');
+                    buttonItem.className = 'icon-item';
+                    buttonItem.innerHTML = `
+                        <div class="icon">加载失败</div>
+                        <div class="label">${iconName} (IconButton)</div>
+                        <div class="status error">✗</div>
+                    `;
+                    container.appendChild(buttonItem);
+                    
+                    console.error(`IconButton ${iconName} 测试失败:`, error);
+                }
+            });
+        }
+        
+        // 测试样式对比
+        function testStyleComparison() {
+            const container = document.getElementById('style-comparison');
+            const testIcon = 'settings';
+            const styles = ['regular', 'bold'];
+            
+            styles.forEach(style => {
+                try {
+                    const iconHtml = Icon.render(testIcon, { 
+                        size: 'large',
+                        style: style,
+                        className: 'test-icon'
+                    });
+                    
+                    const iconItem = document.createElement('div');
+                    iconItem.className = 'icon-item';
+                    iconItem.innerHTML = `
+                        <div class="icon">${iconHtml}</div>
+                        <div class="label">${testIcon} (${style})</div>
+                        <div class="status success">✓</div>
+                    `;
+                    container.appendChild(iconItem);
+                    
+                } catch (error) {
+                    const iconItem = document.createElement('div');
+                    iconItem.className = 'icon-item';
+                    iconItem.innerHTML = `
+                        <div class="icon">加载失败</div>
+                        <div class="label">${testIcon} (${style})</div>
+                        <div class="status error">✗</div>
+                    `;
+                    container.appendChild(iconItem);
+                    
+                    console.error(`样式对比测试 ${style} 失败:`, error);
+                }
+            });
+        }
+        
+        // 页面加载完成后运行测试
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('开始系统设置图标测试...');
+            
+            // 初始化图标系统
+            Icon.init();
+            
+            // 运行所有测试
+            testSettingsIcons();
+            testIconButton();
+            testStyleComparison();
+            
+            console.log('系统设置图标测试完成');
+            console.log('性能统计:', performanceStats);
+        });
+    </script>
+</body>
+</html>

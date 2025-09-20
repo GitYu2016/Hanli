@@ -3,7 +3,7 @@
   "name": "Hanli",
   "version": "1.0",
   "description": "采集Temu商品详情信息并导出JSON",
-  "permissions": ["contextMenus", "scripting", "activeTab"],
+  "permissions": ["contextMenus", "scripting", "activeTab", "storage"],
   "host_permissions": ["http://localhost:3001/*"],
   "action": {
     "default_popup": "popup.html",

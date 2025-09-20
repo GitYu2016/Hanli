@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设置弹窗布局测试</title>
+    <link rel="stylesheet" href="../../renderer/globals.css">
+    <link rel="stylesheet" href="../../renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="../../renderer/icons-fixed.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: var(--color-background-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .test-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .test-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin: 0 0 8px 0;
+        }
+        
+        .test-description {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            margin: 0;
+        }
+        
+        .test-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            background: var(--color-surface-primary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin: 0 0 16px 0;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            color: var(--color-text-secondary);
+        }
+        
+        .feature-item::before {
+            content: "✓";
+            color: var(--color-success);
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        .demo-button {
+            background: var(--color-info);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .demo-button:hover {
+            background: var(--color-info-hover);
+            transform: translateY(-1px);
+        }
+        
+        .demo-button:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1 class="test-title">系统设置弹窗布局测试</h1>
+            <p class="test-description">测试新的左右分栏布局设计</p>
+        </div>
+        
+        <div class="test-buttons">
+            <button class="demo-button" onclick="openSettingsModal()">打开设置弹窗</button>
+            <button class="demo-button" onclick="switchToGeneral()">切换到通用设置</button>
+            <button class="demo-button" onclick="switchToFunction()">切换到功能设置</button>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="section-title">布局特性</h2>
+            <ul class="feature-list">
+                <li class="feature-item">左侧菜单导航，包含通用设置和功能设置</li>
+                <li class="feature-item">右侧内容区域，根据左侧选择动态切换</li>
+                <li class="feature-item">通用设置：外观设置、背景色设置（圆圈形式）、语言设置</li>
+                <li class="feature-item">功能设置：数据存储路径、自动刷新产品数据、显示采集时间</li>
+                <li class="feature-item">响应式设计，移动端自动切换为上下布局</li>
+                <li class="feature-item">使用Phosphor Icons图标系统</li>
+                <li class="feature-item">遵循项目设计规范，使用Radix颜色令牌</li>
+            </ul>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="section-title">技术实现</h2>
+            <ul class="feature-list">
+                <li class="feature-item">重构SettingsModal组件，添加activeSection状态管理</li>
+                <li class="feature-item">实现switchSection方法，支持动态切换内容区域</li>
+                <li class="feature-item">分离renderGeneralSettings和renderFunctionSettings方法</li>
+                <li class="feature-item">新增CSS样式支持左右分栏布局</li>
+                <li class="feature-item">移动端响应式优化，菜单横向滚动</li>
+                <li class="feature-item">保持向后兼容性，不影响现有功能</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 引入必要的组件 -->
+    <script src="../../renderer/components/Common/Button/IconButton.js"></script>
+    <script src="../../renderer/components/Common/Button/Button.js"></script>
+    <script src="../../renderer/components/Common/Switch.js"></script>
+    <script src="../../renderer/components/Common/ThemeSelector.js"></script>
+    <script src="../../renderer/components/Common/BackgroundColorSelector.js"></script>
+    <script src="../../renderer/components/Modal/SettingsModal.js"></script>
+    
+    <script>
+        // 初始化全局实例
+        window.iconButtonInstance = new IconButton();
+        window.buttonInstance = new Button();
+        
+        // 创建设置弹窗实例
+        const settingsModal = new SettingsModal();
+        window.settingsModalInstance = settingsModal;
+        
+        // 设置回调函数
+        settingsModal.setCallbacks({
+            onSave: (settings) => {
+                console.log('保存设置:', settings);
+                alert('设置已保存！');
+            },
+            onCancel: () => {
+                console.log('取消设置');
+            },
+            onThemeChange: (theme) => {
+                console.log('主题切换:', theme);
+            },
+            onBackgroundColorChange: (bgColor) => {
+                console.log('背景色切换:', bgColor);
+            }
+        });
+        
+        // 打开设置弹窗
+        function openSettingsModal() {
+            settingsModal.open();
+        }
+        
+        // 切换到通用设置
+        function switchToGeneral() {
+            if (settingsModal.isOpen) {
+                settingsModal.switchSection('general');
+            } else {
+                alert('请先打开设置弹窗');
+            }
+        }
+        
+        // 切换到功能设置
+        function switchToFunction() {
+            if (settingsModal.isOpen) {
+                settingsModal.switchSection('function');
+            } else {
+                alert('请先打开设置弹窗');
+            }
+        }
+        
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('设置弹窗布局测试页面加载完成');
+        });
+    </script>
+</body>
+</html>

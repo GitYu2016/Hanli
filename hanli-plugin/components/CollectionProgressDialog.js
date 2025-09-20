@@ -33,6 +33,9 @@ class CollectionProgressDialog {
 
         this.createDialog();
         this.isVisible = true;
+        
+        // 在采集开始时就启用"打开App"按钮
+        this.enableOpenAppButton();
     }
 
     // 隐藏进度对话框
@@ -61,7 +64,6 @@ class CollectionProgressDialog {
         if (this.dialog) {
             const progressText = this.dialog.querySelector('#progress-text');
             const progressBar = this.dialog.querySelector('#progress-bar');
-            const progressPercent = this.dialog.querySelector('#progress-percent');
 
             if (progressText) {
                 progressText.textContent = `${completed}/${this.totalFiles}`;
@@ -70,11 +72,6 @@ class CollectionProgressDialog {
             if (progressBar) {
                 const percentage = this.totalFiles > 0 ? (completed / this.totalFiles) * 100 : 0;
                 progressBar.style.width = `${percentage}%`;
-            }
-
-            if (progressPercent) {
-                const percentage = this.totalFiles > 0 ? Math.round((completed / this.totalFiles) * 100) : 0;
-                progressPercent.textContent = `${percentage}%`;
             }
         }
     }
@@ -92,24 +89,41 @@ class CollectionProgressDialog {
         }
     }
 
+    // 启用打开App按钮
+    enableOpenAppButton() {
+        if (this.dialog) {
+            const openAppBtn = this.dialog.querySelector('#open-app-btn');
+            if (openAppBtn) {
+                openAppBtn.textContent = '打开App';
+                openAppBtn.disabled = false;
+                openAppBtn.style.background = '#4a9eff';
+                openAppBtn.style.cursor = 'pointer';
+                
+                // 绑定事件监听器
+                this.bindOpenAppEvent(openAppBtn);
+            }
+        }
+    }
+
     // 显示采集完成
     showComplete() {
         if (this.dialog) {
-            const title = this.dialog.querySelector('#dialog-title');
             const progressText = this.dialog.querySelector('#progress-text');
             const openAppBtn = this.dialog.querySelector('#open-app-btn');
-
-            if (title) {
-                title.textContent = '采集完成';
-            }
 
             if (progressText) {
                 progressText.textContent = `采集完成！共处理 ${this.completedFiles} 个文件`;
             }
 
             if (openAppBtn) {
+                // 确保按钮保持可点击状态
                 openAppBtn.textContent = '打开App';
                 openAppBtn.disabled = false;
+                openAppBtn.style.background = '#4a9eff';
+                openAppBtn.style.cursor = 'pointer';
+                
+                // 重新绑定事件监听器，确保按钮可以点击
+                this.bindOpenAppEvent(openAppBtn);
             }
 
             // 隐藏进度条
@@ -148,23 +162,14 @@ class CollectionProgressDialog {
         `;
 
         dialog.innerHTML = `
-            <div style="padding: 16px 20px 12px 20px; border-bottom: 1px solid #444;">
-                <h3 id="dialog-title" style="margin: 0; font-size: 16px; font-weight: 600; color: #ffffff; text-align: center;">
-                    正在采集中
-                </h3>
-            </div>
             <div style="padding: 16px 20px;">
-                <div id="progress-text" style="margin-bottom: 12px; font-size: 14px; color: #cccccc; text-align: center;">
-                    0/${this.totalFiles}
-                </div>
-                
                 <div id="progress-container" style="margin-bottom: 16px;">
-                    <div style="background: #444; height: 6px; border-radius: 3px; overflow: hidden; margin-bottom: 6px;">
+                    <div style="background: #444; height: 6px; border-radius: 3px; overflow: hidden;">
                         <div id="progress-bar" style="background: #4a9eff; height: 100%; width: 0%; transition: width 0.3s ease;"></div>
                     </div>
-                    <div id="progress-percent" style="text-align: center; font-size: 12px; color: #888;">
-                        0%
-                    </div>
+                </div>
+                <div id="progress-text" style="text-align: center; font-size: 14px; color: #cccccc; margin-bottom: 16px;">
+                    0/${this.totalFiles}
                 </div>
 
                 <div style="margin-bottom: 16px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
@@ -202,7 +207,7 @@ class CollectionProgressDialog {
                         font-size: 12px;
                         font-weight: 500;
                         transition: all 0.2s ease;
-                    " onmouseover="this.style.background='#3a8eef'" onmouseout="this.style.background='#4a9eff'" disabled>
+                    ">
                         打开App
                     </button>
                 </div>
@@ -235,9 +240,7 @@ class CollectionProgressDialog {
         // 打开App按钮
         const openAppBtn = this.dialog.querySelector('#open-app-btn');
         if (openAppBtn) {
-            openAppBtn.addEventListener('click', () => {
-                this.openApp();
-            });
+            this.bindOpenAppEvent(openAppBtn);
         }
 
         // ESC键关闭（仅在采集完成时）
@@ -245,8 +248,8 @@ class CollectionProgressDialog {
             if (e.key === 'Escape') {
                 try {
                     if (this.dialog && this.dialog.querySelector) {
-                        const title = this.dialog.querySelector('#dialog-title');
-                        if (title && title.textContent === '采集完成') {
+                        const openAppBtn = this.dialog.querySelector('#open-app-btn');
+                        if (openAppBtn && !openAppBtn.disabled) {
                             this.hide();
                         }
                     }
@@ -261,6 +264,158 @@ class CollectionProgressDialog {
             }
         };
         document.addEventListener('keydown', this.keydownHandler);
+    }
+
+    // 绑定打开App按钮事件
+    bindOpenAppEvent(openAppBtn) {
+        if (!openAppBtn) return;
+        
+        // 移除之前的事件监听器（如果有的话）
+        const newOpenAppBtn = openAppBtn.cloneNode(true);
+        openAppBtn.parentNode.replaceChild(newOpenAppBtn, openAppBtn);
+        
+        // 添加点击事件监听器
+        newOpenAppBtn.addEventListener('click', () => {
+            console.log('打开App按钮被点击');
+            this.handleOpenAppClick();
+        });
+        
+        // 添加鼠标悬停效果
+        newOpenAppBtn.addEventListener('mouseenter', () => {
+            if (!newOpenAppBtn.disabled) {
+                newOpenAppBtn.style.background = '#3a8eef';
+            }
+        });
+        
+        newOpenAppBtn.addEventListener('mouseleave', () => {
+            if (!newOpenAppBtn.disabled) {
+                newOpenAppBtn.style.background = '#4a9eff';
+            }
+        });
+    }
+    
+    // 处理打开App按钮点击
+    async handleOpenAppClick() {
+        // 检查是否是第一次点击
+        const hasClickedBefore = localStorage.getItem('hanli_has_clicked_open_app');
+        
+        if (!hasClickedBefore) {
+            // 第一次点击，显示浮窗提示
+            const shouldAutoOpen = await this.showAutoOpenDialog();
+            if (shouldAutoOpen !== null) {
+                // 保存用户选择
+                chrome.storage.sync.set({ autoOpenApp: shouldAutoOpen });
+                localStorage.setItem('hanli_has_clicked_open_app', 'true');
+            }
+        }
+        
+        // 执行打开App
+        this.openApp();
+    }
+    
+    // 显示自动打开App的浮窗提示
+    showAutoOpenDialog() {
+        return new Promise((resolve) => {
+            // 创建浮窗遮罩
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 10003;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+
+            // 创建浮窗内容
+            const dialog = document.createElement('div');
+            dialog.style.cssText = `
+                background: #2d2d2d;
+                border-radius: var(--radius-large);
+                padding: 0;
+                max-width: 400px;
+                width: 90%;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                overflow: hidden;
+            `;
+
+            dialog.innerHTML = `
+                <div style="padding: 24px 24px 16px 24px; border-bottom: 1px solid #444;">
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">
+                        是否每次采集自动打开App
+                    </h3>
+                </div>
+                <div style="padding: 16px 24px 24px 24px;">
+                    <p style="margin: 0; font-size: 14px; color: #cccccc; line-height: 1.5;">
+                        开启后，每次采集完成会自动打开Hanli客户端，无需手动点击。
+                    </p>
+                </div>
+                <div style="padding: 0 24px 24px 24px; display: flex; gap: 12px; justify-content: flex-end;">
+                    <button id="hanli-dialog-no" style="
+                        background: transparent;
+                        color: #cccccc;
+                        border: 1px solid #555;
+                        padding: 8px 16px;
+                        border-radius: var(--radius-small);
+                        font-size: 14px;
+                        font-weight: 500;
+                        cursor: pointer;
+                        transition: all 0.2s;
+                    " onmouseover="this.style.background='#444'" onmouseout="this.style.background='transparent'">
+                        否
+                    </button>
+                    <button id="hanli-dialog-yes" style="
+                        background: #4a9eff;
+                        color: white;
+                        border: none;
+                        padding: 8px 16px;
+                        border-radius: var(--radius-small);
+                        font-size: 14px;
+                        font-weight: 500;
+                        cursor: pointer;
+                        transition: all 0.2s;
+                    " onmouseover="this.style.background='#3a8eef'" onmouseout="this.style.background='#4a9eff'">
+                        是
+                    </button>
+                </div>
+            `;
+
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+
+            // 绑定按钮事件
+            const noButton = dialog.querySelector('#hanli-dialog-no');
+            const yesButton = dialog.querySelector('#hanli-dialog-yes');
+            
+            const closeDialog = (result) => {
+                document.body.removeChild(overlay);
+                resolve(result);
+            };
+
+            noButton.addEventListener('click', () => closeDialog(false));
+            yesButton.addEventListener('click', () => closeDialog(true));
+            
+            // 点击遮罩关闭（返回null表示取消）
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    closeDialog(null);
+                }
+            });
+
+            // ESC键关闭
+            const handleKeyDown = (e) => {
+                if (e.key === 'Escape') {
+                    closeDialog(null);
+                    document.removeEventListener('keydown', handleKeyDown);
+                }
+            };
+            document.addEventListener('keydown', handleKeyDown);
+        });
     }
 
     // 打开App
@@ -284,9 +439,8 @@ class CollectionProgressDialog {
                 }
             }, 100);
             
-            // 显示成功提示
+            // 显示成功提示，但不关闭进度弹窗
             this.showToast('正在打开Hanli客户端...', 'success');
-            this.hide();
             
         } catch (error) {
             console.error('打开App失败:', error);

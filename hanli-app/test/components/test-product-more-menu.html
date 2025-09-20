@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProductMoreMenu 组件测试</title>
+    <link rel="stylesheet" href="icons-sprite.css">
+    <link rel="stylesheet" href="globals.css">
+    <link rel="stylesheet" href="theme/light/colors.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-medium);
+            background-color: var(--color-background);
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--color-text-primary);
+        }
+        
+        .test-description {
+            margin-bottom: 20px;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+        }
+        
+        .test-controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-small);
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn:hover {
+            background-color: var(--color-hover);
+        }
+        
+        .btn:active {
+            background-color: var(--color-muted);
+        }
+        
+        .log-container {
+            background-color: var(--color-muted);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-small);
+            padding: 12px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin-bottom: 4px;
+            padding: 2px 0;
+        }
+        
+        .log-info {
+            color: var(--color-text-primary);
+        }
+        
+        .log-success {
+            color: #10b981;
+        }
+        
+        .log-error {
+            color: #ef4444;
+        }
+        
+        .menu-demo {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-medium);
+            background-color: var(--color-background);
+        }
+        
+        .demo-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .demo-label {
+            font-weight: 500;
+            color: var(--color-text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>ProductMoreMenu 组件测试</h1>
+        
+        <!-- 基础功能测试 -->
+        <div class="test-section">
+            <div class="test-title">基础功能测试</div>
+            <div class="test-description">
+                测试 ProductMoreMenu 组件的基本功能，包括菜单显示、隐藏、点击事件等。
+            </div>
+            
+            <div class="test-controls">
+                <button class="btn" onclick="initBasicMenu()">初始化基础菜单</button>
+                <button class="btn" onclick="updateMenuItems()">更新菜单项</button>
+                <button class="btn" onclick="clearLog()">清空日志</button>
+            </div>
+            
+            <div class="menu-demo">
+                <div class="demo-item">
+                    <span class="demo-label">基础菜单：</span>
+                    <div id="basic-menu-container"></div>
+                </div>
+            </div>
+            
+            <div class="log-container" id="basic-log"></div>
+        </div>
+        
+        <!-- 高级功能测试 -->
+        <div class="test-section">
+            <div class="test-title">高级功能测试</div>
+            <div class="test-description">
+                测试 ProductMoreMenu 组件的高级功能，包括禁用项、动态菜单、主题切换等。
+            </div>
+            
+            <div class="test-controls">
+                <button class="btn" onclick="initAdvancedMenu()">初始化高级菜单</button>
+                <button class="btn" onclick="toggleTheme()">切换主题</button>
+                <button class="btn" onclick="testDynamicMenu()">测试动态菜单</button>
+            </div>
+            
+            <div class="menu-demo">
+                <div class="demo-item">
+                    <span class="demo-label">高级菜单：</span>
+                    <div id="advanced-menu-container"></div>
+                </div>
+            </div>
+            
+            <div class="log-container" id="advanced-log"></div>
+        </div>
+        
+        <!-- 产品详情页面模拟 -->
+        <div class="test-section">
+            <div class="test-title">产品详情页面模拟</div>
+            <div class="test-description">
+                模拟产品详情页面中的 ProductMoreMenu 使用场景。
+            </div>
+            
+            <div class="test-controls">
+                <button class="btn" onclick="initProductMenu()">初始化产品菜单</button>
+                <button class="btn" onclick="simulateTemuProduct()">模拟 TEMU 产品</button>
+                <button class="btn" onclick="simulateNormalProduct()">模拟普通产品</button>
+            </div>
+            
+            <div class="menu-demo">
+                <div class="demo-item">
+                    <span class="demo-label">产品菜单：</span>
+                    <div id="product-menu-container"></div>
+                </div>
+            </div>
+            
+            <div class="log-container" id="product-log"></div>
+        </div>
+    </div>
+
+    <!-- 引入组件 -->
+    <script src="components/Modal/ProductMoreMenu.js"></script>
+    
+    <script>
+        let basicMenu = null;
+        let advancedMenu = null;
+        let productMenu = null;
+        let isDarkTheme = false;
+
+        /**
+         * 日志记录函数
+         */
+        function log(message, type = 'info', containerId = 'basic-log') {
+            const logContainer = document.getElementById(containerId);
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        /**
+         * 清空日志
+         */
+        function clearLog() {
+            document.querySelectorAll('.log-container').forEach(container => {
+                container.innerHTML = '';
+            });
+        }
+
+        /**
+         * 初始化基础菜单
+         */
+        function initBasicMenu() {
+            try {
+                if (basicMenu) {
+                    basicMenu.destroy();
+                }
+                
+                basicMenu = new ProductMoreMenu();
+                const container = document.getElementById('basic-menu-container');
+                
+                const menuItems = [
+                    {
+                        label: '查看详情',
+                        action: 'view-details',
+                        icon: 'eye'
+                    },
+                    {
+                        label: '编辑',
+                        action: 'edit',
+                        icon: 'pencil'
+                    },
+                    {
+                        label: '复制链接',
+                        action: 'copy-link',
+                        icon: 'link'
+                    },
+                    {
+                        label: '删除',
+                        action: 'delete',
+                        icon: 'trash',
+                        disabled: true
+                    }
+                ];
+                
+                basicMenu.init(container, menuItems);
+                basicMenu.setMenuClickCallback((action, menuItem) => {
+                    log(`菜单项被点击: ${action}`, 'success', 'basic-log');
+                });
+                
+                log('基础菜单初始化成功', 'success', 'basic-log');
+            } catch (error) {
+                log(`基础菜单初始化失败: ${error.message}`, 'error', 'basic-log');
+            }
+        }
+
+        /**
+         * 更新菜单项
+         */
+        function updateMenuItems() {
+            if (!basicMenu) {
+                log('请先初始化基础菜单', 'error', 'basic-log');
+                return;
+            }
+            
+            const newMenuItems = [
+                {
+                    label: '新功能1',
+                    action: 'new-feature-1',
+                    icon: 'star'
+                },
+                {
+                    label: '新功能2',
+                    action: 'new-feature-2',
+                    icon: 'heart'
+                },
+                {
+                    label: '新功能3',
+                    action: 'new-feature-3',
+                    icon: 'gear'
+                }
+            ];
+            
+            basicMenu.updateMenuItems(newMenuItems);
+            log('菜单项已更新', 'success', 'basic-log');
+        }
+
+        /**
+         * 初始化高级菜单
+         */
+        function initAdvancedMenu() {
+            try {
+                if (advancedMenu) {
+                    advancedMenu.destroy();
+                }
+                
+                advancedMenu = new ProductMoreMenu();
+                const container = document.getElementById('advanced-menu-container');
+                
+                const menuItems = [
+                    {
+                        label: '高级设置',
+                        action: 'advanced-settings',
+                        icon: 'gear'
+                    },
+                    {
+                        label: '导出数据',
+                        action: 'export-data',
+                        icon: 'download'
+                    },
+                    {
+                        label: '导入数据',
+                        action: 'import-data',
+                        icon: 'upload'
+                    },
+                    {
+                        label: '重置设置',
+                        action: 'reset-settings',
+                        icon: 'arrow-clockwise',
+                        disabled: true
+                    },
+                    {
+                        label: '关于',
+                        action: 'about',
+                        icon: 'info'
+                    }
+                ];
+                
+                advancedMenu.init(container, menuItems);
+                advancedMenu.setMenuClickCallback((action, menuItem) => {
+                    log(`高级菜单项被点击: ${action}`, 'success', 'advanced-log');
+                });
+                
+                log('高级菜单初始化成功', 'success', 'advanced-log');
+            } catch (error) {
+                log(`高级菜单初始化失败: ${error.message}`, 'error', 'advanced-log');
+            }
+        }
+
+        /**
+         * 切换主题
+         */
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            const theme = isDarkTheme ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            
+            // 重新加载主题样式
+            const themeLink = document.querySelector('link[href*="colors.css"]');
+            if (themeLink) {
+                themeLink.href = `theme/${theme}/colors.css`;
+            }
+            
+            log(`主题已切换到: ${theme}`, 'success', 'advanced-log');
+        }
+
+        /**
+         * 测试动态菜单
+         */
+        function testDynamicMenu() {
+            if (!advancedMenu) {
+                log('请先初始化高级菜单', 'error', 'advanced-log');
+                return;
+            }
+            
+            const dynamicItems = [
+                {
+                    label: '动态项1',
+                    action: 'dynamic-1',
+                    icon: 'lightning'
+                },
+                {
+                    label: '动态项2',
+                    action: 'dynamic-2',
+                    icon: 'flash'
+                }
+            ];
+            
+            advancedMenu.updateMenuItems(dynamicItems);
+            log('动态菜单已更新', 'success', 'advanced-log');
+        }
+
+        /**
+         * 初始化产品菜单
+         */
+        function initProductMenu() {
+            try {
+                if (productMenu) {
+                    productMenu.destroy();
+                }
+                
+                productMenu = new ProductMoreMenu();
+                const container = document.getElementById('product-menu-container');
+                
+                const menuItems = [
+                    {
+                        label: '在 Finder 中显示',
+                        action: 'show-in-finder',
+                        icon: 'folder-open'
+                    }
+                ];
+                
+                productMenu.init(container, menuItems);
+                productMenu.setMenuClickCallback((action, menuItem) => {
+                    log(`产品菜单项被点击: ${action}`, 'success', 'product-log');
+                });
+                
+                log('产品菜单初始化成功', 'success', 'product-log');
+            } catch (error) {
+                log(`产品菜单初始化失败: ${error.message}`, 'error', 'product-log');
+            }
+        }
+
+        /**
+         * 模拟 TEMU 产品
+         */
+        function simulateTemuProduct() {
+            if (!productMenu) {
+                log('请先初始化产品菜单', 'error', 'product-log');
+                return;
+            }
+            
+            const temuMenuItems = [
+                {
+                    label: '在 Finder 中显示',
+                    action: 'show-in-finder',
+                    icon: 'folder-open'
+                },
+                {
+                    label: '访问 TEMU 链接',
+                    action: 'visit-temu-link',
+                    icon: 'eye'
+                }
+            ];
+            
+            productMenu.updateMenuItems(temuMenuItems);
+            log('已模拟 TEMU 产品菜单', 'success', 'product-log');
+        }
+
+        /**
+         * 模拟普通产品
+         */
+        function simulateNormalProduct() {
+            if (!productMenu) {
+                log('请先初始化产品菜单', 'error', 'product-log');
+                return;
+            }
+            
+            const normalMenuItems = [
+                {
+                    label: '在 Finder 中显示',
+                    action: 'show-in-finder',
+                    icon: 'folder-open'
+                }
+            ];
+            
+            productMenu.updateMenuItems(normalMenuItems);
+            log('已模拟普通产品菜单', 'success', 'product-log');
+        }
+
+        // 页面加载完成后自动初始化基础菜单
+        document.addEventListener('DOMContentLoaded', function() {
+            log('ProductMoreMenu 组件测试页面已加载', 'info', 'basic-log');
+            initBasicMenu();
+        });
+    </script>
+</body>
+</html>

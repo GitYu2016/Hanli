@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简化版背景色选择器测试</title>
+    <link rel="stylesheet" href="../../renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="../../renderer/theme/dark/colors.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-body-bg-default);
+            color: var(--color-primary);
+            transition: background-color 0.2s ease;
+        }
+
+        .theme-dark {
+            background: var(--color-body-bg-default);
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--color-background-normal);
+            border-radius: 6px;
+            border: 1px solid var(--color-border-normal);
+        }
+
+        .section h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--color-primary);
+            font-size: 18px;
+        }
+
+        .theme-toggle {
+            margin-bottom: 20px;
+        }
+
+        .theme-toggle button {
+            padding: 8px 16px;
+            border: 1px solid var(--color-border-normal);
+            border-radius: 6px;
+            background: var(--color-background-normal);
+            color: var(--color-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+
+        .theme-toggle button:hover {
+            background: var(--color-background-focused);
+            border-color: var(--color-border-focused);
+        }
+
+        .current-bg {
+            padding: 12px;
+            margin: 15px 0;
+            background: var(--color-background-focused);
+            border-radius: 6px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .info-box {
+            background: var(--color-background-normal);
+            border: 1px solid var(--color-border-normal);
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .info-box h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--color-primary);
+            font-size: 14px;
+        }
+
+        .info-box p {
+            margin: 5px 0;
+            font-size: 13px;
+            color: var(--color-secondary);
+            line-height: 1.4;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .comparison-item {
+            padding: 15px;
+            background: var(--color-background-normal);
+            border-radius: 6px;
+            border: 1px solid var(--color-border-normal);
+        }
+
+        .comparison-item h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--color-primary);
+            font-size: 14px;
+        }
+
+        .comparison-item ul {
+            margin: 0;
+            padding-left: 20px;
+            font-size: 13px;
+            color: var(--color-secondary);
+        }
+
+        .comparison-item li {
+            margin: 3px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>简化版背景色选择器测试</h1>
+        
+        <div class="section">
+            <h2>主题切换</h2>
+            <div class="theme-toggle">
+                <button onclick="toggleTheme()">切换主题</button>
+                <span id="current-theme">当前主题: 亮色</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>简化版背景色选择器</h2>
+            <div id="background-color-selector-container"></div>
+            <div class="current-bg">
+                当前选择的背景色: <span id="current-bg-color">default</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>简化效果对比</h2>
+            <div class="comparison">
+                <div class="comparison-item">
+                    <h4>简化前</h4>
+                    <ul>
+                        <li>8个背景色选项</li>
+                        <li>复杂的CSS样式</li>
+                        <li>无标签说明</li>
+                        <li>代码行数: 313行</li>
+                    </ul>
+                </div>
+                <div class="comparison-item">
+                    <h4>简化后</h4>
+                    <ul>
+                        <li>4个精选背景色</li>
+                        <li>简化的CSS样式</li>
+                        <li>带标签说明</li>
+                        <li>代码行数: 减少约30%</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>简化说明</h2>
+            <div class="info-box">
+                <h4>🎯 简化目标</h4>
+                <p>• 减少选择困难：从8个选项减少到4个精选选项</p>
+                <p>• 提升用户体验：添加中文标签，更直观易懂</p>
+                <p>• 优化代码结构：移除冗余代码，提高维护性</p>
+                
+                <h4>📋 保留的背景色</h4>
+                <p>• <strong>默认</strong> - 经典灰白，适合日常使用</p>
+                <p>• <strong>蓝色</strong> - 清新蓝色，护眼舒适</p>
+                <p>• <strong>绿色</strong> - 自然绿色，放松心情</p>
+                <p>• <strong>紫色</strong> - 优雅紫色，提升品味</p>
+                
+                <h4>✨ 新增功能</h4>
+                <p>• 每个选项都有中文标签说明</p>
+                <p>• 选中状态更加明显</p>
+                <p>• 响应式设计，移动端友好</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../renderer/components/Common/BackgroundColorSelector.js"></script>
+    <script>
+        let currentTheme = 'light';
+        let backgroundColorSelector;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initBackgroundColorSelector();
+        });
+
+        /**
+         * 初始化背景色选择器
+         */
+        function initBackgroundColorSelector() {
+            backgroundColorSelector = new BackgroundColorSelector({
+                currentBackgroundColor: 'default',
+                onBackgroundColorChange: function(bgColor) {
+                    document.getElementById('current-bg-color').textContent = bgColor;
+                    console.log('背景色已更改为:', bgColor);
+                }
+            });
+
+            const container = document.getElementById('background-color-selector-container');
+            container.innerHTML = backgroundColorSelector.render();
+            backgroundColorSelector.bindEvents(container);
+        }
+
+        /**
+         * 切换主题
+         */
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            if (currentTheme === 'dark') {
+                document.documentElement.classList.add('theme-dark');
+                document.documentElement.classList.remove('theme-light');
+            } else {
+                document.documentElement.classList.add('theme-light');
+                document.documentElement.classList.remove('theme-dark');
+            }
+            
+            document.getElementById('current-theme').textContent = `当前主题: ${currentTheme === 'light' ? '亮色' : '暗色'}`;
+        }
+    </script>
+</body>
+</html>

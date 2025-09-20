@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http://localhost:3001 https://via.placeholder.com https://httpstat.us; font-src 'self' data:; connect-src 'self' http://localhost:3001;">
+    <title>媒体卡片组件测试</title>
+    <link rel="stylesheet" href="hanli-app/renderer/globals.css">
+    <link rel="stylesheet" href="hanli-app/renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="hanli-app/renderer/icons-sprite.css">
+</head>
+<body>
+    <div class="test-container" style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+        <h1>媒体卡片组件测试</h1>
+        
+        <div id="media-card-container"></div>
+        
+        <div style="margin-top: 20px;">
+            <button onclick="testImageSelection()">测试图片选择</button>
+            <button onclick="testVideoSelection()">测试视频选择</button>
+            <button onclick="testMultiSelection()">测试多选模式</button>
+            <button onclick="clearSelection()">清除选择</button>
+        </div>
+        
+        <div id="selection-info" style="margin-top: 20px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+            选择信息将显示在这里
+        </div>
+    </div>
+
+    <script src="hanli-app/renderer/components/Detail/MediaCard.js"></script>
+    <script>
+        // 测试数据
+        const testImages = [
+            {
+                type: 'image',
+                url: 'https://via.placeholder.com/300x400/4CAF50/white?text=图片1',
+                name: '测试图片1.jpg',
+                width: 300,
+                height: 400,
+                fileSize: 1024000
+            },
+            {
+                type: 'image',
+                url: 'https://via.placeholder.com/400x300/2196F3/white?text=图片2',
+                name: '测试图片2.png',
+                width: 400,
+                height: 300,
+                fileSize: 2048000
+            },
+            {
+                type: 'image',
+                url: 'https://via.placeholder.com/350x350/FF9800/white?text=图片3',
+                name: '测试图片3.gif',
+                width: 350,
+                height: 350,
+                fileSize: 1536000
+            }
+        ];
+
+        const testVideos = [
+            {
+                type: 'video',
+                url: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
+                name: '测试视频1.mp4',
+                fileSize: 1048576
+            },
+            {
+                type: 'video',
+                url: 'https://sample-videos.com/zip/10/mp4/SampleVideo_640x360_1mb.mp4',
+                name: '测试视频2.mp4',
+                fileSize: 2097152
+            }
+        ];
+
+        const testMediaItems = [...testImages, ...testVideos];
+
+        // 初始化媒体卡片组件
+        function initMediaCard() {
+            const container = document.getElementById('media-card-container');
+            if (typeof MediaCard !== 'undefined') {
+                const mediaCard = new MediaCard();
+                mediaCard.init(container, testMediaItems, {
+                    onSelectionChange: (selectedItems) => {
+                        updateSelectionInfo(selectedItems);
+                    },
+                    onImageClick: (image, index) => {
+                        console.log('图片点击:', image, index);
+                        alert(`点击了图片: ${image.name}`);
+                    },
+                    onVideoContextMenu: (event, index, fileName, filePath) => {
+                        console.log('视频右键菜单:', event, index, fileName, filePath);
+                        alert(`视频右键菜单: ${fileName}`);
+                    }
+                });
+                window.testMediaCard = mediaCard;
+            } else {
+                container.innerHTML = '<div class="error">MediaCard组件未加载</div>';
+            }
+        }
+
+        // 更新选择信息
+        function updateSelectionInfo(selectedItems) {
+            const infoDiv = document.getElementById('selection-info');
+            if (selectedItems.length === 0) {
+                infoDiv.innerHTML = '没有选择任何媒体项';
+            } else {
+                let info = `已选择 ${selectedItems.length} 个媒体项:<br>`;
+                selectedItems.forEach((item, index) => {
+                    info += `${index + 1}. ${item.item.name} (${item.item.type})<br>`;
+                });
+                infoDiv.innerHTML = info;
+            }
+        }
+
+        // 测试图片选择
+        function testImageSelection() {
+            if (window.testMediaCard) {
+                window.testMediaCard.setSelection([0, 1]); // 选择前两个图片
+            }
+        }
+
+        // 测试视频选择
+        function testVideoSelection() {
+            if (window.testMediaCard) {
+                window.testMediaCard.setSelection([3, 4]); // 选择两个视频
+            }
+        }
+
+        // 测试多选模式
+        function testMultiSelection() {
+            if (window.testMediaCard) {
+                window.testMediaCard.setSelection([0, 2, 3]); // 选择图片1、图片3、视频1
+            }
+        }
+
+        // 清除选择
+        function clearSelection() {
+            if (window.testMediaCard) {
+                window.testMediaCard.clearSelection();
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initMediaCard);
+    </script>
+</body>
+</html>

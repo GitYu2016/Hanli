@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SearchModal 组件测试</title>
+    <link rel="stylesheet" href="icons-sprite.css">
+    <link rel="stylesheet" href="theme/light/colors.css">
+    <link rel="stylesheet" href="theme/dark/colors.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            margin-bottom: 32px;
+            padding: 20px;
+            background: var(--color-card-background);
+            border-radius: var(--radius-medium);
+            border: 1px solid var(--color-border);
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: 16px;
+        }
+        
+        .test-description {
+            color: var(--color-text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        
+        .test-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background-color: var(--color-primary);
+            color: var(--color-primary-foreground);
+            border: none;
+            border-radius: var(--radius-medium);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .test-button:hover {
+            background-color: var(--color-primary-hover);
+            transform: translateY(-1px);
+        }
+        
+        .test-button:active {
+            transform: translateY(0);
+        }
+        
+        .test-button i {
+            font-size: 16px;
+        }
+        
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>SearchModal 组件测试</h1>
+        
+        <div class="test-section">
+            <h2 class="test-title">基本功能测试</h2>
+            <p class="test-description">
+                测试 SearchModal 组件的样式集成是否正常工作。点击按钮打开搜索弹窗，检查样式是否正确应用。
+            </p>
+            <button class="test-button" onclick="openSearchModal()">
+                <i class="ph ph-magnifying-glass"></i>
+                打开搜索弹窗
+            </button>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="test-title">样式集成验证</h2>
+            <p class="test-description">
+                验证以下功能：
+                <br>• 弹窗样式是否正确显示
+                <br>• 搜索输入框样式是否正常
+                <br>• 响应式设计是否工作
+                <br>• 主题切换是否正常
+            </p>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="test-title">测试说明</h2>
+            <p class="test-description">
+                1. 点击"打开搜索弹窗"按钮测试基本功能
+                <br>2. 检查弹窗的样式是否正确应用
+                <br>3. 测试搜索输入框的交互
+                <br>4. 尝试调整浏览器窗口大小测试响应式设计
+                <br>5. 使用右上角的主题切换按钮测试暗色主题
+            </p>
+        </div>
+    </div>
+    
+    <!-- 主题切换按钮 -->
+    <div class="theme-toggle">
+        <button class="test-button" onclick="toggleTheme()">
+            <i class="ph ph-moon"></i>
+            切换主题
+        </button>
+    </div>
+    
+    <!-- 引入组件 -->
+    <script src="components/Common/Button.js"></script>
+    <script src="components/Modal/SearchModal.js"></script>
+    
+    <script>
+        // 初始化全局变量
+        window.buttonInstance = new Button();
+        window.keyboardShortcutManager = {
+            register: () => {},
+            unregisterContext: () => {}
+        };
+        
+        // 创建搜索弹窗实例
+        const searchModal = new SearchModal();
+        
+        // 设置搜索回调
+        searchModal.setSearchCallback((query) => {
+            console.log('搜索查询:', query);
+            
+            // 模拟搜索结果
+            const mockResults = [
+                {
+                    id: '123456789012',
+                    title: '测试产品 1',
+                    price: '99.00',
+                    image: null
+                },
+                {
+                    id: '123456789013',
+                    title: '测试产品 2',
+                    price: '199.00',
+                    image: null
+                },
+                {
+                    id: '123456789014',
+                    title: '测试产品 3',
+                    price: '299.00',
+                    image: null
+                }
+            ];
+            
+            // 过滤结果
+            const filteredResults = mockResults.filter(result => 
+                result.title.toLowerCase().includes(query.toLowerCase()) ||
+                result.id.includes(query)
+            );
+            
+            searchModal.showResults(filteredResults);
+        });
+        
+        // 打开搜索弹窗
+        function openSearchModal() {
+            searchModal.open();
+        }
+        
+        // 主题切换功能
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            body.setAttribute('data-theme', newTheme);
+            
+            // 更新按钮图标
+            const themeButton = document.querySelector('.theme-toggle .test-button i');
+            themeButton.className = newTheme === 'dark' ? 'ph ph-sun' : 'ph ph-moon';
+        }
+        
+        // 初始化主题
+        document.body.setAttribute('data-theme', 'light');
+        
+        console.log('SearchModal 测试页面已加载');
+        console.log('SearchModal 实例:', searchModal);
+    </script>
+</body>
+</html>

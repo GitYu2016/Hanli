@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>侧边栏颜色优化测试</title>
+    <link rel="stylesheet" href="../renderer/globals.css">
+    <link rel="stylesheet" href="../renderer/icons-sprite.css">
+    <link rel="stylesheet" href="../renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="../renderer/theme/dark/colors.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-foreground);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .test-container {
+            display: flex;
+            gap: 20px;
+            min-height: 100vh;
+        }
+
+        .theme-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .theme-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-medium);
+            background: var(--color-surface-primary);
+            color: var(--color-text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .theme-btn:hover {
+            background: var(--color-interactive-hover);
+        }
+
+        .theme-btn.active {
+            background: var(--color-brand-primary);
+            color: var(--color-brand-primary-foreground);
+        }
+
+        .test-sidebar {
+            width: 220px;
+            height: 600px;
+            background-color: var(--color-surface-primary);
+            border: 1px solid var(--color-border-primary);
+            border-radius: var(--radius-medium);
+            overflow: hidden;
+        }
+
+        .test-content {
+            flex: 1;
+            padding: 20px;
+            background: var(--color-surface-secondary);
+            border-radius: var(--radius-medium);
+        }
+
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .color-group {
+            background: var(--color-card-background);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-medium);
+            padding: 16px;
+        }
+
+        .color-group h3 {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+
+        .color-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .color-swatch {
+            width: 16px;
+            height: 16px;
+            border-radius: var(--radius-small);
+            border: 1px solid var(--color-border);
+        }
+
+        .test-notes {
+            background: var(--color-card-background);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-medium);
+            padding: 16px;
+            margin-top: 20px;
+        }
+
+        .test-notes h3 {
+            margin: 0 0 12px 0;
+            color: var(--color-text-primary);
+        }
+
+        .test-notes ul {
+            margin: 0;
+            padding-left: 20px;
+            color: var(--color-text-secondary);
+        }
+
+        .test-notes li {
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-controls">
+        <button class="theme-btn active" onclick="switchTheme('light')">浅色主题</button>
+        <button class="theme-btn" onclick="switchTheme('dark')">深色主题</button>
+    </div>
+
+    <div class="test-container">
+        <!-- 侧边栏测试区域 -->
+        <div class="test-sidebar">
+            <div class="sidebar-content">
+                <div class="sidebar-item active" data-page="home">
+                    <div class="sidebar-item-content">
+                        <div class="sidebar-item-icon">
+                            <i class="ph ph-house"></i>
+                        </div>
+                        <div class="sidebar-item-text">首页</div>
+                    </div>
+                </div>
+                
+                <div class="sidebar-group">
+                    <div class="sidebar-group-title">选品</div>
+                    <div class="sidebar-item" data-page="product-library">
+                        <div class="sidebar-item-content">
+                            <div class="sidebar-item-icon">
+                                <i class="ph ph-package"></i>
+                            </div>
+                            <div class="sidebar-item-text">产品库</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 测试内容区域 -->
+        <div class="test-content">
+            <h1>侧边栏颜色优化测试</h1>
+            <p>此页面用于测试侧边栏组件的颜色优化效果。请切换主题查看不同主题下的颜色表现。</p>
+
+            <div class="color-palette">
+                <div class="color-group">
+                    <h3>图标颜色</h3>
+                    <div class="color-item">
+                        <div class="color-swatch" style="background-color: var(--color-icon-primary);"></div>
+                        <span>--color-icon-primary</span>
+                    </div>
+                    <div class="color-item">
+                        <div class="color-swatch" style="background-color: var(--color-icon-secondary);"></div>
+                        <span>--color-icon-secondary</span>
+                    </div>
+                    <div class="color-item">
+                        <div class="color-swatch" style="background-color: var(--color-icon-hover);"></div>
+                        <span>--color-icon-hover</span>
+                    </div>
+                    <div class="color-item">
+                        <div class="color-swatch" style="background-color: var(--color-icon-active);"></div>
+                        <span>--color-icon-active</span>
+                    </div>
+                    <div class="color-item">
+                        <div class="color-swatch" style="background-color: var(--color-icon-disabled);"></div>
+                        <span>--color-icon-disabled</span>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <h3>文本颜色</h3>
+                    <div class="color-item">
+                        <div class="color-swatch" style="background-color: var(--color-text-primary);"></div>
+                        <span>--color-text-primary</span>
+                    </div>
+                    <div class="color-item">
+                        <div class="color-swatch" style="background-color: var(--color-text-secondary);"></div>
+                        <span>--color-text-secondary</span>
+                    </div>
+                    <div class="color-item">
+                        <div class="color-swatch" style="background-color: var(--color-text-tertiary);"></div>
+                        <span>--color-text-tertiary</span>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <h3>交互颜色</h3>
+                    <div class="color-item">
+                        <div class="color-swatch" style="background-color: var(--color-interactive-hover);"></div>
+                        <span>--color-interactive-hover</span>
+                    </div>
+                    <div class="color-item">
+                        <div class="color-swatch" style="background-color: var(--color-interactive-active);"></div>
+                        <span>--color-interactive-active</span>
+                    </div>
+                    <div class="color-item">
+                        <div class="color-swatch" style="background-color: var(--color-interactive-selected);"></div>
+                        <span>--color-interactive-selected</span>
+                    </div>
+                    <div class="color-item">
+                        <div class="color-swatch" style="background-color: var(--color-interactive-focus);"></div>
+                        <span>--color-interactive-focus</span>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <h3>品牌颜色</h3>
+                    <div class="color-item">
+                        <div class="color-swatch" style="background-color: var(--color-brand-primary);"></div>
+                        <span>--color-brand-primary</span>
+                    </div>
+                    <div class="color-item">
+                        <div class="color-swatch" style="background-color: var(--color-brand-primary-hover);"></div>
+                        <span>--color-brand-primary-hover</span>
+                    </div>
+                    <div class="color-item">
+                        <div class="color-swatch" style="background-color: var(--color-brand-primary-foreground);"></div>
+                        <span>--color-brand-primary-foreground</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="test-notes">
+                <h3>优化说明</h3>
+                <ul>
+                    <li><strong>图标颜色</strong>：使用 background-color + mask 实现，支持不同状态的颜色变化</li>
+                    <li><strong>文字颜色</strong>：采用层次化文本颜色，深色主题下提高对比度</li>
+                    <li><strong>背景色</strong>：使用语义化的交互状态颜色，提供清晰的视觉反馈</li>
+                    <li><strong>过渡动画</strong>：所有颜色变化都有平滑的过渡效果</li>
+                    <li><strong>主题适配</strong>：在浅色和深色主题下都有良好的视觉效果</li>
+                    <li><strong>深色主题修复</strong>：提高文本和图标的不透明度，增强可读性</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 主题切换功能
+        function switchTheme(theme) {
+            document.body.className = `theme-${theme}`;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        // 侧边栏交互测试
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarItems = document.querySelectorAll('.sidebar-item');
+            
+            sidebarItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    // 移除所有激活状态
+                    sidebarItems.forEach(i => i.classList.remove('active'));
+                    // 添加当前激活状态
+                    this.classList.add('active');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

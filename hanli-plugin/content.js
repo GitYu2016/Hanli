@@ -1320,7 +1320,6 @@
         let loadedCount = 0;
         let errorCount = 0;
         
-        console.log(`开始检测 ${imageUrls.length} 张图片的尺寸...`);
         
         for (const imageUrl of imageUrls) {
             try {
@@ -1353,7 +1352,6 @@
                         imageInfoList.push(imageInfo);
                         loadedCount++;
                         
-                        console.log(`图片 ${loadedCount}: ${width}×${height}px, 范围内:${isInRange}, 目标尺寸:${isTargetSize}`);
                         
                         resolve();
                     };
@@ -1374,6 +1372,15 @@
         
         console.log(`图片检测完成: 成功加载 ${loadedCount} 张, 失败 ${errorCount} 张`);
         return imageInfoList;
+    }
+
+    // 检查自动打开App设置
+    async function checkAutoOpenSetting() {
+        return new Promise((resolve) => {
+            chrome.storage.sync.get(['autoOpenApp'], (result) => {
+                resolve(result.autoOpenApp || false);
+            });
+        });
     }
 
     // 带进度跟踪的采集函数
@@ -1418,19 +1425,59 @@
 
             // 提取商品信息
             const goodsInfo = extractGoodsInfo(rawData);
-            const mediaData = await processMediaWithProgress(rawData, goodsInfo.goodsId);
+            
+            // 第一步：先保存核心JSON文件（rawData、product、monitoring）
+            console.log('=== 第一步：保存核心JSON文件 ===');
+            await window.collectionManager.createFolderAndSaveJson(
+                goodsInfo.goodsInfoData, 
+                goodsInfo.monitoringData, 
+                null, // 不传递媒体数据，只保存核心JSON
+                rawData // 传递原始JSON数据
+            );
+            
+            // 更新进度：核心JSON文件已保存
+            if (window.collectionProgressDialog) {
+                window.collectionProgressDialog.updateProgress(1);
+            }
+            
+            // 检查是否自动打开App
+            console.log('=== 第二步：检查自动打开App设置 ===');
+            const shouldAutoOpen = await checkAutoOpenSetting();
+            if (shouldAutoOpen) {
+                console.log('自动打开App已启用');
+                window.collectionManager.openApp(goodsInfo.goodsInfoData.goodsId);
+            } else {
+                console.log('自动打开App已禁用，等待用户手动点击');
+            }
+            
+            // 第三步：处理媒体文件（检测图片和视频）
+            console.log('=== 第三步：处理媒体文件 ===');
+            const mediaData = await processMediaWithProgress(rawData, goodsInfo.goodsInfoData.goodsId);
+            
+            // 调试：检查媒体数据
+            console.log('🔍 媒体数据调试信息:');
+            console.log('  - mediaData:', mediaData);
+            console.log('  - mediaData.media:', mediaData.media);
+            console.log('  - mediaData.media.length:', mediaData.media ? mediaData.media.length : 'undefined');
+            console.log('  - goodsId:', goodsInfo.goodsInfoData.goodsId);
+            
+            
+            if (!mediaData || !mediaData.media || mediaData.media.length === 0) {
+                console.warn('⚠️ 没有检测到媒体文件，跳过下载');
+                window.collectionProgressDialog.showComplete();
+                updateCollectButtonStatus('completed');
+                return;
+            }
             
             // 更新总文件数
             const totalFiles = 1 + mediaData.media.length; // JSON + 媒体文件
             window.collectionProgressDialog.updateProgress(1, totalFiles);
 
-            // 使用CollectionManager执行完整采集流程（不自动打开App）
-            await window.collectionManager.executeCollectionWithProgress(
-                goodsInfo.goodsInfoData, 
-                goodsInfo.monitoringData, 
-                mediaData, 
-                false // 不自动打开App
-            );
+            // 第四步：下载媒体文件
+            console.log('=== 第四步：下载媒体文件 ===');
+            if (window.mediaManager) {
+                await window.collectionManager.downloadMediaFilesWithProgress(goodsInfo.goodsInfoData.goodsId, mediaData);
+            }
 
             // 显示采集完成
             window.collectionProgressDialog.showComplete();
@@ -1459,10 +1506,25 @@
         const pageImages = mediaManager.getAllCollectedImages();
         const pageVideos = mediaManager.getAllCollectedVideos();
         
+        console.log('🔍 媒体收集调试信息:');
+        console.log('  - pageImages.length:', pageImages.length);
+        console.log('  - pageVideos.length:', pageVideos.length);
+        console.log('  - rawData?.store?.goods?.mainImages:', rawData?.store?.goods?.mainImages);
+        console.log('  - rawData?.store?.goods?.mainImages?.length:', rawData?.store?.goods?.mainImages?.length);
+        
         // 合并所有图片源
         let allImages = [...(rawData?.store?.goods?.mainImages || [])];
         allImages = [...allImages, ...pageImages];
         allImages = [...new Set(allImages)]; // 去重
+        
+        console.log('  - allImages.length:', allImages.length);
+        console.log('  - allImages:', allImages);
+        
+        
+        // 检查页面图片收集
+        console.log('🔍 页面图片收集调试:');
+        console.log('  - mediaManager是否存在:', !!mediaManager);
+        console.log('  - pageImages内容:', pageImages);
         
         // 更新图片进度
         window.collectionProgressDialog.updateFileTypeProgress('images', 0, allImages.length);
@@ -1501,6 +1563,15 @@
         
         // 生成媒体数据
         const mediaData = mediaManager.generateMediaData(goodsId, filteredImageInfo, allVideoInfo);
+        
+        // 保存media-temp.json
+        console.log('=== 保存media-temp.json ===');
+        await window.collectionManager.createFolderAndSaveJson(
+            null, // 不更新goodsInfo
+            null, // 不更新monitoring
+            mediaData, // 保存媒体数据
+            null // 不更新rawData
+        );
         
         return mediaData;
     }
@@ -1830,7 +1901,7 @@
 
         // 使用CollectionManager执行完整采集流程（默认打开App）
         try {
-            await window.collectionManager.executeCollection(goodsInfoData, monitoringData, mediaData, true);
+            await window.collectionManager.executeCollection(goodsInfoData, monitoringData, mediaData, true, rawData);
         } catch (error) {
             console.error('采集流程失败:', error);
             alert('采集失败: ' + error.message);
@@ -2287,35 +2358,21 @@
 
             console.log('监控数据提取完成:', monitoringEntry);
 
-            // 发送到App后端保存到monitoring.json
-            const response = await fetch('http://localhost:3001/api/monitor/update-monitoring-data', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    goodsId: goodsId,
-                    monitoringData: [monitoringEntry] // 直接发送单个条目
-                })
-            });
+            // 使用CollectionManager保存JSON数据（包括rawData）
+            await window.collectionManager.createFolderAndSaveJson(
+                { goodsId: goodsId, collectTime: new Date().toISOString().replace('Z', '+08:00') }, // 基本商品信息
+                [monitoringEntry], // 监控数据数组
+                { goodsId: goodsId, media: [] }, // 空的媒体数据
+                rawData // 原始JSON数据
+            );
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`保存monitoring.json失败: ${response.status} - ${errorText}`);
-            }
-
-            const result = await response.json();
-            if (!result.success) {
-                throw new Error(result.error || '保存monitoring.json失败');
-            }
-
-            console.log('监控数据已保存到monitoring.json');
+            console.log('监控数据和rawData已保存到hanli-app的data文件夹');
             
             // 更新按钮状态为已完成
             updateMonitorButtonStatus('completed');
             
             // 显示成功消息
-            showSuccessMessage('监控数据采集成功！数据已保存到monitoring.json');
+            showSuccessMessage('监控数据采集成功！数据已保存到hanli-app的data文件夹');
             
             // 触发完成事件
             window.dispatchEvent(new CustomEvent('hanliPopupMonitoringCollectionCompleted', {

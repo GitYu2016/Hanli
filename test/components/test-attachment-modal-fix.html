@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>附件预览弹窗修复测试</title>
+    <link rel="stylesheet" href="../../hanli-app/renderer/globals.css">
+    <link rel="stylesheet" href="../../hanli-app/renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="../../hanli-app/renderer/icons-fixed.css">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--color-background-normal);
+            color: var(--color-text-primary);
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--color-background-focused);
+            border-radius: 8px;
+            border: 1px solid var(--color-border-normal);
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--color-text-primary);
+        }
+        
+        .test-description {
+            margin-bottom: 15px;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+        }
+        
+        .test-button {
+            padding: 10px 20px;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        
+        .test-button:hover {
+            background: var(--color-primary-hover);
+            transform: translateY(-1px);
+        }
+        
+        .test-results {
+            margin-top: 15px;
+            padding: 10px;
+            background: var(--color-background-normal);
+            border-radius: 4px;
+            border-left: 4px solid var(--color-primary);
+        }
+        
+        .test-result-item {
+            margin: 5px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid var(--color-border-normal);
+        }
+        
+        .test-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .result-pass {
+            color: var(--color-success);
+        }
+        
+        .result-fail {
+            color: var(--color-destructive);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>附件预览弹窗修复测试</h1>
+        
+        <div class="test-section">
+            <div class="test-title">测试1: 关闭按钮功能</div>
+            <div class="test-description">
+                测试附件预览弹窗的关闭按钮是否能正常工作，包括：
+                <ul>
+                    <li>点击关闭按钮能关闭弹窗</li>
+                    <li>点击遮罩层能关闭弹窗</li>
+                    <li>按ESC键能关闭弹窗</li>
+                </ul>
+            </div>
+            <button class="test-button" onclick="testCloseButton()">测试关闭按钮</button>
+            <div class="test-results" id="close-button-results" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">测试2: 复制按钮组件</div>
+            <div class="test-description">
+                测试附件预览弹窗的复制按钮是否使用了MPrimaryButton组件：
+                <ul>
+                    <li>复制按钮使用了MPrimaryButton样式</li>
+                    <li>复制按钮有正确的图标和文本</li>
+                    <li>复制功能能正常工作</li>
+                </ul>
+            </div>
+            <button class="test-button" onclick="testCopyButton()">测试复制按钮</button>
+            <div class="test-results" id="copy-button-results" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">测试3: 整体功能测试</div>
+            <div class="test-description">
+                测试附件预览弹窗的整体功能是否正常：
+                <ul>
+                    <li>弹窗能正常打开</li>
+                    <li>JSON内容能正确显示</li>
+                    <li>所有交互功能都正常</li>
+                </ul>
+            </div>
+            <button class="test-button" onclick="testOverallFunctionality()">测试整体功能</button>
+            <div class="test-results" id="overall-results" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- 引入必要的组件 -->
+    <script src="../../hanli-app/renderer/components/Common/BaseComponent.js"></script>
+    <script src="../../hanli-app/renderer/components/Common/StyleManager.js"></script>
+    <script src="../../hanli-app/renderer/components/Common/Icon.js"></script>
+    <script src="../../hanli-app/renderer/components/Common/Button/IconButton.js"></script>
+    <script src="../../hanli-app/renderer/components/Common/MPrimaryButton.js"></script>
+    <script src="../../hanli-app/renderer/components/ProductDetailPage/AttachmentCard.js"></script>
+
+    <script>
+        // 模拟测试数据
+        const testJsonData = {
+            "productId": "123456789012",
+            "name": "测试产品",
+            "price": 99.99,
+            "description": "这是一个测试产品的描述",
+            "specifications": {
+                "weight": 500,
+                "dimensions": {
+                    "length": 100,
+                    "width": 50,
+                    "height": 30
+                }
+            },
+            "images": [
+                "image1.jpg",
+                "image2.jpg"
+            ],
+            "createdAt": "2024-01-01T00:00:00",
+            "updatedAt": "2024-01-02T00:00:00"
+        };
+
+        // 测试关闭按钮功能
+        function testCloseButton() {
+            const resultsContainer = document.getElementById('close-button-results');
+            resultsContainer.style.display = 'block';
+            resultsContainer.innerHTML = '<div class="test-result-item">正在测试关闭按钮功能...</div>';
+            
+            let testResults = [];
+            
+            try {
+                // 创建测试弹窗
+                const modal = createTestModal();
+                document.body.appendChild(modal);
+                
+                // 测试1: 点击关闭按钮
+                const closeButton = modal.querySelector('.json-modal-close');
+                if (closeButton) {
+                    closeButton.click();
+                    if (!document.body.contains(modal)) {
+                        testResults.push({ test: '点击关闭按钮', result: '通过', status: 'pass' });
+                    } else {
+                        testResults.push({ test: '点击关闭按钮', result: '失败 - 弹窗未关闭', status: 'fail' });
+                    }
+                } else {
+                    testResults.push({ test: '点击关闭按钮', result: '失败 - 找不到关闭按钮', status: 'fail' });
+                }
+                
+                // 重新创建弹窗进行下一个测试
+                const modal2 = createTestModal();
+                document.body.appendChild(modal2);
+                
+                // 测试2: 点击遮罩层关闭
+                modal2.click();
+                if (!document.body.contains(modal2)) {
+                    testResults.push({ test: '点击遮罩层关闭', result: '通过', status: 'pass' });
+                } else {
+                    testResults.push({ test: '点击遮罩层关闭', result: '失败 - 弹窗未关闭', status: 'fail' });
+                }
+                
+                // 重新创建弹窗进行下一个测试
+                const modal3 = createTestModal();
+                document.body.appendChild(modal3);
+                
+                // 测试3: ESC键关闭
+                const handleKeyDown = (e) => {
+                    if (e.key === 'Escape') {
+                        if (!document.body.contains(modal3)) {
+                            testResults.push({ test: 'ESC键关闭', result: '通过', status: 'pass' });
+                        } else {
+                            testResults.push({ test: 'ESC键关闭', result: '失败 - 弹窗未关闭', status: 'fail' });
+                        }
+                        document.removeEventListener('keydown', handleKeyDown);
+                        displayResults(resultsContainer, testResults);
+                    }
+                };
+                document.addEventListener('keydown', handleKeyDown);
+                
+                // 模拟ESC键
+                setTimeout(() => {
+                    const escEvent = new KeyboardEvent('keydown', { key: 'Escape' });
+                    document.dispatchEvent(escEvent);
+                }, 100);
+                
+            } catch (error) {
+                testResults.push({ test: '关闭按钮测试', result: '失败 - ' + error.message, status: 'fail' });
+                displayResults(resultsContainer, testResults);
+            }
+        }
+        
+        // 测试复制按钮组件
+        function testCopyButton() {
+            const resultsContainer = document.getElementById('copy-button-results');
+            resultsContainer.style.display = 'block';
+            resultsContainer.innerHTML = '<div class="test-result-item">正在测试复制按钮组件...</div>';
+            
+            let testResults = [];
+            
+            try {
+                // 创建测试弹窗
+                const modal = createTestModal();
+                document.body.appendChild(modal);
+                
+                // 检查复制按钮是否使用了MPrimaryButton
+                const copyButton = modal.querySelector('.m-primary-btn');
+                if (copyButton) {
+                    testResults.push({ test: '使用MPrimaryButton组件', result: '通过', status: 'pass' });
+                    
+                    // 检查按钮文本和图标
+                    const buttonText = copyButton.querySelector('.m-primary-btn-text');
+                    const buttonIcon = copyButton.querySelector('.m-primary-btn-icon');
+                    
+                    if (buttonText && buttonText.textContent === '复制') {
+                        testResults.push({ test: '按钮文本正确', result: '通过', status: 'pass' });
+                    } else {
+                        testResults.push({ test: '按钮文本正确', result: '失败 - 文本不正确', status: 'fail' });
+                    }
+                    
+                    if (buttonIcon && buttonIcon.getAttribute('data-icon') === 'copy') {
+                        testResults.push({ test: '按钮图标正确', result: '通过', status: 'pass' });
+                    } else {
+                        testResults.push({ test: '按钮图标正确', result: '失败 - 图标不正确', status: 'fail' });
+                    }
+                } else {
+                    testResults.push({ test: '使用MPrimaryButton组件', result: '失败 - 未找到MPrimaryButton', status: 'fail' });
+                }
+                
+                // 清理弹窗
+                if (document.body.contains(modal)) {
+                    document.body.removeChild(modal);
+                }
+                
+                displayResults(resultsContainer, testResults);
+                
+            } catch (error) {
+                testResults.push({ test: '复制按钮测试', result: '失败 - ' + error.message, status: 'fail' });
+                displayResults(resultsContainer, testResults);
+            }
+        }
+        
+        // 测试整体功能
+        function testOverallFunctionality() {
+            const resultsContainer = document.getElementById('overall-results');
+            resultsContainer.style.display = 'block';
+            resultsContainer.innerHTML = '<div class="test-result-item">正在测试整体功能...</div>';
+            
+            let testResults = [];
+            
+            try {
+                // 使用AttachmentCard实例测试
+                if (typeof attachmentCardInstance !== 'undefined') {
+                    // 模拟showJsonModal调用
+                    const fileName = 'test-product.json';
+                    const jsonText = JSON.stringify(testJsonData, null, 2);
+                    
+                    attachmentCardInstance.showJsonModal(fileName, jsonText);
+                    
+                    // 检查弹窗是否创建
+                    const modal = document.querySelector('.json-modal-overlay');
+                    if (modal) {
+                        testResults.push({ test: '弹窗正常打开', result: '通过', status: 'pass' });
+                        
+                        // 检查JSON内容是否正确显示
+                        const jsonContent = modal.querySelector('.json-modal-content pre code');
+                        if (jsonContent && jsonContent.textContent.includes('测试产品')) {
+                            testResults.push({ test: 'JSON内容正确显示', result: '通过', status: 'pass' });
+                        } else {
+                            testResults.push({ test: 'JSON内容正确显示', result: '失败 - 内容不正确', status: 'fail' });
+                        }
+                        
+                        // 检查所有必需元素
+                        const closeButton = modal.querySelector('.json-modal-close');
+                        const copyButton = modal.querySelector('.m-primary-btn');
+                        
+                        if (closeButton) {
+                            testResults.push({ test: '关闭按钮存在', result: '通过', status: 'pass' });
+                        } else {
+                            testResults.push({ test: '关闭按钮存在', result: '失败 - 找不到关闭按钮', status: 'fail' });
+                        }
+                        
+                        if (copyButton) {
+                            testResults.push({ test: '复制按钮存在', result: '通过', status: 'pass' });
+                        } else {
+                            testResults.push({ test: '复制按钮存在', result: '失败 - 找不到复制按钮', status: 'fail' });
+                        }
+                        
+                        // 清理弹窗
+                        if (document.body.contains(modal)) {
+                            document.body.removeChild(modal);
+                        }
+                    } else {
+                        testResults.push({ test: '弹窗正常打开', result: '失败 - 弹窗未创建', status: 'fail' });
+                    }
+                } else {
+                    testResults.push({ test: 'AttachmentCard实例', result: '失败 - 实例未找到', status: 'fail' });
+                }
+                
+                displayResults(resultsContainer, testResults);
+                
+            } catch (error) {
+                testResults.push({ test: '整体功能测试', result: '失败 - ' + error.message, status: 'fail' });
+                displayResults(resultsContainer, testResults);
+            }
+        }
+        
+        // 创建测试弹窗
+        function createTestModal() {
+            const modal = document.createElement('div');
+            modal.className = 'json-modal-overlay';
+            modal.innerHTML = `
+                <div class="json-modal">
+                    <div class="json-modal-header">
+                        <h3>test-product.json</h3>
+                        <button class="json-modal-close" title="关闭">
+                            <div class="svg-icon" data-icon="x" data-filled="false"></div>
+                        </button>
+                    </div>
+                    <div class="json-modal-content">
+                        <pre><code>${JSON.stringify(testJsonData, null, 2)}</code></pre>
+                    </div>
+                    <div class="json-modal-footer" id="json-modal-footer">
+                        <!-- 按钮将通过JavaScript动态创建 -->
+                    </div>
+                </div>
+            `;
+            
+            // 创建复制按钮
+            const footer = modal.querySelector('#json-modal-footer');
+            if (footer && window.mPrimaryButtonInstance) {
+                const copyButton = window.mPrimaryButtonInstance.create({
+                    text: '复制',
+                    icon: 'ph-copy',
+                    onClick: () => {
+                        console.log('复制功能被调用');
+                    }
+                });
+                footer.appendChild(copyButton);
+            }
+            
+            // 添加关闭事件监听器
+            const closeButton = modal.querySelector('.json-modal-close');
+            if (closeButton) {
+                closeButton.addEventListener('click', () => {
+                    if (modal.parentNode) {
+                        modal.parentNode.removeChild(modal);
+                    }
+                });
+            }
+            
+            // 点击遮罩层关闭
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    if (modal.parentNode) {
+                        modal.parentNode.removeChild(modal);
+                    }
+                }
+            });
+            
+            return modal;
+        }
+        
+        // 显示测试结果
+        function displayResults(container, results) {
+            let html = '';
+            results.forEach(result => {
+                const statusClass = result.status === 'pass' ? 'result-pass' : 'result-fail';
+                html += `<div class="test-result-item ${statusClass}">
+                    <strong>${result.test}:</strong> ${result.result}
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+        
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('附件预览弹窗修复测试页面已加载');
+            console.log('MPrimaryButton实例:', window.mPrimaryButtonInstance);
+            console.log('AttachmentCard实例:', window.attachmentCardInstance);
+        });
+    </script>
+</body>
+</html>

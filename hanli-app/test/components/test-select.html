@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select 组件测试</title>
+    <link rel="stylesheet" href="../../renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="../../renderer/globals.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            background-color: var(--color-body-bg-default);
+            color: var(--color-primary);
+        }
+
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .test-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background-color: var(--color-background-normal);
+            border-radius: 6px;
+            border: 1px solid var(--color-border-normal);
+        }
+
+        .test-section h2 {
+            margin-top: 0;
+            margin-bottom: 16px;
+            color: var(--color-primary);
+        }
+
+        .test-section h3 {
+            margin-top: 20px;
+            margin-bottom: 12px;
+            color: var(--color-primary);
+        }
+
+        .test-item {
+            margin-bottom: 20px;
+        }
+
+        .test-item label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--color-primary);
+        }
+
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: var(--color-background-focused);
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Select 组件测试</h1>
+        
+        <!-- 基础测试 -->
+        <div class="test-section">
+            <h2>基础功能测试</h2>
+            
+            <div class="test-item">
+                <label>基础选择器：</label>
+                <div id="basic-select"></div>
+                <div class="result" id="basic-result">当前值: 无</div>
+            </div>
+
+            <div class="test-item">
+                <label>带图标的选择器：</label>
+                <div id="icon-select"></div>
+                <div class="result" id="icon-result">当前值: 无</div>
+            </div>
+
+            <div class="test-item">
+                <label>带默认值的选择器：</label>
+                <div id="default-select"></div>
+                <div class="result" id="default-result">当前值: 无</div>
+            </div>
+        </div>
+
+        <!-- 自定义样式测试 -->
+        <div class="test-section">
+            <h2>自定义样式测试</h2>
+            
+            <div class="test-item">
+                <label>自定义占位符：</label>
+                <div id="custom-placeholder-select"></div>
+                <div class="result" id="custom-placeholder-result">当前值: 无</div>
+            </div>
+
+            <div class="test-item">
+                <label>自定义类名：</label>
+                <div id="custom-class-select"></div>
+                <div class="result" id="custom-class-result">当前值: 无</div>
+            </div>
+        </div>
+
+        <!-- 事件测试 -->
+        <div class="test-section">
+            <h2>事件测试</h2>
+            
+            <div class="test-item">
+                <label>事件监听测试：</label>
+                <div id="event-select"></div>
+                <div class="result" id="event-result">
+                    事件日志:<br>
+                    <span id="event-log">暂无事件</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 方法测试 -->
+        <div class="test-section">
+            <h2>方法测试</h2>
+            
+            <div class="test-item">
+                <label>动态设置选项：</label>
+                <div id="dynamic-select"></div>
+                <div class="result" id="dynamic-result">当前值: 无</div>
+                <button onclick="updateOptions()">更新选项</button>
+                <button onclick="setValue()">设置值为 'option2'</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入 Select 组件 -->
+    <script src="../../renderer/components/Common/Select.js"></script>
+    
+    <script>
+        // 基础选择器
+        const basicSelect = new Select({
+            options: [
+                { value: 'option1', label: '选项一' },
+                { value: 'option2', label: '选项二' },
+                { value: 'option3', label: '选项三' }
+            ],
+            onChange: (value) => {
+                document.getElementById('basic-result').textContent = `当前值: ${value || '无'}`;
+            }
+        });
+        document.getElementById('basic-select').innerHTML = basicSelect.render();
+        basicSelect.bindEvents(document.getElementById('basic-select'));
+
+        // 带图标的选择器
+        const iconSelect = new Select({
+            options: [
+                { value: 'home', label: '首页', icon: '🏠' },
+                { value: 'settings', label: '设置', icon: '⚙️' },
+                { value: 'profile', label: '个人资料', icon: '👤' }
+            ],
+            onChange: (value) => {
+                document.getElementById('icon-result').textContent = `当前值: ${value || '无'}`;
+            }
+        });
+        document.getElementById('icon-select').innerHTML = iconSelect.render();
+        iconSelect.bindEvents(document.getElementById('icon-select'));
+
+        // 带默认值的选择器
+        const defaultSelect = new Select({
+            options: [
+                { value: 'red', label: '红色' },
+                { value: 'green', label: '绿色' },
+                { value: 'blue', label: '蓝色' }
+            ],
+            value: 'green',
+            onChange: (value) => {
+                document.getElementById('default-result').textContent = `当前值: ${value || '无'}`;
+            }
+        });
+        document.getElementById('default-select').innerHTML = defaultSelect.render();
+        defaultSelect.bindEvents(document.getElementById('default-select'));
+
+        // 自定义占位符
+        const customPlaceholderSelect = new Select({
+            options: [
+                { value: 'small', label: '小号' },
+                { value: 'medium', label: '中号' },
+                { value: 'large', label: '大号' }
+            ],
+            placeholder: '请选择尺寸',
+            onChange: (value) => {
+                document.getElementById('custom-placeholder-result').textContent = `当前值: ${value || '无'}`;
+            }
+        });
+        document.getElementById('custom-placeholder-select').innerHTML = customPlaceholderSelect.render();
+        customPlaceholderSelect.bindEvents(document.getElementById('custom-placeholder-select'));
+
+        // 自定义类名
+        const customClassSelect = new Select({
+            options: [
+                { value: 'apple', label: '苹果' },
+                { value: 'banana', label: '香蕉' },
+                { value: 'orange', label: '橙子' }
+            ],
+            className: 'custom-select',
+            onChange: (value) => {
+                document.getElementById('custom-class-result').textContent = `当前值: ${value || '无'}`;
+            }
+        });
+        document.getElementById('custom-class-select').innerHTML = customClassSelect.render();
+        customClassSelect.bindEvents(document.getElementById('custom-class-select'));
+
+        // 事件监听测试
+        let eventLog = [];
+        const eventSelect = new Select({
+            options: [
+                { value: 'event1', label: '事件一' },
+                { value: 'event2', label: '事件二' },
+                { value: 'event3', label: '事件三' }
+            ],
+            onChange: (value) => {
+                eventLog.push(`onChange: ${value}`);
+                updateEventLog();
+            },
+            onFocus: () => {
+                eventLog.push('onFocus');
+                updateEventLog();
+            },
+            onBlur: () => {
+                eventLog.push('onBlur');
+                updateEventLog();
+            }
+        });
+        document.getElementById('event-select').innerHTML = eventSelect.render();
+        eventSelect.bindEvents(document.getElementById('event-select'));
+
+        function updateEventLog() {
+            const logElement = document.getElementById('event-log');
+            logElement.innerHTML = eventLog.slice(-5).join('<br>'); // 只显示最近5个事件
+        }
+
+        // 动态选择器
+        const dynamicSelect = new Select({
+            options: [
+                { value: 'item1', label: '项目一' },
+                { value: 'item2', label: '项目二' }
+            ],
+            onChange: (value) => {
+                document.getElementById('dynamic-result').textContent = `当前值: ${value || '无'}`;
+            }
+        });
+        document.getElementById('dynamic-select').innerHTML = dynamicSelect.render();
+        dynamicSelect.bindEvents(document.getElementById('dynamic-select'));
+
+        // 全局方法
+        window.updateOptions = function() {
+            const newOptions = [
+                { value: 'new1', label: '新项目一' },
+                { value: 'new2', label: '新项目二' },
+                { value: 'new3', label: '新项目三' }
+            ];
+            dynamicSelect.setOptions(newOptions);
+        };
+
+        window.setValue = function() {
+            dynamicSelect.setValue('option2');
+        };
+
+        // 初始化默认值显示
+        document.getElementById('default-result').textContent = `当前值: ${defaultSelect.getValue() || '无'}`;
+    </script>
+</body>
+</html>

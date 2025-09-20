@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>背景色圆圈预览测试</title>
+    <link rel="stylesheet" href="../../renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="../../renderer/theme/dark/colors.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-body-bg-default);
+            color: var(--color-primary);
+            transition: background-color 0.2s ease;
+        }
+
+        .theme-dark {
+            background: var(--color-body-bg-default);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--color-background-normal);
+            border-radius: 6px;
+            border: 1px solid var(--color-border-normal);
+        }
+
+        .section h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--color-primary);
+        }
+
+        .theme-toggle {
+            margin-bottom: 20px;
+        }
+
+        .theme-toggle button {
+            padding: 8px 16px;
+            border: 1px solid var(--color-border-normal);
+            border-radius: 6px;
+            background: var(--color-background-normal);
+            color: var(--color-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle button:hover {
+            background: var(--color-background-focused);
+            border-color: var(--color-border-focused);
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .preview-item {
+            padding: 15px;
+            background: var(--color-background-normal);
+            border-radius: 6px;
+            border: 1px solid var(--color-border-normal);
+            text-align: center;
+        }
+
+        .preview-item h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--color-primary);
+            font-size: 14px;
+        }
+
+        .color-preview {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid var(--color-border-normal);
+            margin: 0 auto 10px;
+            transition: all 0.2s ease;
+        }
+
+        .color-preview.active {
+            border-color: var(--color-border-focused);
+            border-width: 3px;
+            box-shadow: 0 0 0 2px var(--color-background-focused), 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .color-info {
+            font-size: 12px;
+            color: var(--color-secondary);
+            margin-bottom: 5px;
+        }
+
+        .color-value {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 11px;
+            color: var(--color-secondary);
+            background: var(--color-background-focused);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .test-controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .test-controls button {
+            margin: 0 5px;
+            padding: 6px 12px;
+            border: 1px solid var(--color-border-normal);
+            border-radius: 4px;
+            background: var(--color-background-normal);
+            color: var(--color-primary);
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .test-controls button:hover {
+            background: var(--color-background-focused);
+            border-color: var(--color-border-focused);
+        }
+
+        .test-controls button.active {
+            background: var(--color-background-focused);
+            border-color: var(--color-border-focused);
+            color: var(--color-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>背景色圆圈预览测试</h1>
+        
+        <div class="section">
+            <h2>主题切换</h2>
+            <div class="theme-toggle">
+                <button onclick="toggleTheme()">切换主题</button>
+                <span id="current-theme">当前主题: 亮色</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>背景色圆圈预览</h2>
+            <p>测试不同圆圈使用不同的背景色变量，选中状态保持各自的背景色。</p>
+            
+            <div class="preview-grid">
+                <div class="preview-item">
+                    <h4>默认背景色</h4>
+                    <div class="color-preview bg-default" id="preview-default"></div>
+                    <div class="color-info">--color-body-bg-default</div>
+                    <div class="color-value">经典灰白</div>
+                </div>
+                
+                <div class="preview-item">
+                    <h4>蓝色背景色</h4>
+                    <div class="color-preview bg-blue" id="preview-blue"></div>
+                    <div class="color-info">--color-body-bg-blue</div>
+                    <div class="color-value">清新蓝色</div>
+                </div>
+                
+                <div class="preview-item">
+                    <h4>绿色背景色</h4>
+                    <div class="color-preview bg-green" id="preview-green"></div>
+                    <div class="color-info">--color-body-bg-green</div>
+                    <div class="color-value">自然绿色</div>
+                </div>
+                
+                <div class="preview-item">
+                    <h4>紫色背景色</h4>
+                    <div class="color-preview bg-purple" id="preview-purple"></div>
+                    <div class="color-info">--color-body-bg-purple</div>
+                    <div class="color-value">优雅紫色</div>
+                </div>
+            </div>
+            
+            <div class="test-controls">
+                <button onclick="testActiveState('default')">测试默认选中</button>
+                <button onclick="testActiveState('blue')">测试蓝色选中</button>
+                <button onclick="testActiveState('green')">测试绿色选中</button>
+                <button onclick="testActiveState('purple')">测试紫色选中</button>
+                <button onclick="clearActiveState()">清除选中状态</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>测试说明</h2>
+            <div style="font-size: 14px; color: var(--color-secondary); line-height: 1.6;">
+                <p><strong>测试要点：</strong></p>
+                <ul>
+                    <li>✅ 每个圆圈显示不同的背景色（使用对应的CSS变量）</li>
+                    <li>✅ 选中状态下，圆圈保持自己的背景色不变</li>
+                    <li>✅ 选中状态只改变边框颜色和阴影效果</li>
+                    <li>✅ 亮色/暗色主题切换时颜色正确显示</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTheme = 'light';
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 添加背景色样式
+            const style = document.createElement('style');
+            style.textContent = `
+                .bg-default { background: var(--color-body-bg-default) !important; }
+                .bg-blue { background: var(--color-body-bg-blue) !important; }
+                .bg-green { background: var(--color-body-bg-green) !important; }
+                .bg-purple { background: var(--color-body-bg-purple) !important; }
+            `;
+            document.head.appendChild(style);
+        });
+
+        /**
+         * 切换主题
+         */
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            if (currentTheme === 'dark') {
+                document.documentElement.classList.add('theme-dark');
+                document.documentElement.classList.remove('theme-light');
+            } else {
+                document.documentElement.classList.add('theme-light');
+                document.documentElement.classList.remove('theme-dark');
+            }
+            
+            document.getElementById('current-theme').textContent = `当前主题: ${currentTheme === 'light' ? '亮色' : '暗色'}`;
+        }
+
+        /**
+         * 测试选中状态
+         */
+        function testActiveState(colorType) {
+            // 清除所有选中状态
+            clearActiveState();
+            
+            // 设置指定颜色为选中状态
+            const preview = document.getElementById(`preview-${colorType}`);
+            if (preview) {
+                preview.classList.add('active');
+            }
+            
+            console.log(`测试 ${colorType} 背景色的选中状态`);
+        }
+
+        /**
+         * 清除选中状态
+         */
+        function clearActiveState() {
+            const previews = document.querySelectorAll('.color-preview');
+            previews.forEach(preview => {
+                preview.classList.remove('active');
+            });
+        }
+    </script>
+</body>
+</html>

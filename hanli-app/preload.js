@@ -163,31 +163,39 @@ window.addEventListener('DOMContentLoaded', () => {
     
     // 菜单事件监听器已移除
     
-    window.electronAPI.onMenuAbout(() => {
-        console.log('菜单：关于 - 收到IPC事件');
-        // 显示关于对话框
-        const event = new CustomEvent('menu-about');
-        console.log('菜单：关于 - 触发自定义事件');
-        window.dispatchEvent(event);
-    });
+    if (window.electronAPI && window.electronAPI.onMenuAbout) {
+        window.electronAPI.onMenuAbout(() => {
+            console.log('菜单：关于 - 收到IPC事件');
+            // 显示关于对话框
+            const event = new CustomEvent('menu-about');
+            console.log('菜单：关于 - 触发自定义事件');
+            window.dispatchEvent(event);
+        });
+    } else {
+        console.warn('electronAPI.onMenuAbout 不可用');
+    }
     
     // 监听商品详情页打开请求
-    window.electronAPI.onNavigateToProduct((event, data) => {
-        console.log('收到商品详情页打开请求:', data);
-        // 触发页面上的商品详情页打开功能
-        const customEvent = new CustomEvent('navigate-to-product', { detail: data });
-        window.dispatchEvent(customEvent);
-    });
+    if (window.electronAPI && window.electronAPI.onNavigateToProduct) {
+        window.electronAPI.onNavigateToProduct((event, data) => {
+            console.log('收到商品详情页打开请求:', data);
+            // 触发页面上的商品详情页打开功能
+            const customEvent = new CustomEvent('navigate-to-product', { detail: data });
+            window.dispatchEvent(customEvent);
+        });
+    }
     
     // 监听打开产品详情页请求
-    window.electronAPI.onOpenProductDetail((event, data) => {
-        console.log('preload.js: 收到打开产品详情页请求:', data);
-        // 直接调用页面上的产品详情页打开功能
-        if (window.homePageInstance && data && data.goodsId) {
-            console.log('preload.js: 调用homePageInstance.viewProductDetail，商品ID:', data.goodsId);
-            window.homePageInstance.viewProductDetail(data.goodsId);
-        } else {
-            console.warn('preload.js: 无法调用viewProductDetail，homePageInstance:', !!window.homePageInstance, 'data:', data);
-        }
-    });
+    if (window.electronAPI && window.electronAPI.onOpenProductDetail) {
+        window.electronAPI.onOpenProductDetail((event, data) => {
+            console.log('preload.js: 收到打开产品详情页请求:', data);
+            // 直接调用页面上的产品详情页打开功能
+            if (window.mainAppInstance && data && data.goodsId) {
+                console.log('preload.js: 调用mainAppInstance.viewProductDetail，商品ID:', data.goodsId);
+                window.mainAppInstance.viewProductDetail(data.goodsId);
+            } else {
+                console.warn('preload.js: 无法调用viewProductDetail，mainAppInstance:', !!window.mainAppInstance, 'data:', data);
+            }
+        });
+    }
 });

@@ -147,11 +147,122 @@
             line-height: 1.4;
         }
         
-        .current-page {
-            margin-bottom: 8px;
-            font-size: 11px;
-            color: #888;
-            word-break: break-all;
+        
+        /* 设置面板样式 */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .settings-content {
+            background: #2d2d2d;
+            border-radius: var(--radius-large);
+            padding: 20px;
+            width: 280px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #444;
+        }
+        
+        .settings-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #ffffff;
+        }
+        
+        .btn-close {
+            background: none;
+            border: none;
+            color: #cccccc;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-close:hover {
+            color: #ffffff;
+        }
+        
+        .setting-item {
+            margin-bottom: 16px;
+        }
+        
+        .setting-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            margin-bottom: 4px;
+        }
+        
+        .setting-checkbox {
+            margin-right: 8px;
+            width: 16px;
+            height: 16px;
+        }
+        
+        .setting-text {
+            font-size: 14px;
+            color: #ffffff;
+            font-weight: 500;
+        }
+        
+        .setting-description {
+            font-size: 12px;
+            color: #cccccc;
+            margin-left: 24px;
+            line-height: 1.4;
+        }
+        
+        /* 浅色主题设置面板 */
+        @media (prefers-color-scheme: light) {
+            .settings-content {
+                background: #ffffff;
+            }
+            
+            .settings-header {
+                border-bottom: 1px solid #e0e0e0;
+            }
+            
+            .settings-header h3 {
+                color: #333333;
+            }
+            
+            .btn-close {
+                color: #666666;
+            }
+            
+            .btn-close:hover {
+                color: #333333;
+            }
+            
+            .setting-text {
+                color: #333333;
+            }
+            
+            .setting-description {
+                color: #666666;
+            }
         }
     </style>
 </head>
@@ -167,12 +278,29 @@
             <div class="status-text" id="statusText">检查连接状态...</div>
         </div>
         
-        <div class="current-page" id="currentPage"></div>
         
         <div class="action-buttons">
             <button class="btn btn-primary" id="collectBtn" disabled>开始采集</button>
             <button class="btn btn-primary" id="monitorCollectBtn" disabled>仅采集监控数据</button>
             <button class="btn btn-secondary" id="refreshBtn">刷新状态</button>
+            <button class="btn btn-secondary" id="settingsBtn">设置</button>
+        </div>
+        
+        <!-- 设置面板 -->
+        <div class="settings-panel" id="settingsPanel" style="display: none;">
+            <div class="settings-header">
+                <h3>插件设置</h3>
+                <button class="btn-close" id="closeSettingsBtn">×</button>
+            </div>
+            <div class="settings-content">
+                <div class="setting-item">
+                    <label class="setting-label">
+                        <input type="checkbox" id="autoOpenAppToggle" class="setting-checkbox">
+                        <span class="setting-text">采集后自动打开App</span>
+                    </label>
+                    <div class="setting-description">开启后，每次采集完成会自动打开Hanli客户端</div>
+                </div>
+            </div>
         </div>
         
         <div class="info">

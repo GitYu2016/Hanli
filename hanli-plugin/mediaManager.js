@@ -44,13 +44,35 @@ class MediaManager {
         const allImages = document.querySelectorAll('img');
         console.log(`页面当前图片数量: ${allImages.length}`);
         
-        allImages.forEach(img => {
-            if (img.src && img.src.startsWith('http')) {
-                this.collectedImages.add(img.src);
-            }
+        // 详细调试：检查每个图片元素
+        allImages.forEach((img, index) => {
+            console.log(`图片 ${index}:`, {
+                src: img.src,
+                dataSrc: img.dataset.src,
+                currentSrc: img.currentSrc,
+                naturalWidth: img.naturalWidth,
+                naturalHeight: img.naturalHeight,
+                complete: img.complete,
+                loading: img.loading
+            });
+            
+            // 检查多种可能的图片源
+            const imageSources = [
+                img.src,
+                img.dataset.src,
+                img.currentSrc,
+                img.getAttribute('data-lazy-src'),
+                img.getAttribute('data-original')
+            ].filter(src => src && src.startsWith('http'));
+            
+            imageSources.forEach(src => {
+                this.collectedImages.add(src);
+                console.log(`添加图片源: ${src}`);
+            });
         });
         
         console.log(`收集到图片数量: ${this.collectedImages.size}`);
+        console.log(`收集到的图片列表:`, Array.from(this.collectedImages));
     }
 
     // 收集当前页面的视频
@@ -257,7 +279,6 @@ class MediaManager {
                         imageInfoList.push(imageInfo);
                         loadedCount++;
                         
-                        console.log(`图片 ${loadedCount}: ${width}×${height}px, 范围内:${isInRange}, 目标尺寸:${isTargetSize}`);
                         
                         resolve();
                     };
@@ -276,7 +297,6 @@ class MediaManager {
             }
         }
         
-        console.log(`图片检测完成: 成功加载 ${loadedCount} 张, 失败 ${errorCount} 张`);
         return imageInfoList;
     }
 
@@ -498,7 +518,6 @@ class MediaManager {
 
     // 显示下载完成通知
     showDownloadCompleteNotification(fileCount) {
-        this.showToast(`媒体文件下载完成！共下载 ${fileCount} 个文件`, 'success');
     }
 
     // 通知采集完成

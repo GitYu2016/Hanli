@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日志管理器集成测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .demo-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fafafa;
+        }
+        
+        .demo-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        
+        .log-output {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        
+        .log-debug { color: #6c757d; }
+        .log-info { color: #007bff; }
+        .log-warn { color: #ffc107; }
+        .log-error { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>日志管理器集成测试</h1>
+            <p>演示如何在组件中使用日志管理器</p>
+        </div>
+        
+        <div class="demo-section">
+            <h3>1. 直接使用 LoggerManager</h3>
+            <p>直接调用全局日志管理器的方法</p>
+            <button class="btn btn-primary" onclick="testDirectLogger()">测试直接调用</button>
+            <div class="log-output" id="directLogs"></div>
+        </div>
+        
+        <div class="demo-section">
+            <h3>2. 通过 BaseComponent 使用</h3>
+            <p>继承 BaseComponent 的组件自动获得日志功能</p>
+            <button class="btn btn-primary" onclick="testBaseComponent()">测试 BaseComponent</button>
+            <div class="log-output" id="componentLogs"></div>
+        </div>
+        
+        <div class="demo-section">
+            <h3>3. 错误处理演示</h3>
+            <p>演示错误日志和异常处理</p>
+            <button class="btn btn-primary" onclick="testErrorHandling()">测试错误处理</button>
+            <div class="log-output" id="errorLogs"></div>
+        </div>
+        
+        <div class="demo-section">
+            <h3>4. 日志过滤和搜索</h3>
+            <p>演示日志过滤功能</p>
+            <input type="text" id="searchInput" placeholder="搜索日志..." style="width: 100%; padding: 8px; margin-bottom: 10px;">
+            <button class="btn btn-primary" onclick="testLogFiltering()">测试过滤</button>
+            <div class="log-output" id="filteredLogs"></div>
+        </div>
+    </div>
+
+    <!-- 引入依赖 -->
+    <script src="../../config.js"></script>
+    <script src="../../components/Common/LoggerManager.js"></script>
+    <script src="../../components/Common/BaseComponent.js"></script>
+    
+    <script>
+        // 测试组件类
+        class TestComponent extends BaseComponent {
+            constructor() {
+                super('TestComponent');
+            }
+            
+            init() {
+                this.log('组件初始化开始', 'info');
+                
+                // 模拟一些初始化操作
+                this.setupEventListeners();
+                this.loadData();
+                
+                this.log('组件初始化完成', 'info');
+            }
+            
+            setupEventListeners() {
+                this.log('设置事件监听器', 'debug');
+                // 模拟事件监听器设置
+            }
+            
+            loadData() {
+                this.log('开始加载数据', 'debug');
+                // 模拟数据加载
+                setTimeout(() => {
+                    this.log('数据加载完成', 'info');
+                }, 100);
+            }
+            
+            render() {
+                this.log('开始渲染组件', 'debug');
+                return this.createElement('div', 'test-component', 'Test Component');
+            }
+            
+            simulateError() {
+                try {
+                    this.log('尝试执行可能出错的操作', 'debug');
+                    throw new Error('这是一个模拟错误');
+                } catch (error) {
+                    this.handleError(error, '模拟操作');
+                }
+            }
+        }
+        
+        let testComponent = null;
+        let logListener = null;
+        
+        // 初始化
+        function init() {
+            testComponent = new TestComponent();
+            testComponent.init();
+            
+            // 设置日志监听器
+            logListener = window.logger.addListener(updateLogDisplay);
+        }
+        
+        // 更新日志显示
+        function updateLogDisplay(logEntry) {
+            const container = document.getElementById('directLogs');
+            const logElement = document.createElement('div');
+            logElement.className = `log-entry log-${logEntry.level}`;
+            logElement.textContent = `[${logEntry.formattedTime}] [${logEntry.component}] ${logEntry.message}`;
+            container.appendChild(logElement);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        // 测试直接使用 LoggerManager
+        function testDirectLogger() {
+            window.logger.debug('这是一条调试日志', { test: true });
+            window.logger.info('这是一条信息日志', { test: true });
+            window.logger.warn('这是一条警告日志', { test: true });
+            window.logger.error('这是一条错误日志', { test: true, error: new Error('测试错误') });
+        }
+        
+        // 测试 BaseComponent
+        function testBaseComponent() {
+            const container = document.getElementById('componentLogs');
+            container.innerHTML = '';
+            
+            // 创建新的测试组件
+            const component = new TestComponent();
+            component.init();
+            
+            // 模拟一些操作
+            component.log('执行用户操作', 'info', { action: 'click' });
+            component.showSuccess('操作成功完成');
+            component.showWarning('这是一个警告');
+        }
+        
+        // 测试错误处理
+        function testErrorHandling() {
+            const container = document.getElementById('errorLogs');
+            container.innerHTML = '';
+            
+            // 模拟各种错误情况
+            testComponent.simulateError();
+            
+            // 模拟异步错误
+            setTimeout(() => {
+                try {
+                    JSON.parse('invalid json');
+                } catch (error) {
+                    testComponent.handleError(error, 'JSON解析');
+                }
+            }, 500);
+        }
+        
+        // 测试日志过滤
+        function testLogFiltering() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const container = document.getElementById('filteredLogs');
+            container.innerHTML = '';
+            
+            const logs = window.logger.getLogs({
+                search: searchTerm,
+                sortBy: 'time',
+                limit: 20
+            });
+            
+            logs.forEach(logEntry => {
+                const logElement = document.createElement('div');
+                logElement.className = `log-entry log-${logEntry.level}`;
+                logElement.textContent = `[${logEntry.formattedTime}] [${logEntry.component}] ${logEntry.message}`;
+                container.appendChild(logElement);
+            });
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

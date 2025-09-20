@@ -158,7 +158,6 @@ class KeyboardShortcutManager {
             context
         });
 
-        console.log(`注册快捷键: ${key} (${context}) - ${description}`);
     }
 
     /**
@@ -170,7 +169,6 @@ class KeyboardShortcutManager {
         const contextShortcuts = this.contexts.get(context);
         if (contextShortcuts && contextShortcuts.has(key)) {
             contextShortcuts.delete(key);
-            console.log(`注销快捷键: ${key} (${context})`);
         }
     }
 
@@ -180,7 +178,6 @@ class KeyboardShortcutManager {
      */
     unregisterContext(context) {
         this.contexts.delete(context);
-        console.log(`注销上下文: ${context}`);
     }
 
     /**
@@ -245,8 +242,6 @@ class KeyboardShortcutManager {
         this.contexts.clear();
         this.shortcuts.clear();
         this.boundHandlers.clear();
-        
-        console.log('快捷键管理器已销毁');
     }
 }
 

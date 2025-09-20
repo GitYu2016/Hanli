@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试修复的图标</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .icon-test {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        .icon-test .svg-icon {
+            margin-right: 10px;
+        }
+        .test-title {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .status {
+            margin-left: auto;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="test-title">图标修复测试</h1>
+        
+        <div class="icon-test">
+            <div class="svg-icon" data-icon="folder-open" data-filled="false"></div>
+            <span>folder-open 图标</span>
+            <span class="status" id="folder-open-status">测试中...</span>
+        </div>
+        
+        <div class="icon-test">
+            <div class="svg-icon" data-icon="file-json" data-filled="false"></div>
+            <span>file-json 图标 (使用 file-js 替代)</span>
+            <span class="status" id="file-json-status">测试中...</span>
+        </div>
+        
+        <div class="icon-test">
+            <div class="svg-icon" data-icon="file-pdf" data-filled="false"></div>
+            <span>file-pdf 图标</span>
+            <span class="status" id="file-pdf-status">测试中...</span>
+        </div>
+        
+        <div class="icon-test">
+            <div class="svg-icon" data-icon="dots-three-vertical" data-filled="false"></div>
+            <span>dots-three-vertical 图标 (参考图标)</span>
+            <span class="status" id="dots-status">测试中...</span>
+        </div>
+    </div>
+
+    <script src="../hanli-app/renderer/components/Common/Icon.js"></script>
+    <script>
+        // 初始化图标系统
+        Icon.init();
+        
+        // 等待图标加载完成后检查状态
+        setTimeout(() => {
+            checkIconStatus('folder-open', 'folder-open-status');
+            checkIconStatus('file-json', 'file-json-status');
+            checkIconStatus('file-pdf', 'file-pdf-status');
+            checkIconStatus('dots-three-vertical', 'dots-status');
+        }, 1000);
+        
+        function checkIconStatus(iconName, statusId) {
+            const statusElement = document.getElementById(statusId);
+            const iconElement = document.querySelector(`[data-icon="${iconName}"]`);
+            
+            if (iconElement && iconElement.innerHTML.trim()) {
+                statusElement.textContent = '成功';
+                statusElement.className = 'status success';
+            } else {
+                statusElement.textContent = '失败';
+                statusElement.className = 'status error';
+            }
+        }
+    </script>
+</body>
+</html>

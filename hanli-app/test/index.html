@@ -5,15 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hanli App 测试页面索引</title>
     <link rel="stylesheet" href="../renderer/theme/light/colors.css">
-    <link rel="stylesheet" href="../renderer/styles.css">
+    <link rel="stylesheet" href="../renderer/globals.css">
     <style>
         body {
             font-family: Arial, sans-serif;
+            margin: 0;
             padding: 20px;
             background-color: var(--color-background);
             color: var(--color-text-primary);
             min-height: 100vh;
             overflow-x: hidden;
+            overflow-y: auto;
         }
         .test-index-container {
             max-width: 1200px;
@@ -22,8 +24,8 @@
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            min-height: calc(100vh - 40px);
-            overflow-y: auto;
+            min-height: auto;
+            overflow: visible;
         }
         .test-index-header {
             text-align: center;
@@ -182,21 +184,21 @@
         }
         
         /* 滚动条样式 */
-        .test-index-container::-webkit-scrollbar {
+        body::-webkit-scrollbar {
             width: 8px;
         }
         
-        .test-index-container::-webkit-scrollbar-track {
+        body::-webkit-scrollbar-track {
             background: var(--color-muted);
             border-radius: 4px;
         }
         
-        .test-index-container::-webkit-scrollbar-thumb {
+        body::-webkit-scrollbar-thumb {
             background: var(--color-border);
             border-radius: 4px;
         }
         
-        .test-index-container::-webkit-scrollbar-thumb:hover {
+        body::-webkit-scrollbar-thumb:hover {
             background: var(--color-text-secondary);
         }
         
@@ -303,210 +305,121 @@
         
         <div class="test-categories">
             <div class="test-category">
-                <h3><span class="test-category-icon">🔌</span>插件功能测试</h3>
+                <h3><span class="test-category-icon">🎨</span>图标系统测试</h3>
                 <ul class="test-list">
                     <li class="test-item">
-                        <a href="test-plugin-fetch.html" class="test-link">
-                            <div class="test-name">插件Fetch测试</div>
-                            <div class="test-description">测试插件与App的fetch连接功能</div>
+                        <a href="test-icons.html" class="test-link">
+                            <div class="test-name">图标系统测试</div>
+                            <div class="test-description">测试Phosphor Icons图标系统</div>
                         </a>
                     </li>
                     <li class="test-item">
-                        <a href="test-plugin-launch.html" class="test-link">
-                            <div class="test-name">插件启动测试</div>
-                            <div class="test-description">测试插件启动App的功能</div>
+                        <a href="test-phosphor-icons.html" class="test-link">
+                            <div class="test-name">Phosphor图标测试</div>
+                            <div class="test-description">测试Phosphor图标库加载</div>
                         </a>
                     </li>
                     <li class="test-item">
-                        <a href="test-collection.html" class="test-link">
-                            <div class="test-name">数据采集测试</div>
-                            <div class="test-description">测试插件数据采集功能</div>
+                        <a href="test-svg-icons.html" class="test-link">
+                            <div class="test-name">SVG图标测试</div>
+                            <div class="test-description">测试SVG图标显示</div>
                         </a>
                     </li>
                     <li class="test-item">
-                        <a href="test-debug-fetch.html" class="test-link">
-                            <div class="test-name">Fetch调试测试</div>
-                            <div class="test-description">调试fetch请求的详细过程</div>
+                        <a href="test-bold-icons.html" class="test-link">
+                            <div class="test-name">粗体图标测试</div>
+                            <div class="test-description">测试粗体风格图标</div>
                         </a>
                     </li>
                     <li class="test-item">
-                        <a href="test-simple-fetch.html" class="test-link">
-                            <div class="test-name">简单Fetch测试</div>
-                            <div class="test-description">基础的fetch功能测试</div>
+                        <a href="test-main-icons.html" class="test-link">
+                            <div class="test-name">主要图标测试</div>
+                            <div class="test-description">测试应用主要图标</div>
                         </a>
                     </li>
                     <li class="test-item">
-                        <a href="test-plugin-modal.html" class="test-link">
-                            <div class="test-name">插件弹窗测试</div>
-                            <div class="test-description">测试插件弹窗功能</div>
+                        <a href="test-topbar-icons.html" class="test-link">
+                            <div class="test-name">顶部栏图标测试</div>
+                            <div class="test-description">测试TopBar图标显示</div>
                         </a>
                     </li>
                     <li class="test-item">
-                        <a href="test-navigation.html" class="test-link">
-                            <div class="test-name">导航功能测试</div>
-                            <div class="test-description">测试TopBar和SideBar的点击切换功能</div>
+                        <a href="test-settings-icons.html" class="test-link">
+                            <div class="test-name">设置图标测试</div>
+                            <div class="test-description">测试设置页面图标</div>
+                        </a>
+                    </li>
+                    <li class="test-item">
+                        <a href="test-home-tab-icon.html" class="test-link">
+                            <div class="test-name">首页标签图标测试</div>
+                            <div class="test-description">测试首页标签图标</div>
                         </a>
                     </li>
                 </ul>
             </div>
             
             <div class="test-category">
-                <h3><span class="test-category-icon">📱</span>App功能测试</h3>
+                <h3><span class="test-category-icon">🎨</span>界面样式测试</h3>
                 <ul class="test-list">
                     <li class="test-item">
-                        <a href="test-app-launch.html" class="test-link">
-                            <div class="test-name">App启动测试</div>
-                            <div class="test-description">测试App的启动和窗口管理</div>
+                        <a href="test-theme-selector.html" class="test-link">
+                            <div class="test-name">主题选择器测试</div>
+                            <div class="test-description">测试浅色/深色主题切换</div>
                         </a>
                     </li>
                     <li class="test-item">
-                        <a href="test-app-startup.html" class="test-link">
-                            <div class="test-name">App启动流程测试</div>
-                            <div class="test-description">测试App完整启动流程</div>
+                        <a href="test-sidebar-colors.html" class="test-link">
+                            <div class="test-name">侧边栏颜色测试</div>
+                            <div class="test-description">测试侧边栏颜色系统</div>
                         </a>
                     </li>
                     <li class="test-item">
-                        <a href="test-window-size.html" class="test-link">
-                            <div class="test-name">窗口大小测试</div>
-                            <div class="test-description">测试窗口大小和最大化功能</div>
+                        <a href="test-product-library-styles.html" class="test-link">
+                            <div class="test-name">产品库样式测试</div>
+                            <div class="test-description">测试产品库页面样式</div>
                         </a>
                     </li>
                     <li class="test-item">
-                        <a href="test-button-status.html" class="test-link">
-                            <div class="test-name">按钮状态测试</div>
-                            <div class="test-description">测试各种按钮的交互状态</div>
+                        <a href="test-topbar-icons.html" class="test-link">
+                            <div class="test-name">顶部栏样式测试</div>
+                            <div class="test-description">测试TopBar样式和布局</div>
                         </a>
                     </li>
                 </ul>
             </div>
             
             <div class="test-category">
-                <h3><span class="test-category-icon">📊</span>数据功能测试</h3>
+                <h3><span class="test-category-icon">🔧</span>功能组件测试</h3>
                 <ul class="test-list">
                     <li class="test-item">
-                        <a href="test-product-count-refresh.html" class="test-link">
-                            <div class="test-name">产品总数刷新测试</div>
-                            <div class="test-description">测试产品总数的自动刷新功能</div>
+                        <a href="test-search-shortcut.html" class="test-link">
+                            <div class="test-name">搜索快捷键测试</div>
+                            <div class="test-description">测试搜索功能快捷键</div>
                         </a>
                     </li>
                     <li class="test-item">
-                        <a href="test-product-library.html" class="test-link">
-                            <div class="test-name">产品库基础测试</div>
-                            <div class="test-description">测试产品库的基本显示功能</div>
-                        </a>
-                    </li>
-                    <li class="test-item">
-                        <a href="test-product-library-features.html" class="test-link">
-                            <div class="test-name">产品库功能测试</div>
-                            <div class="test-description">测试产品库的完整功能（排序、刷新、分页）</div>
-                        </a>
-                    </li>
-                    <li class="test-item">
-                        <a href="test-product-detail.html" class="test-link">
-                            <div class="test-name">产品详情测试</div>
-                            <div class="test-description">测试产品详情页面的显示</div>
-                        </a>
-                    </li>
-                    <li class="test-item">
-                        <a href="test-product-detail-api.html" class="test-link">
-                            <div class="test-name">产品详情API测试</div>
-                            <div class="test-description">测试产品详情API接口</div>
+                        <a href="test-resource-loading.html" class="test-link">
+                            <div class="test-name">资源加载测试</div>
+                            <div class="test-description">测试资源加载机制</div>
                         </a>
                     </li>
                 </ul>
             </div>
             
-            <div class="test-category">
-                <h3><span class="test-category-icon">📊</span>监控功能测试</h3>
-                <ul class="test-list">
-                    <li class="test-item">
-                        <a href="test-monitoring-features.html" class="test-link">
-                            <div class="test-name">监控功能完整测试</div>
-                            <div class="test-description">监控功能综合测试（推荐入口）</div>
-                        </a>
-                    </li>
-                    <li class="test-item">
-                        <a href="test-monitor-collection.html" class="test-link">
-                            <div class="test-name">监控数据采集测试</div>
-                            <div class="test-description">测试监控数据采集页面功能</div>
-                        </a>
-                    </li>
-                    <li class="test-item">
-                        <a href="test-timeout-mechanism.html" class="test-link">
-                            <div class="test-name">超时机制测试</div>
-                            <div class="test-description">测试20秒超时，3秒检查间隔机制</div>
-                        </a>
-                    </li>
-                    <li class="test-item">
-                        <a href="test-theme-adaptation.html" class="test-link">
-                            <div class="test-name">主题适配测试</div>
-                            <div class="test-description">测试浅色/深色模式主题适配</div>
-                        </a>
-                    </li>
-                    <li class="test-item">
-                        <a href="test-monitoring-json-format.html" class="test-link">
-                            <div class="test-name">监控数据格式测试</div>
-                            <div class="test-description">验证monitoring.json数据格式</div>
-                        </a>
-                    </li>
-                    <li class="test-item">
-                        <a href="test-products-list-api.html" class="test-link">
-                            <div class="test-name">商品清单API测试</div>
-                            <div class="test-description">测试商品清单API接口</div>
-                        </a>
-                    </li>
-                    <li class="test-item">
-                        <a href="test-today-collection-status.html" class="test-link">
-                            <div class="test-name">今日采集状态测试</div>
-                            <div class="test-description">测试今日采集状态检查功能</div>
-                        </a>
-                    </li>
-                    <li class="test-item">
-                        <a href="test-auto-refresh.html" class="test-link">
-                            <div class="test-name">自动刷新机制测试</div>
-                            <div class="test-description">测试自动刷新机制功能</div>
-                        </a>
-                    </li>
-                    <li class="test-item">
-                        <a href="test-today-collect.html" class="test-link">
-                            <div class="test-name">今日采集统计测试</div>
-                            <div class="test-description">测试App首页今日采集统计功能</div>
-                        </a>
-                    </li>
-                </ul>
-            </div>
             
             <div class="test-category">
-                <h3><span class="test-category-icon">🎨</span>界面功能测试</h3>
+                <h3><span class="test-category-icon">📱</span>其他测试</h3>
                 <ul class="test-list">
                     <li class="test-item">
-                        <a href="test-topbar-adjustments.html" class="test-link">
-                            <div class="test-name">TopBar调整测试</div>
-                            <div class="test-description">测试TopBar的padding和3个点菜单</div>
+                        <a href="test-electron-icons.html" class="test-link">
+                            <div class="test-name">Electron图标测试</div>
+                            <div class="test-description">测试Electron环境图标</div>
                         </a>
                     </li>
                     <li class="test-item">
-                        <a href="test-settings-modal.html" class="test-link">
-                            <div class="test-name">设置弹窗测试</div>
-                            <div class="test-description">测试系统设置弹窗功能</div>
-                        </a>
-                    </li>
-                    <li class="test-item">
-                        <a href="test-settings-interaction.html" class="test-link">
-                            <div class="test-name">设置交互测试</div>
-                            <div class="test-description">测试设置弹窗的按钮交互</div>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-            
-            <div class="test-category">
-                <h3><span class="test-category-icon">🔧</span>协议和通信测试</h3>
-                <ul class="test-list">
-                    <li class="test-item">
-                        <a href="test-protocol.html" class="test-link">
-                            <div class="test-name">协议测试</div>
-                            <div class="test-description">测试hanliapp://协议功能</div>
+                        <a href="range-selection-test.html" class="test-link">
+                            <div class="test-name">范围选择测试</div>
+                            <div class="test-description">测试范围选择功能</div>
                         </a>
                     </li>
                 </ul>
@@ -515,11 +428,11 @@
         
         <div class="test-stats">
             <div class="stat-item">
-                <div class="stat-number">20</div>
+                <div class="stat-number">15</div>
                 <div class="stat-label">测试页面</div>
             </div>
             <div class="stat-item">
-                <div class="stat-number">5</div>
+                <div class="stat-number">3</div>
                 <div class="stat-label">测试分类</div>
             </div>
             <div class="stat-item">
@@ -542,10 +455,22 @@
     <script>
         function openAllTests() {
             const testLinks = document.querySelectorAll('.test-link');
+            console.log('准备打开', testLinks.length, '个测试页面');
+            
             testLinks.forEach((link, index) => {
                 setTimeout(() => {
-                    window.open(link.href, '_blank');
-                }, index * 200); // 每200ms打开一个，避免浏览器阻止
+                    try {
+                        // 检查链接是否有效
+                        if (link.href && link.href !== '') {
+                            console.log('打开测试页面:', link.href);
+                            window.open(link.href, '_blank');
+                        } else {
+                            console.warn('无效链接:', link);
+                        }
+                    } catch (error) {
+                        console.error('打开链接失败:', link.href, error);
+                    }
+                }, index * 300); // 每300ms打开一个，避免浏览器阻止
             });
         }
         
@@ -556,8 +481,7 @@
         
         // 回到顶部功能
         function scrollToTop() {
-            const container = document.querySelector('.test-index-container');
-            container.scrollTo({
+            window.scrollTo({
                 top: 0,
                 behavior: 'smooth'
             });
@@ -566,13 +490,60 @@
         // 滚动检测
         function handleScroll() {
             const backToTop = document.getElementById('backToTop');
-            const container = document.querySelector('.test-index-container');
             
-            if (container.scrollTop > 300) {
+            if (window.scrollY > 300) {
                 backToTop.classList.add('show');
             } else {
                 backToTop.classList.remove('show');
             }
+        }
+        
+        // 验证测试页面是否存在
+        function validateTestLinks() {
+            const testLinks = document.querySelectorAll('.test-link');
+            let validCount = 0;
+            let invalidCount = 0;
+            
+            // 已知存在的测试页面列表
+            const existingTests = [
+                'test-icons.html',
+                'test-phosphor-icons.html', 
+                'test-svg-icons.html',
+                'test-bold-icons.html',
+                'test-main-icons.html',
+                'test-topbar-icons.html',
+                'test-settings-icons.html',
+                'test-home-tab-icon.html',
+                'test-theme-selector.html',
+                'test-sidebar-colors.html',
+                'test-product-library-styles.html',
+                'test-search-shortcut.html',
+                'test-resource-loading.html',
+                'test-electron-icons.html',
+                'range-selection-test.html'
+            ];
+            
+            testLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href) {
+                    const fileName = href.split('/').pop();
+                    if (existingTests.includes(fileName)) {
+                        validCount++;
+                        link.style.opacity = '1';
+                        link.title = '点击打开测试页面';
+                        link.style.pointerEvents = 'auto';
+                    } else {
+                        invalidCount++;
+                        link.style.opacity = '0.5';
+                        link.title = '测试页面不存在: ' + fileName;
+                        link.style.pointerEvents = 'none';
+                        console.warn('测试页面不存在:', fileName);
+                    }
+                }
+            });
+            
+            console.log('链接验证完成 - 有效:', validCount, '无效:', invalidCount);
+            return { valid: validCount, invalid: invalidCount };
         }
         
         // 页面加载完成后的初始化
@@ -580,12 +551,16 @@
             console.log('测试页面索引已加载');
             console.log('共发现', document.querySelectorAll('.test-link').length, '个测试页面');
             
-            // 绑定滚动事件
-            const container = document.querySelector('.test-index-container');
-            container.addEventListener('scroll', handleScroll);
+            // 绑定滚动事件到window
+            window.addEventListener('scroll', handleScroll);
             
             // 初始化回到顶部按钮状态
             handleScroll();
+            
+            // 验证所有测试链接
+            setTimeout(() => {
+                validateTestLinks();
+            }, 1000);
         });
     </script>
 </body>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>背景色映射测试</title>
+    <link rel="stylesheet" href="../../renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="../../renderer/theme/dark/colors.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-body-bg-default);
+            color: var(--color-primary);
+            transition: background-color 0.2s ease;
+        }
+
+        .theme-dark {
+            background: var(--color-body-bg-default);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--color-background-normal);
+            border-radius: 6px;
+            border: 1px solid var(--color-border-normal);
+        }
+
+        .section h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--color-primary);
+        }
+
+        .theme-toggle {
+            margin-bottom: 20px;
+        }
+
+        .theme-toggle button {
+            padding: 8px 16px;
+            border: 1px solid var(--color-border-normal);
+            border-radius: 6px;
+            background: var(--color-background-normal);
+            color: var(--color-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle button:hover {
+            background: var(--color-background-focused);
+            border-color: var(--color-border-focused);
+        }
+
+        .current-bg {
+            padding: 12px;
+            margin: 15px 0;
+            background: var(--color-background-focused);
+            border-radius: 6px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .debug-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: var(--color-background-normal);
+            border-radius: 6px;
+            border: 1px solid var(--color-border-normal);
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            color: var(--color-secondary);
+        }
+
+        .debug-info h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--color-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .debug-info pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>背景色映射测试</h1>
+        
+        <div class="section">
+            <h2>主题切换</h2>
+            <div class="theme-toggle">
+                <button onclick="toggleTheme()">切换主题</button>
+                <span id="current-theme">当前主题: 亮色</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>背景色选择器</h2>
+            <div id="background-color-selector-container"></div>
+            <div class="current-bg">
+                当前选择的背景色: <span id="current-bg-color">default</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>调试信息</h2>
+            <div class="debug-info">
+                <h4>生成的HTML结构</h4>
+                <pre id="html-structure"></pre>
+                
+                <h4>CSS变量值</h4>
+                <pre id="css-vars"></pre>
+                
+                <h4>元素类名检查</h4>
+                <pre id="class-check"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../renderer/components/Common/BackgroundColorSelector.js"></script>
+    <script>
+        let currentTheme = 'light';
+        let backgroundColorSelector;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initBackgroundColorSelector();
+            updateDebugInfo();
+        });
+
+        /**
+         * 初始化背景色选择器
+         */
+        function initBackgroundColorSelector() {
+            backgroundColorSelector = new BackgroundColorSelector({
+                currentBackgroundColor: 'default',
+                onBackgroundColorChange: function(bgColor) {
+                    document.getElementById('current-bg-color').textContent = bgColor;
+                    console.log('背景色已更改为:', bgColor);
+                    updateDebugInfo();
+                }
+            });
+
+            const container = document.getElementById('background-color-selector-container');
+            container.innerHTML = backgroundColorSelector.render();
+            backgroundColorSelector.bindEvents(container);
+        }
+
+        /**
+         * 切换主题
+         */
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            if (currentTheme === 'dark') {
+                document.documentElement.classList.add('theme-dark');
+                document.documentElement.classList.remove('theme-light');
+            } else {
+                document.documentElement.classList.add('theme-light');
+                document.documentElement.classList.remove('theme-dark');
+            }
+            
+            document.getElementById('current-theme').textContent = `当前主题: ${currentTheme === 'light' ? '亮色' : '暗色'}`;
+            
+            // 更新调试信息
+            setTimeout(updateDebugInfo, 100);
+        }
+
+        /**
+         * 更新调试信息
+         */
+        function updateDebugInfo() {
+            // 显示生成的HTML结构
+            const container = document.getElementById('background-color-selector-container');
+            document.getElementById('html-structure').textContent = container.innerHTML;
+
+            // 显示CSS变量值
+            const root = document.documentElement;
+            const computedStyle = getComputedStyle(root);
+            
+            const cssVars = [
+                '--color-body-bg-default',
+                '--color-body-bg-blue', 
+                '--color-body-bg-green',
+                '--color-body-bg-purple'
+            ];
+
+            const cssVarsText = cssVars.map(varName => {
+                const value = computedStyle.getPropertyValue(varName).trim();
+                return `${varName}: ${value}`;
+            }).join('\n');
+
+            document.getElementById('css-vars').textContent = cssVarsText;
+
+            // 检查元素类名
+            const options = container.querySelectorAll('.background-color-option');
+            const classCheckText = Array.from(options).map((option, index) => {
+                const classes = option.className;
+                const preview = option.querySelector('.background-color-preview');
+                const computedBg = preview ? getComputedStyle(preview).backgroundColor : 'N/A';
+                return `选项 ${index + 1}:\n  类名: ${classes}\n  背景色: ${computedBg}`;
+            }).join('\n\n');
+
+            document.getElementById('class-check').textContent = classCheckText;
+        }
+    </script>
+</body>
+</html>

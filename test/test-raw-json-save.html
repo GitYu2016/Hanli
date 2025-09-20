@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>原始JSON保存功能测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .test-button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .test-button:hover {
+            background: #0056CC;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+        }
+        .error {
+            background: #ffebee;
+            border: 1px solid #f44336;
+            color: #c62828;
+        }
+        .code-block {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>原始JSON保存功能测试</h1>
+    
+    <div class="test-section">
+        <h2>功能说明</h2>
+        <p>本次更新实现了以下功能：</p>
+        <ul>
+            <li>在每次采集时，插件会自动保存原始的JSON数据</li>
+            <li>原始JSON文件按照 <code>goodId_时间</code> 的格式命名</li>
+            <li>文件保存在对应商品的文件夹中</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>修改内容</h2>
+        
+        <h3>1. 插件端修改 (hanli-plugin/)</h3>
+        <div class="code-block">
+// collectionManager.js - 修改方法签名，支持传递原始数据
+async createFolderAndSaveJson(goodsInfoData, monitoringData, mediaData, rawData = null) {
+    const jsonData = {
+        goodsId: goodsInfoData.goodsId,
+        collectTime: goodsInfoData.collectTime,
+        goodsInfo: JSON.stringify(goodsInfoData, null, 2),
+        monitoring: JSON.stringify(monitoringData, null, 2),
+        mediaData: JSON.stringify(mediaData, null, 2),
+        rawData: rawData ? JSON.stringify(rawData, null, 2) : null, // 添加原始JSON数据
+        useTempFile: true
+    };
+    // ... 发送到服务端
+}
+
+// content.js - 传递原始数据
+await window.collectionManager.executeCollectionWithProgress(
+    goodsInfo.goodsInfoData, 
+    goodsInfo.monitoringData, 
+    mediaData, 
+    false, // 不自动打开App
+    rawData // 传递原始JSON数据
+);
+        </div>
+
+        <h3>2. 服务端修改 (hanli-app/server.js)</h3>
+        <div class="code-block">
+// 修改saveJsonFiles函数，支持保存原始JSON
+async function saveJsonFiles(goodsId, jsonData) {
+    // ... 现有逻辑 ...
+    
+    // 保存原始JSON数据（按照goodId_时间命名）
+    if (jsonData.rawData && jsonData.collectTime) {
+        const rawDataFileName = `${goodsId}_${jsonData.collectTime}.json`;
+        const rawDataPath = path.join(productDir, rawDataFileName);
+        await fsPromises.writeFile(rawDataPath, jsonData.rawData, 'utf8');
+        files.push(rawDataPath);
+        console.log(`原始JSON数据已保存: ${rawDataFileName}`);
+    }
+    
+    return files;
+}
+
+// 修改API接口，接收原始数据
+app.post('/api/save-json-files', async (req, res) => {
+    const { goodsId, goodsInfo, monitoring, mediaData, rawData, collectTime, useTempFile } = req.body;
+    // ... 处理逻辑 ...
+});
+        </div>
+
+        <h3>3. 修复的问题</h3>
+        <div class="code-block">
+// 修复了scrapeRawData函数中未传递rawData参数的问题
+// 在content.js中，两个采集函数都正确传递了rawData：
+
+// scrapeRawDataWithProgress函数（带进度条）
+await window.collectionManager.executeCollectionWithProgress(
+    goodsInfo.goodsInfoData, 
+    goodsInfo.monitoringData, 
+    mediaData, 
+    false, // 不自动打开App
+    rawData // 传递原始JSON数据
+);
+
+// scrapeRawData函数（普通采集）
+await window.collectionManager.executeCollection(
+    goodsInfoData, 
+    monitoringData, 
+    mediaData, 
+    true, // 默认打开App
+    rawData // 传递原始JSON数据
+);
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>测试步骤</h2>
+        <ol>
+            <li>确保Hanli应用已启动（运行在localhost:3001）</li>
+            <li>在浏览器中打开一个商品页面</li>
+            <li>点击插件的采集按钮</li>
+            <li>检查商品文件夹中是否生成了原始JSON文件</li>
+        </ol>
+        
+        <button class="test-button" onclick="testConnection()">测试应用连接</button>
+        <button class="test-button" onclick="showFileStructure()">查看文件结构说明</button>
+        <button class="test-button" onclick="testRawDataSave()">测试原始数据保存</button>
+    </div>
+
+    <div id="test-results"></div>
+
+    <script>
+        async function testConnection() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<div class="result">正在测试连接...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/health');
+                if (response.ok) {
+                    resultsDiv.innerHTML = '<div class="result">✅ 应用连接正常</div>';
+                } else {
+                    resultsDiv.innerHTML = '<div class="result error">❌ 应用连接失败，状态码: ' + response.status + '</div>';
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = '<div class="result error">❌ 无法连接到应用: ' + error.message + '</div>';
+            }
+        }
+
+        function showFileStructure() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = `
+                <div class="result">
+                    <h3>文件结构说明</h3>
+                    <p>采集完成后，商品文件夹结构如下：</p>
+                    <div class="code-block">
+data/
+└── goods-library/
+    └── {goodsId}/
+        ├── product.json          # 商品信息数据
+        ├── monitoring.json       # 监控数据
+        ├── media.json           # 媒体文件信息
+        ├── media-temp.json      # 临时媒体文件信息
+        ├── rawdata_{goodsId}_{时间}.json  # 原始JSON数据（新增）
+        └── images/              # 图片文件夹
+            ├── image1.jpg
+            └── image2.jpg
+                    </div>
+                    <p><strong>原始JSON文件命名格式：</strong> rawdata_{goodsId}_{YYYYMMDDHHMM}.json</p>
+                    <p><strong>示例：</strong> rawdata_123456789012_202412011430.json</p>
+                </div>
+            `;
+        }
+
+        async function testRawDataSave() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<div class="result">正在测试原始数据保存功能...</div>';
+            
+            try {
+                // 模拟测试数据
+                const testData = {
+                    goodsId: '123456789012',
+                    collectTime: '202412011430',
+                    goodsInfo: JSON.stringify({ test: 'goodsInfo' }),
+                    monitoring: JSON.stringify({ test: 'monitoring' }),
+                    mediaData: JSON.stringify({ test: 'mediaData' }),
+                    rawData: JSON.stringify({ 
+                        test: 'rawData',
+                        timestamp: new Date().toISOString(),
+                        sampleData: {
+                            store: {
+                                goodsId: '123456789012',
+                                goods: {
+                                    goodsName: '测试商品'
+                                }
+                            }
+                        }
+                    }),
+                    useTempFile: true
+                };
+
+                const response = await fetch('http://localhost:3001/api/save-json-files', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    resultsDiv.innerHTML = `
+                        <div class="result">
+                            ✅ 原始数据保存测试成功！
+                            <br><br>
+                            <strong>保存的文件：</strong>
+                            <div class="code-block">${result.files.join('\n')}</div>
+                            <br>
+                            <strong>预期原始JSON文件：</strong> rawdata_123456789012_202412011430.json
+                            <br><br>
+                            请检查 data/goods-library/123456789012/ 文件夹中是否生成了原始JSON文件。
+                        </div>
+                    `;
+                } else {
+                    const errorText = await response.text();
+                    resultsDiv.innerHTML = `
+                        <div class="result error">
+                            ❌ 测试失败，状态码: ${response.status}
+                            <br><br>错误信息: ${errorText}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="result error">
+                        ❌ 测试失败: ${error.message}
+                        <br><br>请确保Hanli应用已启动并运行在localhost:3001
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

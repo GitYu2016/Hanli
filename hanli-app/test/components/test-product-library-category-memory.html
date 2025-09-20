@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品库分类记忆功能测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .test-button {
+            padding: 8px 16px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f8f9fa;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: #e9ecef;
+        }
+        .test-button.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .test-result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .test-result.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .mock-categories {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        .mock-filter-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f8f9fa;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+        .mock-filter-btn:hover {
+            background: #e9ecef;
+        }
+        .mock-filter-btn.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>产品库分类记忆功能测试</h1>
+        
+        <div class="test-section">
+            <div class="test-title">1. 本地存储功能测试</div>
+            <button class="test-button" onclick="testLocalStorage()">测试本地存储读写</button>
+            <button class="test-button" onclick="clearLocalStorage()">清空本地存储</button>
+            <div id="storage-test-result" class="test-result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">2. 分类选择模拟</div>
+            <p>模拟产品库的分类筛选器，测试分类选择的记忆功能：</p>
+            <div class="mock-categories">
+                <div class="mock-filter-btn active" data-category="all">全部</div>
+                <div class="mock-filter-btn" data-category="电子产品">电子产品</div>
+                <div class="mock-filter-btn" data-category="服装">服装</div>
+                <div class="mock-filter-btn" data-category="家居">家居</div>
+                <div class="mock-filter-btn" data-category="美妆">美妆</div>
+            </div>
+            <div id="category-test-result" class="test-result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">3. 产品库组件测试</div>
+            <button class="test-button" onclick="testProductLibraryComponent()">测试产品库组件</button>
+            <button class="test-button" onclick="simulateCategoryChange('电子产品')">模拟选择电子产品分类</button>
+            <button class="test-button" onclick="simulateCategoryChange('服装')">模拟选择服装分类</button>
+            <button class="test-button" onclick="simulateCategoryChange('all')">模拟选择全部分类</button>
+            <div id="component-test-result" class="test-result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">4. 功能验证</div>
+            <button class="test-button" onclick="verifyMemoryFunction()">验证记忆功能</button>
+            <div id="verify-result" class="test-result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟产品库组件的本地存储功能
+        const STORAGE_KEY = 'productLibrary_selectedCategory';
+        
+        function getStoredCategory() {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                return stored || null;
+            } catch (error) {
+                console.warn('读取本地存储的分类选择失败:', error);
+                return null;
+            }
+        }
+
+        function setStoredCategory(category) {
+            try {
+                localStorage.setItem(STORAGE_KEY, category);
+                console.log('已保存分类选择到本地存储:', category);
+                return true;
+            } catch (error) {
+                console.warn('保存分类选择到本地存储失败:', error);
+                return false;
+            }
+        }
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `test-result ${type}`;
+            element.textContent = message;
+        }
+
+        function testLocalStorage() {
+            try {
+                // 测试写入
+                const testCategory = '测试分类';
+                setStoredCategory(testCategory);
+                
+                // 测试读取
+                const retrieved = getStoredCategory();
+                
+                if (retrieved === testCategory) {
+                    showResult('storage-test-result', '✓ 本地存储读写测试通过', 'success');
+                } else {
+                    showResult('storage-test-result', `✗ 本地存储读写测试失败: 期望 "${testCategory}", 实际 "${retrieved}"`, 'error');
+                }
+            } catch (error) {
+                showResult('storage-test-result', `✗ 本地存储测试出错: ${error.message}`, 'error');
+            }
+        }
+
+        function clearLocalStorage() {
+            try {
+                localStorage.removeItem(STORAGE_KEY);
+                showResult('storage-test-result', '✓ 本地存储已清空', 'success');
+            } catch (error) {
+                showResult('storage-test-result', `✗ 清空本地存储失败: ${error.message}`, 'error');
+            }
+        }
+
+        function simulateCategoryChange(category) {
+            try {
+                // 模拟分类选择
+                setStoredCategory(category);
+                
+                // 更新UI状态
+                const buttons = document.querySelectorAll('.mock-filter-btn');
+                buttons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.category === category) {
+                        btn.classList.add('active');
+                    }
+                });
+                
+                showResult('category-test-result', `✓ 已选择分类: ${category}`, 'success');
+            } catch (error) {
+                showResult('category-test-result', `✗ 分类选择失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testProductLibraryComponent() {
+            try {
+                // 测试组件初始化
+                const currentCategory = getStoredCategory() || 'all';
+                
+                let result = `当前存储的分类: ${currentCategory}\n`;
+                result += `组件初始化时应该使用: ${currentCategory}\n`;
+                
+                // 验证分类选择逻辑
+                if (currentCategory === 'all') {
+                    result += '✓ 默认分类为"全部"\n';
+                } else {
+                    result += `✓ 已记忆用户选择的分类: ${currentCategory}\n`;
+                }
+                
+                showResult('component-test-result', result, 'success');
+            } catch (error) {
+                showResult('component-test-result', `✗ 组件测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        function verifyMemoryFunction() {
+            try {
+                const storedCategory = getStoredCategory();
+                const currentActive = document.querySelector('.mock-filter-btn.active');
+                const currentCategory = currentActive ? currentActive.dataset.category : 'all';
+                
+                let result = `本地存储的分类: ${storedCategory || '无'}\n`;
+                result += `当前UI显示的分类: ${currentCategory}\n`;
+                
+                if (storedCategory === currentCategory) {
+                    result += '✓ 记忆功能正常工作\n';
+                } else {
+                    result += '✗ 记忆功能异常：存储的分类与UI显示不一致\n';
+                }
+                
+                // 测试页面刷新后的状态
+                result += '\n页面刷新后，分类选择应该保持为: ' + (storedCategory || 'all');
+                
+                showResult('verify-result', result, storedCategory === currentCategory ? 'success' : 'error');
+            } catch (error) {
+                showResult('verify-result', `✗ 验证失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 从本地存储恢复分类选择状态
+            const storedCategory = getStoredCategory();
+            if (storedCategory) {
+                const buttons = document.querySelectorAll('.mock-filter-btn');
+                buttons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.category === storedCategory) {
+                        btn.classList.add('active');
+                    }
+                });
+                
+                showResult('category-test-result', `页面加载时恢复分类选择: ${storedCategory}`, 'info');
+            }
+        });
+
+        // 绑定分类按钮点击事件
+        document.querySelectorAll('.mock-filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const category = this.dataset.category;
+                simulateCategoryChange(category);
+            });
+        });
+    </script>
+</body>
+</html>

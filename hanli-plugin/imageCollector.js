@@ -159,7 +159,6 @@ class ImageCollector {
                         imageInfoList.push(imageInfo);
                         loadedCount++;
                         
-                        console.log(`图片 ${loadedCount}: ${width}×${height}px, 范围内:${isInRange}, 目标尺寸:${isTargetSize}`);
                         
                         resolve();
                     };
@@ -178,7 +177,6 @@ class ImageCollector {
             }
         }
         
-        console.log(`图片检测完成: 成功加载 ${loadedCount} 张, 失败 ${errorCount} 张`);
         return imageInfoList;
     }
 

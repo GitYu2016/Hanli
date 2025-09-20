@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分页组件全局计数测试</title>
+    <link rel="stylesheet" href="../../renderer/globals.css">
+    <link rel="stylesheet" href="../../renderer/theme/light/colors.css" id="theme-colors">
+    <style>
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid var(--color-border-normal);
+            border-radius: 8px;
+            background-color: var(--color-background-normal);
+        }
+        
+        .test-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--color-text-primary);
+        }
+        
+        .test-button {
+            background-color: var(--color-primary);
+            color: var(--color-primary-reverse);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .test-button:hover {
+            background-color: var(--color-focused);
+        }
+        
+        .test-result {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: var(--color-background-focused);
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--color-text-primary);
+        }
+        
+        .pagination-demo {
+            height: 200px;
+            background-color: var(--color-surface-primary);
+            border: 1px solid var(--color-border-normal);
+            border-radius: 6px;
+            margin: 20px 0;
+            position: relative;
+        }
+        
+        .info-display {
+            background-color: var(--color-background-normal);
+            border: 1px solid var(--color-border-normal);
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>分页组件全局计数测试</h1>
+        
+        <div class="test-section">
+            <div class="test-title">全局产品数据管理器状态</div>
+            <div id="global-status" class="info-display">正在检查全局状态...</div>
+            <button class="test-button" onclick="checkGlobalStatus()">检查全局状态</button>
+            <button class="test-button" onclick="loadGlobalCount()">加载全局计数</button>
+            <div id="test-result-1" class="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">分页组件测试</div>
+            <div class="pagination-demo">
+                <div id="pagination-demo-container" style="position: absolute; bottom: 0; left: 0; right: 0;"></div>
+            </div>
+            <button class="test-button" onclick="initPagination()">初始化分页组件</button>
+            <button class="test-button" onclick="testPaginationWithGlobalCount()">测试全局计数</button>
+            <button class="test-button" onclick="updatePaginationTest()">更新分页测试</button>
+            <div id="test-result-2" class="test-result"></div>
+        </div>
+    </div>
+
+    <!-- 引入必要的组件 -->
+    <script src="../../renderer/components/Common/StyleManager.js"></script>
+    <script src="../../renderer/components/ProductLibraryPage/ProductDataManager.js"></script>
+    <script src="../../renderer/components/Common/Pagination.js"></script>
+
+    <script>
+        let demoPagination = null;
+        let productDataManager = null;
+
+        // 初始化测试
+        document.addEventListener('DOMContentLoaded', () => {
+            logResult('test-result-1', '全局计数测试页面已加载');
+            checkGlobalStatus();
+        });
+
+        function logResult(resultId, message) {
+            const resultEl = document.getElementById(resultId);
+            if (resultEl) {
+                const timestamp = new Date().toLocaleTimeString();
+                resultEl.innerHTML += `[${timestamp}] ${message}<br>`;
+                resultEl.scrollTop = resultEl.scrollHeight;
+            }
+        }
+
+        function updateGlobalStatus() {
+            const statusEl = document.getElementById('global-status');
+            if (!statusEl) return;
+
+            let status = '';
+            status += `window.productDataManager: ${window.productDataManager ? '已定义' : '未定义'}<br>`;
+            
+            if (window.productDataManager) {
+                status += `lastProductCount: ${window.productDataManager.lastProductCount || 0}<br>`;
+                status += `isLoadingCount: ${window.productDataManager.isLoadingCount || false}<br>`;
+            }
+            
+            if (productDataManager) {
+                status += `本地实例lastProductCount: ${productDataManager.lastProductCount || 0}<br>`;
+            }
+
+            statusEl.innerHTML = status;
+        }
+
+        function checkGlobalStatus() {
+            updateGlobalStatus();
+            logResult('test-result-1', '✓ 全局状态检查完成');
+        }
+
+        function loadGlobalCount() {
+            if (!window.productDataManager) {
+                logResult('test-result-1', '✗ 全局ProductDataManager未定义，创建本地实例');
+                productDataManager = new ProductDataManager();
+                productDataManager.init();
+            }
+
+            const manager = window.productDataManager || productDataManager;
+            if (manager) {
+                manager.loadProductCount().then(count => {
+                    logResult('test-result-1', `✓ 全局计数加载完成: ${count}`);
+                    updateGlobalStatus();
+                }).catch(error => {
+                    logResult('test-result-1', `✗ 全局计数加载失败: ${error.message}`);
+                });
+            } else {
+                logResult('test-result-1', '✗ 无法创建ProductDataManager实例');
+            }
+        }
+
+        async function initPagination() {
+            try {
+                if (demoPagination) {
+                    demoPagination.destroy();
+                }
+                
+                demoPagination = new Pagination('pagination-demo-container');
+                await demoPagination.init();
+                
+                logResult('test-result-2', '✓ 分页组件初始化完成');
+            } catch (error) {
+                logResult('test-result-2', `✗ 分页组件初始化失败: ${error.message}`);
+            }
+        }
+
+        function testPaginationWithGlobalCount() {
+            if (!demoPagination) {
+                logResult('test-result-2', '✗ 请先初始化分页组件');
+                return;
+            }
+
+            // 测试不提供totalItems的情况
+            demoPagination.updatePagination({
+                currentPage: 1,
+                itemsPerPage: 20
+            });
+
+            const data = demoPagination.getPaginationData();
+            logResult('test-result-2', `✓ 分页数据更新完成 - 总条数: ${data.totalItems}, 总页数: ${data.totalPages}`);
+        }
+
+        function updatePaginationTest() {
+            if (!demoPagination) {
+                logResult('test-result-2', '✗ 请先初始化分页组件');
+                return;
+            }
+
+            // 测试提供totalItems的情况
+            demoPagination.updatePagination({
+                totalItems: 150,
+                currentPage: 2,
+                itemsPerPage: 25
+            });
+
+            const data = demoPagination.getPaginationData();
+            logResult('test-result-2', `✓ 分页数据更新完成 - 总条数: ${data.totalItems}, 总页数: ${data.totalPages}, 当前页: ${data.currentPage}`);
+        }
+    </script>
+</body>
+</html>

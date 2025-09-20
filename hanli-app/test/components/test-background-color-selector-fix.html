@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>背景色选择器修复测试</title>
+    <link rel="stylesheet" href="../../renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="../../renderer/theme/dark/colors.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-body-bg-default);
+            color: var(--color-primary);
+            transition: background-color 0.2s ease;
+        }
+
+        .theme-dark {
+            background: var(--color-body-bg-default);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background: var(--color-background-normal);
+            border-radius: 6px;
+            border: 1px solid var(--color-border-normal);
+        }
+
+        .section h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--color-primary);
+        }
+
+        .theme-toggle {
+            margin-bottom: 20px;
+        }
+
+        .theme-toggle button {
+            padding: 8px 16px;
+            border: 1px solid var(--color-border-normal);
+            border-radius: 6px;
+            background: var(--color-background-normal);
+            color: var(--color-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle button:hover {
+            background: var(--color-background-focused);
+            border-color: var(--color-border-focused);
+        }
+
+        .current-bg {
+            padding: 10px;
+            margin: 10px 0;
+            background: var(--color-background-focused);
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
+        .debug-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: var(--color-background-normal);
+            border-radius: 6px;
+            border: 1px solid var(--color-border-normal);
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            color: var(--color-secondary);
+        }
+
+        .debug-info h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--color-primary);
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .color-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: var(--color-background-normal);
+            border-radius: 6px;
+            border: 1px solid var(--color-border-normal);
+        }
+
+        .color-preview {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid var(--color-border-normal);
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>背景色选择器修复测试</h1>
+        
+        <div class="section">
+            <h2>主题切换</h2>
+            <div class="theme-toggle">
+                <button onclick="toggleTheme()">切换主题</button>
+                <span id="current-theme">当前主题: 亮色</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>背景色选择器</h2>
+            <div id="background-color-selector-container"></div>
+            <div class="current-bg">
+                当前选择的背景色: <span id="current-bg-color">default</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>所有背景色预览</h2>
+            <div class="color-grid" id="color-grid">
+                <!-- 动态生成颜色预览 -->
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>调试信息</h2>
+            <div class="debug-info">
+                <h4>CSS变量检查</h4>
+                <div id="css-vars-debug"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../renderer/components/Common/BackgroundColorSelector.js"></script>
+    <script>
+        let currentTheme = 'light';
+        let backgroundColorSelector;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initBackgroundColorSelector();
+            generateColorGrid();
+            checkCSSVariables();
+        });
+
+        /**
+         * 初始化背景色选择器
+         */
+        function initBackgroundColorSelector() {
+            backgroundColorSelector = new BackgroundColorSelector({
+                currentBackgroundColor: 'default',
+                onBackgroundColorChange: function(bgColor) {
+                    document.getElementById('current-bg-color').textContent = bgColor;
+                    console.log('背景色已更改为:', bgColor);
+                }
+            });
+
+            const container = document.getElementById('background-color-selector-container');
+            container.innerHTML = backgroundColorSelector.render();
+            backgroundColorSelector.bindEvents(container);
+        }
+
+        /**
+         * 生成颜色网格
+         */
+        function generateColorGrid() {
+            const colors = [
+                { name: 'default', label: '默认' },
+                { name: 'blue', label: '蓝色' },
+                { name: 'green', label: '绿色' },
+                { name: 'purple', label: '紫色' },
+                { name: 'orange', label: '橙色' },
+                { name: 'pink', label: '粉色' },
+                { name: 'gray', label: '灰色' },
+                { name: 'indigo', label: '靛蓝' }
+            ];
+
+            const grid = document.getElementById('color-grid');
+            grid.innerHTML = colors.map(color => `
+                <div class="color-item">
+                    <div class="color-preview bg-${color.name}"></div>
+                    <div>
+                        <div style="font-weight: 500;">${color.label}</div>
+                        <div style="font-size: 12px; color: var(--color-secondary);">bg-${color.name}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        /**
+         * 检查CSS变量
+         */
+        function checkCSSVariables() {
+            const root = document.documentElement;
+            const computedStyle = getComputedStyle(root);
+            
+            const variables = [
+                '--color-body-bg-default',
+                '--color-body-bg-blue',
+                '--color-body-bg-green',
+                '--color-body-bg-purple',
+                '--color-body-bg-orange',
+                '--color-body-bg-pink',
+                '--color-body-bg-gray',
+                '--color-body-bg-indigo',
+                '--color-border-normal',
+                '--color-primary'
+            ];
+
+            const debugDiv = document.getElementById('css-vars-debug');
+            debugDiv.innerHTML = variables.map(varName => {
+                const value = computedStyle.getPropertyValue(varName).trim();
+                const status = value ? '✅' : '❌';
+                return `<div>${status} ${varName}: ${value || '未定义'}</div>`;
+            }).join('');
+        }
+
+        /**
+         * 切换主题
+         */
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            if (currentTheme === 'dark') {
+                document.documentElement.classList.add('theme-dark');
+                document.documentElement.classList.remove('theme-light');
+            } else {
+                document.documentElement.classList.add('theme-light');
+                document.documentElement.classList.remove('theme-dark');
+            }
+            
+            document.getElementById('current-theme').textContent = `当前主题: ${currentTheme === 'light' ? '亮色' : '暗色'}`;
+            
+            // 重新检查CSS变量
+            setTimeout(checkCSSVariables, 100);
+        }
+
+        // 添加背景色样式
+        const style = document.createElement('style');
+        style.textContent = `
+            .bg-default .color-preview { background: var(--color-body-bg-default); }
+            .bg-blue .color-preview { background: var(--color-body-bg-blue); }
+            .bg-green .color-preview { background: var(--color-body-bg-green); }
+            .bg-purple .color-preview { background: var(--color-body-bg-purple); }
+            .bg-orange .color-preview { background: var(--color-body-bg-orange); }
+            .bg-pink .color-preview { background: var(--color-body-bg-pink); }
+            .bg-gray .color-preview { background: var(--color-body-bg-gray); }
+            .bg-indigo .color-preview { background: var(--color-body-bg-indigo); }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

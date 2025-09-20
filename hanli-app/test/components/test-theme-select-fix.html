@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>主题选择器修复测试</title>
+    <link rel="stylesheet" href="../../renderer/globals.css">
+    <link rel="stylesheet" href="../../renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="../../renderer/icons-fixed.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: var(--color-background-normal);
+            color: var(--color-primary);
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            background: var(--color-surface-primary);
+            border: 1px solid var(--color-border-normal);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--color-primary);
+        }
+        
+        .test-description {
+            color: var(--color-secondary);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        
+        .test-controls {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .test-button {
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+        }
+        
+        .test-button:hover {
+            background: var(--color-primary-hover);
+        }
+        
+        .test-button:disabled {
+            background: var(--color-border-normal);
+            cursor: not-allowed;
+        }
+        
+        .test-result {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .test-result.success {
+            background: var(--color-success-bg);
+            color: var(--color-success);
+            border: 1px solid var(--color-success);
+        }
+        
+        .test-result.error {
+            background: var(--color-error-bg);
+            color: var(--color-error);
+            border: 1px solid var(--color-error);
+        }
+        
+        .test-result.info {
+            background: var(--color-info-bg);
+            color: var(--color-info);
+            border: 1px solid var(--color-info);
+        }
+        
+        .select-test-area {
+            background: var(--color-surface-secondary);
+            border: 1px solid var(--color-border-normal);
+            border-radius: 6px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        
+        .select-test-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--color-primary);
+        }
+        
+        .log-area {
+            background: var(--color-surface-secondary);
+            border: 1px solid var(--color-border-normal);
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 16px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 12px;
+            color: var(--color-secondary);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>主题选择器修复测试</h1>
+        
+        <div class="test-section">
+            <div class="test-title">测试说明</div>
+            <div class="test-description">
+                此测试用于验证主题选择器Select组件的修复效果。主要测试：
+                <br>1. Select组件能否正常展开下拉选项
+                <br>2. 选项点击是否正常工作
+                <br>3. 事件绑定是否正确（避免重复绑定）
+                <br>4. 组件销毁时是否正确解绑事件
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">基础功能测试</div>
+            <div class="test-description">
+                测试Select组件的基本功能，包括展开、选择、关闭等操作。
+            </div>
+            
+            <div class="select-test-area">
+                <label class="select-test-label">主题选择器：</label>
+                <div id="theme-select-container"></div>
+            </div>
+            
+            <div class="test-controls">
+                <button class="test-button" onclick="testBasicFunctionality()">测试基础功能</button>
+                <button class="test-button" onclick="testMultipleClicks()">测试多次点击</button>
+                <button class="test-button" onclick="testKeyboardNavigation()">测试键盘导航</button>
+                <button class="test-button" onclick="clearLog()">清空日志</button>
+            </div>
+            
+            <div id="test-result" class="test-result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">事件绑定测试</div>
+            <div class="test-description">
+                测试事件绑定是否正确，避免重复绑定导致的问题。
+            </div>
+            
+            <div class="test-controls">
+                <button class="test-button" onclick="testEventBinding()">测试事件绑定</button>
+                <button class="test-button" onclick="testRecreateComponent()">测试重新创建组件</button>
+                <button class="test-button" onclick="testDestroyComponent()">测试销毁组件</button>
+            </div>
+        </div>
+        
+        <div class="log-area" id="log-area">
+            <div>测试日志：</div>
+        </div>
+    </div>
+
+    <script src="../../renderer/components/Common/Select.js"></script>
+    <script>
+        let selectInstance = null;
+        let testResults = [];
+        
+        // 初始化测试
+        function initTest() {
+            log('开始初始化测试...');
+            
+            // 创建主题选择器
+            selectInstance = new Select({
+                options: [
+                    { value: 'light', label: '浅色主题' },
+                    { value: 'dark', label: '深色主题' },
+                    { value: 'auto', label: '跟随系统' }
+                ],
+                value: 'auto',
+                placeholder: '请选择主题',
+                className: 'theme-select',
+                onChange: (theme) => {
+                    log(`主题已更改为: ${theme}`);
+                    showResult(`主题已更改为: ${theme}`, 'success');
+                }
+            });
+            
+            // 渲染到页面
+            const container = document.getElementById('theme-select-container');
+            container.innerHTML = selectInstance.render();
+            
+            // 绑定事件
+            selectInstance.bindEvents(container);
+            
+            log('主题选择器初始化完成');
+            showResult('主题选择器初始化完成', 'success');
+        }
+        
+        // 测试基础功能
+        function testBasicFunctionality() {
+            log('开始测试基础功能...');
+            
+            const trigger = document.querySelector('.select-trigger');
+            if (!trigger) {
+                showResult('错误：找不到select-trigger元素', 'error');
+                return;
+            }
+            
+            // 测试点击展开
+            log('测试点击展开...');
+            trigger.click();
+            
+            setTimeout(() => {
+                const dropdown = document.querySelector('.select-dropdown');
+                if (dropdown && dropdown.classList.contains('open')) {
+                    log('✓ 下拉菜单成功展开');
+                    showResult('✓ 下拉菜单成功展开', 'success');
+                } else {
+                    log('✗ 下拉菜单未能展开');
+                    showResult('✗ 下拉菜单未能展开', 'error');
+                }
+            }, 100);
+        }
+        
+        // 测试多次点击
+        function testMultipleClicks() {
+            log('开始测试多次点击...');
+            
+            const trigger = document.querySelector('.select-trigger');
+            if (!trigger) return;
+            
+            // 连续点击5次
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    trigger.click();
+                    log(`第${i + 1}次点击`);
+                }, i * 100);
+            }
+            
+            setTimeout(() => {
+                const dropdown = document.querySelector('.select-dropdown');
+                if (dropdown && dropdown.classList.contains('open')) {
+                    log('✓ 多次点击后下拉菜单正常展开');
+                    showResult('✓ 多次点击后下拉菜单正常展开', 'success');
+                } else {
+                    log('✗ 多次点击后下拉菜单未能展开');
+                    showResult('✗ 多次点击后下拉菜单未能展开', 'error');
+                }
+            }, 600);
+        }
+        
+        // 测试键盘导航
+        function testKeyboardNavigation() {
+            log('开始测试键盘导航...');
+            
+            const trigger = document.querySelector('.select-trigger');
+            if (!trigger) return;
+            
+            // 聚焦并打开
+            trigger.focus();
+            trigger.click();
+            
+            setTimeout(() => {
+                // 测试向下箭头
+                const downEvent = new KeyboardEvent('keydown', { key: 'ArrowDown' });
+                trigger.dispatchEvent(downEvent);
+                log('按下向下箭头键');
+                
+                setTimeout(() => {
+                    // 测试回车选择
+                    const enterEvent = new KeyboardEvent('keydown', { key: 'Enter' });
+                    trigger.dispatchEvent(enterEvent);
+                    log('按下回车键选择');
+                }, 100);
+            }, 100);
+        }
+        
+        // 测试事件绑定
+        function testEventBinding() {
+            log('开始测试事件绑定...');
+            
+            const trigger = document.querySelector('.select-trigger');
+            if (!trigger) return;
+            
+            // 检查事件监听器数量
+            const clickListeners = getEventListeners(trigger, 'click');
+            log(`点击事件监听器数量: ${clickListeners ? clickListeners.length : '无法检测'}`);
+            
+            // 测试多次绑定
+            log('测试多次绑定事件...');
+            selectInstance.bindEvents(document.getElementById('theme-select-container'));
+            selectInstance.bindEvents(document.getElementById('theme-select-container'));
+            selectInstance.bindEvents(document.getElementById('theme-select-container'));
+            
+            const clickListenersAfter = getEventListeners(trigger, 'click');
+            log(`多次绑定后点击事件监听器数量: ${clickListenersAfter ? clickListenersAfter.length : '无法检测'}`);
+            
+            if (clickListenersAfter && clickListenersAfter.length <= 1) {
+                log('✓ 事件绑定正确，没有重复绑定');
+                showResult('✓ 事件绑定正确，没有重复绑定', 'success');
+            } else {
+                log('✗ 可能存在重复绑定问题');
+                showResult('✗ 可能存在重复绑定问题', 'error');
+            }
+        }
+        
+        // 测试重新创建组件
+        function testRecreateComponent() {
+            log('开始测试重新创建组件...');
+            
+            // 销毁当前组件
+            if (selectInstance) {
+                selectInstance.destroy();
+            }
+            
+            // 重新创建
+            initTest();
+            
+            log('✓ 组件重新创建完成');
+            showResult('✓ 组件重新创建完成', 'success');
+        }
+        
+        // 测试销毁组件
+        function testDestroyComponent() {
+            log('开始测试销毁组件...');
+            
+            if (selectInstance) {
+                selectInstance.destroy();
+                log('✓ 组件销毁完成');
+                showResult('✓ 组件销毁完成', 'success');
+            } else {
+                log('✗ 没有可销毁的组件');
+                showResult('✗ 没有可销毁的组件', 'error');
+            }
+        }
+        
+        // 显示测试结果
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('test-result');
+            resultDiv.textContent = message;
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                resultDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 记录日志
+        function log(message) {
+            const logArea = document.getElementById('log-area');
+            const timestamp = new Date().toLocaleTimeString();
+            logArea.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logArea.scrollTop = logArea.scrollHeight;
+            console.log(`[测试] ${message}`);
+        }
+        
+        // 清空日志
+        function clearLog() {
+            document.getElementById('log-area').innerHTML = '<div>测试日志：</div>';
+        }
+        
+        // 获取事件监听器（仅用于调试，实际浏览器可能不支持）
+        function getEventListeners(element, eventType) {
+            if (element._events && element._events[eventType]) {
+                return element._events[eventType];
+            }
+            return null;
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initTest);
+    </script>
+</body>
+</html>

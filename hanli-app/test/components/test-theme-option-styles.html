@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theme Option 样式测试</title>
+    <link rel="stylesheet" href="../../renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="../../renderer/theme/dark/colors.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-body-bg-default);
+            color: var(--color-primary);
+            transition: background-color 0.2s ease;
+        }
+
+        .theme-dark {
+            background: var(--color-body-bg-default);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--color-background-normal);
+            border-radius: 6px;
+            border: 1px solid var(--color-border-normal);
+        }
+
+        .section h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--color-primary);
+        }
+
+        .theme-toggle {
+            margin-bottom: 20px;
+        }
+
+        .theme-toggle button {
+            padding: 8px 16px;
+            border: 1px solid var(--color-border-normal);
+            border-radius: 6px;
+            background: var(--color-background-normal);
+            color: var(--color-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle button:hover {
+            background: var(--color-background-focused);
+            border-color: var(--color-border-focused);
+        }
+
+        .test-instructions {
+            background: var(--color-background-normal);
+            border: 1px solid var(--color-border-normal);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: var(--color-secondary);
+            line-height: 1.6;
+        }
+
+        .test-instructions h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--color-primary);
+        }
+
+        .test-instructions ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .test-instructions li {
+            margin: 5px 0;
+        }
+
+        .debug-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: var(--color-background-normal);
+            border-radius: 6px;
+            border: 1px solid var(--color-border-normal);
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            color: var(--color-secondary);
+        }
+
+        .debug-info h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--color-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .debug-info pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-normal { background: var(--color-border-normal); }
+        .status-hover { background: var(--color-border-focused); }
+        .status-active { background: var(--color-border-focused); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Theme Option 样式测试</h1>
+        
+        <div class="section">
+            <h2>主题切换</h2>
+            <div class="theme-toggle">
+                <button onclick="toggleTheme()">切换主题</button>
+                <span id="current-theme">当前主题: 亮色</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>主题选择器样式测试</h2>
+            
+            <div class="test-instructions">
+                <h4>🧪 测试说明</h4>
+                <ul>
+                    <li><span class="status-indicator status-normal"></span><strong>正常状态</strong>: 背景色为 --color-background-normal，边框为 --color-border-normal</li>
+                    <li><span class="status-indicator status-hover"></span><strong>悬浮状态</strong>: 背景色不变，边框变为 --color-border-focused</li>
+                    <li><span class="status-indicator status-active"></span><strong>选中状态</strong>: 背景色不变，边框变为 --color-border-focused</li>
+                </ul>
+            </div>
+            
+            <div id="theme-selector-container"></div>
+            <div style="margin-top: 15px; padding: 12px; background: var(--color-background-focused); border-radius: 6px; font-weight: 500; text-align: center;">
+                当前选择的主题: <span id="current-theme-value">light</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>调试信息</h2>
+            <div class="debug-info">
+                <h4>CSS变量值</h4>
+                <pre id="css-vars"></pre>
+                
+                <h4>主题选项样式检查</h4>
+                <pre id="style-check"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../renderer/components/Common/ThemeSelector.js"></script>
+    <script>
+        let currentTheme = 'light';
+        let themeSelector;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initThemeSelector();
+            updateDebugInfo();
+        });
+
+        /**
+         * 初始化主题选择器
+         */
+        function initThemeSelector() {
+            themeSelector = new ThemeSelector({
+                currentTheme: 'light',
+                onThemeChange: function(theme) {
+                    document.getElementById('current-theme-value').textContent = theme;
+                    console.log('主题已更改为:', theme);
+                    updateDebugInfo();
+                }
+            });
+
+            const container = document.getElementById('theme-selector-container');
+            container.innerHTML = themeSelector.render();
+            themeSelector.bindEvents(container);
+        }
+
+        /**
+         * 切换主题
+         */
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            if (currentTheme === 'dark') {
+                document.documentElement.classList.add('theme-dark');
+                document.documentElement.classList.remove('theme-light');
+            } else {
+                document.documentElement.classList.add('theme-light');
+                document.documentElement.classList.remove('theme-dark');
+            }
+            
+            document.getElementById('current-theme').textContent = `当前主题: ${currentTheme === 'light' ? '亮色' : '暗色'}`;
+            
+            // 更新调试信息
+            setTimeout(updateDebugInfo, 100);
+        }
+
+        /**
+         * 更新调试信息
+         */
+        function updateDebugInfo() {
+            // 显示CSS变量值
+            const root = document.documentElement;
+            const computedStyle = getComputedStyle(root);
+            
+            const cssVars = [
+                '--color-background-normal',
+                '--color-border-normal',
+                '--color-border-focused'
+            ];
+
+            const cssVarsText = cssVars.map(varName => {
+                const value = computedStyle.getPropertyValue(varName).trim();
+                return `${varName}: ${value}`;
+            }).join('\n');
+
+            document.getElementById('css-vars').textContent = cssVarsText;
+
+            // 检查主题选项样式
+            const container = document.getElementById('theme-selector-container');
+            const themeOptions = container.querySelectorAll('.theme-option');
+            
+            const styleCheckText = Array.from(themeOptions).map((option, index) => {
+                const computedStyle = getComputedStyle(option);
+                const backgroundColor = computedStyle.backgroundColor;
+                const borderColor = computedStyle.borderColor;
+                const isActive = option.classList.contains('active');
+                const theme = option.dataset.theme;
+                
+                return `主题选项 ${index + 1} (${theme}):\n  背景色: ${backgroundColor}\n  边框色: ${borderColor}\n  选中状态: ${isActive ? '是' : '否'}`;
+            }).join('\n\n');
+
+            document.getElementById('style-check').textContent = styleCheckText;
+        }
+    </script>
+</body>
+</html>

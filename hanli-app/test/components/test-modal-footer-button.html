@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模态框Footer按钮测试</title>
+    <link rel="stylesheet" href="../../renderer/globals.css">
+    <link rel="stylesheet" href="../../renderer/theme/light/colors.css" id="theme-colors">
+    <link rel="stylesheet" href="../../renderer/icons-fixed.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: var(--color-background-normal);
+            color: var(--color-primary);
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            background: var(--color-surface-primary);
+            border: 1px solid var(--color-border-normal);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--color-primary);
+        }
+        
+        .test-button {
+            background: var(--color-info);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 8px;
+        }
+        
+        .test-button:hover {
+            background: var(--color-info-hover);
+        }
+        
+        .status {
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        
+        .status.success {
+            background: var(--color-success-light);
+            color: var(--color-success);
+            border: 1px solid var(--color-success);
+        }
+        
+        .status.error {
+            background: var(--color-error-light);
+            color: var(--color-error);
+            border: 1px solid var(--color-error);
+        }
+        
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--color-border-normal);
+            display: flex;
+            justify-content: flex-end;
+            background: var(--color-surface-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>模态框Footer按钮测试</h1>
+        
+        <div class="test-section">
+            <div class="test-title">测试"完成"按钮显示</div>
+            <p>点击下面的按钮打开设置模态框，检查"完成"按钮是否正常显示。</p>
+            
+            <button class="test-button" onclick="openSettingsModal()">打开设置模态框</button>
+            <button class="test-button" onclick="testFooterButton()">测试Footer按钮</button>
+            
+            <div id="test-status"></div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">Footer按钮预览</div>
+            <div class="modal-footer" id="footer-preview">
+                <!-- 按钮将在这里显示 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载必要的组件 -->
+    <script src="../../renderer/components/Common/Select.js"></script>
+    <script src="../../renderer/components/Common/BackgroundColorSelector.js"></script>
+    <script src="../../renderer/components/Modal/SettingsModal.js"></script>
+    <script src="../../renderer/components/Common/Button/MPrimaryButton.js"></script>
+    <script src="../../renderer/components/Common/KeyboardShortcutManager.js"></script>
+    <script src="../../renderer/components/Common/Toast.js"></script>
+
+    <script>
+        let settingsModal;
+        
+        // 初始化测试
+        function initTest() {
+            // 创建设置模态框
+            settingsModal = new SettingsModal({
+                onSave: (settings) => {
+                    console.log('设置保存:', settings);
+                    showStatus('设置已保存', 'success');
+                }
+            });
+            
+            // 设置全局引用
+            window.settingsModalInstance = settingsModal;
+            window.buttonInstance = {
+                secondary: () => document.createElement('button'),
+                warning: () => document.createElement('button')
+            };
+            window.mPrimaryButtonInstance = {
+                create: (options) => {
+                    const button = document.createElement('button');
+                    button.textContent = options.text;
+                    button.className = options.className || 'btn btn-primary';
+                    button.style.cssText = `
+                        background: var(--color-primary);
+                        color: white;
+                        border: none;
+                        padding: 8px 16px;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 14px;
+                        font-weight: 500;
+                        transition: background-color 0.2s ease;
+                    `;
+                    if (options.onClick) {
+                        button.addEventListener('click', options.onClick);
+                    }
+                    return button;
+                }
+            };
+            window.keyboardShortcutManager = {
+                register: () => {},
+                unregisterContext: () => {}
+            };
+            
+            // 测试Footer按钮
+            testFooterButton();
+        }
+        
+        // 打开设置模态框
+        function openSettingsModal() {
+            if (settingsModal) {
+                settingsModal.open();
+                showStatus('设置模态框已打开', 'success');
+            } else {
+                showStatus('设置模态框未初始化', 'error');
+            }
+        }
+        
+        // 测试Footer按钮
+        function testFooterButton() {
+            const footer = document.getElementById('footer-preview');
+            footer.innerHTML = '';
+            
+            // 测试MPrimaryButton组件
+            if (window.mPrimaryButtonInstance) {
+                const completeButton = window.mPrimaryButtonInstance.create({
+                    text: '完成',
+                    onClick: () => {
+                        showStatus('完成按钮被点击', 'success');
+                    },
+                    className: 'modal-btn-complete'
+                });
+                
+                footer.appendChild(completeButton);
+                showStatus('Footer按钮创建成功', 'success');
+            } else {
+                showStatus('MPrimaryButton组件未加载', 'error');
+            }
+        }
+        
+        // 显示状态消息
+        function showStatus(message, type = 'success') {
+            const statusDiv = document.getElementById('test-status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            
+            // 3秒后清除状态
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+            }, 3000);
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initTest);
+    </script>
+</body>
+</html>

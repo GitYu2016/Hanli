@@ -75,12 +75,11 @@ class MoreMenu {
 
         return this.menuItems.map(item => {
             const disabledClass = item.disabled ? 'disabled' : '';
-            const iconClass = item.icon ? `ph ph-${item.icon}` : '';
             
             return `
                 <div class="more-menu-item ${disabledClass}" 
                      data-action="${item.action}">
-                    ${item.icon ? `<i class="${iconClass}"></i>` : ''}
+                    ${item.icon ? `<div class="svg-icon" data-icon="${item.icon}" data-filled="false"></div>` : ''}
                     <span>${item.label}</span>
                 </div>
             `;

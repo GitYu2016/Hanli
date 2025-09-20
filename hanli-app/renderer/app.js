@@ -1,120 +1,32 @@
-// Tab管理类
-class TabManager {
+// Tab管理类已移动到 components/Common/TabManager.js
+
+// 主应用逻辑
+class MainApp {
     constructor() {
-        this.tabs = [];
-        this.activeTabId = null;
-        this.tabIdCounter = 0;
-    }
-
-    // 生成唯一Tab ID
-    generateTabId() {
-        return `tab_${++this.tabIdCounter}`;
-    }
-
-    // 新增Tab
-    addTab(pageData) {
-        const tabId = this.generateTabId();
-        const tab = {
-            id: tabId,
-            pageType: pageData.type,
-            title: pageData.title,
-            pageData: pageData,
-            isActive: false,
-            closable: pageData.closable !== false // 默认为true，除非明确设置为false
-        };
-        
-        this.tabs.push(tab);
-        this.setActiveTab(tabId);
-        return tabId;
-    }
-
-    // 设置活动Tab
-    setActiveTab(tabId) {
-        // 取消所有Tab的激活状态
-        this.tabs.forEach(tab => tab.isActive = false);
-        
-        // 激活指定Tab
-        const targetTab = this.tabs.find(tab => tab.id === tabId);
-        if (targetTab) {
-            targetTab.isActive = true;
-            this.activeTabId = tabId;
-        }
-    }
-
-    // 关闭Tab
-    closeTab(tabId) {
-        const tabIndex = this.tabs.findIndex(tab => tab.id === tabId);
-        if (tabIndex === -1) return;
-
-        const isActiveTab = this.tabs[tabIndex].isActive;
-        this.tabs.splice(tabIndex, 1);
-
-        if (isActiveTab && this.tabs.length > 0) {
-            let newActiveIndex = tabIndex - 1;
-            if (newActiveIndex < 0) {
-                newActiveIndex = 0;
-            }
-            this.setActiveTab(this.tabs[newActiveIndex].id);
-        } else if (this.tabs.length === 0) {
-            this.activeTabId = null;
-        }
-
-        return isActiveTab;
-    }
-
-    // Tab切换回调
-    onTabSwitch(tab) {
-        // 触发自定义事件，让其他组件监听
-        const event = new CustomEvent('tabSwitch', {
-            detail: { tab }
-        });
-        document.dispatchEvent(event);
-    }
-
-    // 获取当前活动Tab
-    getActiveTab() {
-        return this.tabs.find(tab => tab.isActive);
-    }
-
-    // 根据页面类型查找Tab
-    findTabByPageType(pageType) {
-        return this.tabs.find(tab => tab.pageType === pageType);
-    }
-
-    // 根据页面类型和特定参数查找Tab（用于产品详情等需要区分不同实例的页面）
-    findTabByPageTypeAndParam(pageType, paramKey, paramValue) {
-        return this.tabs.find(tab => 
-            tab.pageType === pageType && 
-            tab.pageData && 
-            tab.pageData[paramKey] === paramValue
-        );
-    }
-}
-
-// 首页应用逻辑
-class HomePage {
-    constructor() {
-        this.currentTheme = 'light';
         this.activePage = 'home';
         this.isResizing = false;
         this.tabManager = new TabManager();
+        this.themeManager = new ThemeManager();
+        this.productDataManager = new ProductDataManager();
         this.topBar = null; // TopBar组件实例
         this.sideBar = null; // SideBar组件实例
         this.pageContainer = null; // PageContainer组件实例
-        this.settingsModal = null; // SettingsModal组件实例
-        this.productCountRefreshTimer = null; // 产品总数刷新定时器
-        this.productLibraryRefreshTimer = null; // 产品库刷新定时器
-        this.currentSortField = 'collectTime';
-        this.currentSortOrder = 'desc';
-        this.currentPage = 1;
-        this.itemsPerPage = 100;
+        this.settingsPage = null; // SettingsPage组件实例
         this.init();
     }
 
     async init() {
-        this.loadTheme();
+        // 初始化图标系统（最早初始化）
+        Icon.init();
+        
+        // 立即加载窗口控制按钮图标（HTML中已存在）
+        this.loadWindowControlIcons();
+        
+        this.themeManager.init();
+        this.productDataManager.init();
         this.detectEnvironment();
         await this.initComponents();
+        
         this.bindEvents();
         this.renderTabs();
         this.applyStoredSettings();
@@ -126,100 +38,53 @@ class HomePage {
         }, 100);
         
         // 设置全局引用，供TabManager使用
-        window.homePageInstance = this;
+        window.mainAppInstance = this;
+        
+        // 设置全局引用，供其他组件使用
+        window.productDataManager = this.productDataManager;
     }
 
-    // 加载主题
-    loadTheme() {
-        const savedTheme = localStorage.getItem('app-theme') || 'auto';
-        this.setTheme(savedTheme);
-        
-        // 应用存储的背景色
-        const savedBgColor = localStorage.getItem('app-background-color') || 'default';
-        this.setBackgroundColor(savedBgColor);
-    }
+    // 主题管理相关方法已移动到 ThemeManager 组件
 
-    // 设置主题
-    setTheme(theme) {
-        this.currentTheme = theme;
-        const themeColors = document.getElementById('theme-colors');
-        const root = document.documentElement;
-        
-        // 移除现有主题类
-        root.classList.remove('theme-light', 'theme-dark', 'theme-auto');
-        
-        if (theme === 'auto') {
-            // 跟随系统主题
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const actualTheme = prefersDark ? 'dark' : 'light';
-            themeColors.href = `theme/${actualTheme}/colors.css`;
-            root.classList.add(`theme-${actualTheme}`);
-            
-            // 监听系统主题变化
-            this.setupSystemThemeListener();
-        } else {
-            // 使用指定主题
-            themeColors.href = `theme/${theme}/colors.css`;
-            root.classList.add(`theme-${theme}`);
-        }
-        
-        // 重新应用背景色，确保主题切换后背景色仍然有效
-        const savedBgColor = localStorage.getItem('app-background-color') || 'default';
-        this.setBackgroundColor(savedBgColor);
-        
-        localStorage.setItem('app-theme', theme);
-    }
-
-    // 设置背景色
-    setBackgroundColor(bgColor) {
-        const root = document.documentElement;
-        
-        // 移除现有背景色类
-        root.classList.remove('bg-default', 'bg-blue', 'bg-green', 'bg-purple', 'bg-orange', 'bg-pink', 'bg-gray', 'bg-indigo');
-        
-        // 添加新背景色类
-        root.classList.add(`bg-${bgColor}`);
-        
-        // 保存到localStorage
-        localStorage.setItem('app-background-color', bgColor);
-        
-        console.log('背景色已切换为:', bgColor);
-    }
-
-    // 设置系统主题监听器
-    setupSystemThemeListener() {
-        if (this.systemThemeListener) {
-            this.systemThemeListener.removeEventListener('change', this.handleSystemThemeChange);
-        }
-        
-        this.systemThemeListener = window.matchMedia('(prefers-color-scheme: dark)');
-        this.handleSystemThemeChange = () => {
-            if (this.currentTheme === 'auto') {
-                const prefersDark = this.systemThemeListener.matches;
-                const actualTheme = prefersDark ? 'dark' : 'light';
-                const themeColors = document.getElementById('theme-colors');
-                const root = document.documentElement;
-                
-                root.classList.remove('theme-light', 'theme-dark');
-                root.classList.add(`theme-${actualTheme}`);
-                themeColors.href = `theme/${actualTheme}/colors.css`;
-                
-                // 重新应用背景色，确保系统主题切换后背景色仍然有效
-                const savedBgColor = localStorage.getItem('app-background-color') || 'default';
-                this.setBackgroundColor(savedBgColor);
+    /**
+     * 加载窗口控制按钮图标
+     */
+    loadWindowControlIcons() {
+        try {
+            // 加载关闭按钮图标
+            const closeIcon = document.getElementById('close-icon');
+            if (closeIcon) {
+                const closeIconHTML = Icon.render('x', { className: 'svg-icon', style: 'bold' });
+                closeIcon.outerHTML = closeIconHTML;
             }
-        };
-        
-        this.systemThemeListener.addEventListener('change', this.handleSystemThemeChange);
-    }
 
+            // 加载最小化按钮图标
+            const minimizeIcon = document.getElementById('minimize-icon');
+            if (minimizeIcon) {
+                const minimizeIconHTML = Icon.render('minus', { className: 'svg-icon', style: 'bold' });
+                minimizeIcon.outerHTML = minimizeIconHTML;
+            }
+
+            // 加载全屏按钮图标
+            const fullscreenIcon = document.getElementById('fullscreen-icon');
+            if (fullscreenIcon) {
+                const fullscreenIconHTML = Icon.render('arrows-out', { className: 'svg-icon', style: 'bold' });
+                fullscreenIcon.outerHTML = fullscreenIconHTML;
+            }
+        } catch (error) {
+            console.error('加载窗口控制按钮图标失败:', error);
+        }
+    }
 
     // 初始化所有组件
     async initComponents() {
         this.initTopBar();
         this.initSideBar();
         await this.initPageContainer();
+        this.initSettingsPage();
         this.initSettingsModal();
+        
+        // 样式现在通过主题切换机制自动重新应用
     }
 
     // 初始化TopBar组件
@@ -232,13 +97,16 @@ class HomePage {
         
         // 设置设置按钮回调
         this.topBar.setSettingsCallback(() => {
-            this.openSettingsModal();
+            this.openSettingsPage();
         });
         
         // 设置Tab切换回调
         this.topBar.setTabSwitchCallback((tab) => {
             this.handleTabSwitch(tab);
         });
+
+        // 渲染TopBar
+        this.topBar.render();
     }
 
     // 初始化SideBar组件
@@ -261,6 +129,28 @@ class HomePage {
         this.pageContainer.render();
     }
 
+    // 初始化SettingsPage组件
+    initSettingsPage() {
+        // 创建SettingsPage组件实例
+        this.settingsPage = new SettingsPage();
+        
+        // 设置回调
+        this.settingsPage.setCallbacks({
+            onSave: (settings) => {
+                this.handleSettingsSave(settings);
+            },
+            onCancel: () => {
+                // 设置已取消，无需输出日志
+            },
+            onThemeChange: (theme) => {
+                this.themeManager.setTheme(theme);
+            },
+            onBackgroundColorChange: (bgColor) => {
+                this.themeManager.setBackgroundColor(bgColor);
+            }
+        });
+    }
+
     // 初始化SettingsModal组件
     initSettingsModal() {
         // 创建SettingsModal组件实例
@@ -272,10 +162,13 @@ class HomePage {
                 this.handleSettingsSave(settings);
             },
             onCancel: () => {
-                console.log('设置已取消');
+                // 设置已取消，无需输出日志
             },
             onThemeChange: (theme) => {
-                this.setTheme(theme);
+                this.themeManager.setTheme(theme);
+            },
+            onBackgroundColorChange: (bgColor) => {
+                this.themeManager.setBackgroundColor(bgColor);
             }
         });
     }
@@ -302,6 +195,11 @@ class HomePage {
             if (productName) {
                 const goodsId = productName.dataset.goodsId;
                 if (goodsId) {
+                    // 防止重复点击
+                    if (this.isLoadingProductDetail && this.loadingProductId === goodsId) {
+                        console.log('产品详情正在加载中，忽略重复点击:', goodsId);
+                        return;
+                    }
                     console.log('打开产品详情:', goodsId);
                     this.viewProductDetail(goodsId);
                 }
@@ -345,12 +243,12 @@ class HomePage {
         // 根据Tab类型渲染对应的页面内容
         this.renderPageContent(tab.pageData.type, tab.pageData);
         
-        // 根据Tab类型管理产品总数刷新
+        // 根据Tab类型管理产品数据刷新
         if (tab.pageType === 'home') {
             // 切换到首页，按需刷新产品总数
-            this.refreshProductCountIfNeeded();
+            this.productDataManager.refreshProductCountIfNeeded(() => this.isOnHomePage());
         } else if (tab.pageType === 'product-library') {
-            // 切换到产品库，触发一次刷新
+            // 切换到产品库，触发一次刷新（会同时更新产品总数）
             this.loadProductLibrary();
         }
     }
@@ -369,6 +267,11 @@ class HomePage {
         window.keyboardShortcutManager.register('ctrl+shift+tab', (e) => {
             this.switchToPreviousTab();
         }, 'global', '切换到上一个Tab');
+
+        // 注册搜索快捷键
+        window.keyboardShortcutManager.register('ctrl+f', (e) => {
+            this.openSearchModal();
+        }, 'global', '打开搜索弹窗');
     }
 
     /**
@@ -397,6 +300,15 @@ class HomePage {
             if (window.electronAPI && window.electronAPI.windowAPI) {
                 window.electronAPI.windowAPI.close();
             }
+        }
+    }
+
+    /**
+     * 打开搜索弹窗
+     */
+    openSearchModal() {
+        if (this.topBar) {
+            this.topBar.openSearchModal();
         }
     }
 
@@ -467,10 +379,7 @@ class HomePage {
             this.renderTabs();
             // 触发Tab切换事件
             this.tabManager.onTabSwitch(existingTab);
-            // 如果是产品库页面，触发一次刷新
-            if (page === 'product-library') {
-                this.loadProductLibrary();
-            }
+            // 产品库页面会在onTabSwitch中自动刷新，无需重复调用
         } else {
             // 如果不存在，创建新Tab
             const newTabId = this.tabManager.addTab(pageData);
@@ -479,10 +388,7 @@ class HomePage {
             const newTab = this.tabManager.tabs.find(t => t.id === newTabId);
             if (newTab) {
                 this.tabManager.onTabSwitch(newTab);
-                // 如果是产品库页面，触发一次刷新
-                if (page === 'product-library') {
-                    this.loadProductLibrary();
-                }
+                // 产品库页面会在onTabSwitch中自动刷新，无需重复调用
             }
         }
         
@@ -558,31 +464,52 @@ class HomePage {
         
         switch (pageType) {
             case 'home':
-                console.log('渲染首页');
                 await this.pageContainer.renderHomePage();
                 break;
             case 'goodsList':
                 this.loadProductLibrary();
                 break;
             case 'productDetail':
-                console.log('渲染产品详情页');
                 // 产品详情页需要根据productId重新加载数据
                 if (pageData && pageData.productId) {
-                    console.log('根据productId加载产品详情:', pageData.productId);
                     this.loadProductDetailByGoodsId(pageData.productId);
                 } else if (this.currentProductDetail) {
-                    console.log('使用当前产品详情数据');
                     await this.pageContainer.renderProductDetail(this.currentProductDetail);
                 } else {
-                    console.warn('没有产品详情数据');
+                    console.warn('⚠️ 没有产品详情数据');
                 }
+                break;
+            case 'settings':
+                await this.renderSettingsPage();
                 break;
             default:
                 console.warn('未知的页面类型:', pageType);
         }
     }
     
-
+    // 渲染设置页面
+    async renderSettingsPage() {
+        if (!this.settingsPage) {
+            console.error('SettingsPage组件未初始化');
+            return;
+        }
+        
+        // 渲染设置页面
+        const container = document.getElementById('page-container');
+        if (container) {
+            container.innerHTML = this.settingsPage.render();
+            
+            // 绑定事件
+            this.settingsPage.bindEvents();
+            
+            // 加载当前设置
+            this.settingsPage.loadCurrentSettings();
+            
+            console.log('✅ 设置页面已渲染');
+        } else {
+            console.error('找不到页面容器');
+        }
+    }
 
     // 根据Tab更新侧边栏状态
     updateSidebarForTab(tab) {
@@ -617,73 +544,7 @@ class HomePage {
 
 
 
-    // 加载仪表板数据
-    loadDashboardData() {
-        this.loadProductCount();
-        // 初始化页面可见性监听（用于App前后台切换时刷新）
-        this.initVisibilityListener();
-    }
-
-    // 加载产品总数
-    async loadProductCount() {
-        try {
-            // 通过API获取产品总数
-            const response = await fetch('http://localhost:3001/api/products/count');
-            if (response.ok) {
-                const data = await response.json();
-                document.getElementById('product-count').textContent = data.count || 0;
-                console.log('产品总数已更新:', data.count);
-            } else {
-                console.error('获取产品总数失败:', response.status);
-                document.getElementById('product-count').textContent = '0';
-            }
-        } catch (error) {
-            console.error('获取产品总数失败:', error);
-            document.getElementById('product-count').textContent = '0';
-        }
-    }
-
-    // 按需刷新产品总数（已移除定时刷新）
-    refreshProductCountIfNeeded() {
-        // 只有在首页时才刷新
-        if (this.isOnHomePage()) {
-            console.log('按需刷新产品总数...');
-            this.loadProductCount();
-        }
-    }
-
-    // 初始化页面可见性监听
-    initVisibilityListener() {
-        // 如果已经初始化过，直接返回
-        if (this.visibilityListenerInitialized) {
-            return;
-        }
-
-        // 绑定事件处理函数，以便后续可以正确移除
-        this.handleVisibilityChange = () => {
-            if (!document.hidden && this.isOnHomePage()) {
-                console.log('App从后台切换到前台，刷新产品总数');
-                this.loadProductCount();
-            }
-        };
-
-        this.handleWindowFocus = () => {
-            if (this.isOnHomePage()) {
-                console.log('窗口获得焦点，刷新产品总数');
-                this.loadProductCount();
-            }
-        };
-
-        // 监听页面可见性变化（App从后台到前台）
-        document.addEventListener('visibilitychange', this.handleVisibilityChange);
-
-        // 监听窗口焦点变化（作为备用）
-        window.addEventListener('focus', this.handleWindowFocus);
-
-        // 标记为已初始化
-        this.visibilityListenerInitialized = true;
-        console.log('页面可见性监听器已初始化');
-    }
+    // 产品数据管理相关方法已移动到 ProductDataManager 组件
 
     // 检查是否在首页
     isOnHomePage() {
@@ -699,43 +560,23 @@ class HomePage {
 
     // 加载产品库数据
     async loadProductLibrary() {
-        // 避免重复加载
-        if (this.isLoadingProductLibrary) {
-            return;
-        }
-        
-        this.isLoadingProductLibrary = true;
-        
         try {
-            console.log('开始加载产品库数据...');
+            const result = await this.productDataManager.loadProductLibrary(
+                (products, totalCount) => this.renderProductLibrary(products, totalCount)
+            );
             
-            // 通过API获取产品列表
-            const response = await fetch('http://localhost:3001/api/products');
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success) {
-                    // 对产品进行排序
-                    const sortedProducts = this.sortProducts(data.products);
-                    
-                    // 分页处理
-                    const paginatedProducts = this.paginateProducts(sortedProducts);
-                    
-                    await this.renderProductLibrary(paginatedProducts, data.products.length);
-                    console.log('产品库数据加载成功:', data.products.length, '个产品');
-                    
-                } else {
-                    console.error('获取产品列表失败:', data.error);
-                    this.showProductLibraryError('获取产品列表失败');
+            // 检查返回值是否有效
+            if (result && typeof result === 'object') {
+                if (!result.success) {
+                    console.warn('产品库数据加载状态:', result.message || '未知状态');
                 }
+                // 成功状态由 ProductDataManager 统一处理，这里不再重复打印
             } else {
-                console.error('获取产品列表失败:', response.status);
-                this.showProductLibraryError('网络请求失败');
+                console.warn('产品库数据加载返回无效结果');
             }
         } catch (error) {
             console.error('加载产品库数据失败:', error);
             this.showProductLibraryError('加载数据失败');
-        } finally {
-            this.isLoadingProductLibrary = false;
         }
     }
 
@@ -747,158 +588,7 @@ class HomePage {
     }
 
 
-    // 获取产品价格
-    getProductPrice(product) {
-        if (product.skuList && product.skuList.length > 0) {
-            const sku = product.skuList[0];
-            return sku.goodsPromoPrice || sku.goodsNormalPrice || '价格未知';
-        }
-        return '价格未知';
-    }
-
-    // 获取昨日销量
-    getYesterdaySales(product) {
-        if (product.yesterdaySales !== undefined) {
-            return Math.round(product.yesterdaySales).toLocaleString() + '件';
-        }
-        return '-';
-    }
-
-    // 获取价格增长百分比
-    getPriceGrowthPercent(product) {
-        if (product.priceGrowthPercent !== undefined) {
-            const percent = product.priceGrowthPercent;
-            const sign = percent >= 0 ? '+' : '';
-            return `${sign}${percent.toFixed(1)}%`;
-        }
-        return '-';
-    }
-
-    // 截断文本
-    truncateText(text, maxLength) {
-        if (!text) return '';
-        if (text.length <= maxLength) return text;
-        return text.substring(0, maxLength) + '...';
-    }
-
-    // 排序产品
-    sortProducts(products) {
-        return products.sort((a, b) => {
-            let aValue, bValue;
-            
-            switch (this.currentSortField) {
-                case 'goodsCat3':
-                    aValue = (a.goodsCat3 || '').toLowerCase();
-                    bValue = (b.goodsCat3 || '').toLowerCase();
-                    break;
-                case 'yesterdaySales':
-                    aValue = a.yesterdaySales || 0;
-                    bValue = b.yesterdaySales || 0;
-                    break;
-                case 'priceGrowthPercent':
-                    aValue = a.priceGrowthPercent || 0;
-                    bValue = b.priceGrowthPercent || 0;
-                    break;
-                case 'collectTime':
-                default:
-                    aValue = new Date(a.collectTime || 0);
-                    bValue = new Date(b.collectTime || 0);
-                    break;
-            }
-            
-            if (aValue < bValue) return this.currentSortOrder === 'asc' ? -1 : 1;
-            if (aValue > bValue) return this.currentSortOrder === 'asc' ? 1 : -1;
-            return 0;
-        });
-    }
-
-    // 分页产品
-    paginateProducts(products) {
-        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-        const endIndex = startIndex + this.itemsPerPage;
-        return products.slice(startIndex, endIndex);
-    }
-
-    // 启动产品库自动刷新
-    startProductLibraryRefresh() {
-        // 清除现有定时器
-        this.stopProductLibraryRefresh();
-        
-        // 设置新的定时器，每5秒刷新一次
-        this.productLibraryRefreshTimer = setInterval(() => {
-            // 只有在产品库页面时才执行刷新
-            if (this.isOnProductLibraryPage()) {
-                console.log('自动刷新产品库数据...');
-                this.loadProductLibrary();
-            }
-        }, 5000);
-    }
-
-    // 停止产品库自动刷新
-    stopProductLibraryRefresh() {
-        if (this.productLibraryRefreshTimer) {
-            clearInterval(this.productLibraryRefreshTimer);
-            this.productLibraryRefreshTimer = null;
-        }
-    }
-
-    // 绑定排序事件
-    bindSortEvents() {
-        const sortableHeaders = document.querySelectorAll('.product-table th.sortable');
-        sortableHeaders.forEach(header => {
-            header.addEventListener('click', () => {
-                const sortField = header.dataset.sort;
-                this.handleSort(sortField);
-            });
-        });
-    }
-
-    // 处理排序
-    handleSort(field) {
-        if (this.currentSortField === field) {
-            // 切换排序顺序
-            this.currentSortOrder = this.currentSortOrder === 'asc' ? 'desc' : 'asc';
-        } else {
-            // 设置新的排序字段，默认为降序
-            this.currentSortField = field;
-            this.currentSortOrder = 'desc';
-        }
-        
-        // 更新表头样式
-        this.updateSortHeaders();
-        
-        // 重新加载数据
-        this.loadProductLibrary();
-    }
-
-    // 更新排序表头样式
-    updateSortHeaders() {
-        const sortableHeaders = document.querySelectorAll('.product-table th.sortable');
-        sortableHeaders.forEach(header => {
-            header.classList.remove('sort-asc', 'sort-desc');
-            if (header.dataset.sort === this.currentSortField) {
-                header.classList.add(`sort-${this.currentSortOrder}`);
-            }
-        });
-    }
-
-    // 格式化采集时间
-    formatCollectTime(collectTime) {
-        if (!collectTime) return '未知时间';
-        
-        try {
-            const date = new Date(collectTime);
-            return date.toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        } catch (error) {
-            return collectTime;
-        }
-    }
+    // 产品数据处理相关方法已移动到 ProductDataManager 组件
 
     // 刷新产品库功能已移除
 
@@ -1085,7 +775,7 @@ class HomePage {
             if (copyBtn) {
                 const originalText = copyBtn.textContent;
                 copyBtn.textContent = '✅';
-                copyBtn.style.backgroundColor = '#28a745';
+                copyBtn.style.backgroundColor = 'var(--color-success)';
                 
                 setTimeout(() => {
                     copyBtn.textContent = originalText;
@@ -1098,59 +788,15 @@ class HomePage {
         }
     }
     
-    // 显示Toast通知
+    // 显示Toast通知 - 使用统一的Toast组件
     showToast(message, type = 'info') {
-        // 创建toast元素
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        toast.textContent = message;
-        
-        // 添加样式
-        Object.assign(toast.style, {
-            position: 'fixed',
-            top: '20px',
-            right: '20px',
-            padding: '12px 20px',
-            borderRadius: '6px',
-            color: 'white',
-            fontSize: '14px',
-            fontWeight: '500',
-            zIndex: '10000',
-            opacity: '0',
-            transform: 'translateX(100%)',
-            transition: 'all 0.3s ease',
-            maxWidth: '300px',
-            wordWrap: 'break-word'
-        });
-        
-        // 根据类型设置背景色
-        const colors = {
-            success: '#28a745',
-            error: '#dc3545',
-            warning: '#ffc107',
-            info: '#17a2b8'
-        };
-        toast.style.backgroundColor = colors[type] || colors.info;
-        
-        // 添加到页面
-        document.body.appendChild(toast);
-        
-        // 显示动画
-        setTimeout(() => {
-            toast.style.opacity = '1';
-            toast.style.transform = 'translateX(0)';
-        }, 100);
-        
-        // 自动隐藏
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(100%)';
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.parentNode.removeChild(toast);
-                }
-            }, 300);
-        }, 3000);
+        if (typeof window.toastInstance !== 'undefined') {
+            window.toastInstance.show(message, type);
+        } else {
+            console.warn('Toast组件未初始化，使用备用方案');
+            // 备用方案：简单的alert
+            alert(message);
+        }
     }
 
     /**
@@ -1176,13 +822,13 @@ class HomePage {
         const showInFinderText = platform.includes('mac') ? '在 Finder 中显示' : '在文件夹中显示';
         
         contextMenu.innerHTML = `
-            <div class="context-menu-item" onclick="homePageInstance.showVideoInFinder(${index}, '${videoName}', '${videoPath}')">
+            <div class="context-menu-item" onclick="mainAppInstance.showVideoInFinder(${index}, '${videoName}', '${videoPath}')">
                 <span>${showInFinderText}</span>
             </div>
-            <div class="context-menu-item" onclick="homePageInstance.saveVideoAs(${index}, '${videoName}', '${videoPath}')">
+            <div class="context-menu-item" onclick="mainAppInstance.saveVideoAs(${index}, '${videoName}', '${videoPath}')">
                 <span>另存为</span>
             </div>
-            <div class="context-menu-item context-menu-item-danger" onclick="homePageInstance.moveVideoToTrash(${index}, '${videoName}', '${videoPath}')">
+            <div class="context-menu-item context-menu-item-danger" onclick="mainAppInstance.moveVideoToTrash(${index}, '${videoName}', '${videoPath}')">
                 <span>移到废纸篓</span>
             </div>
         `;
@@ -1306,11 +952,7 @@ class HomePage {
                 console.log('视频文件已移动到废纸篓');
                 
                 // 显示成功提示
-                if (window.showToast) {
-                    window.showToast('视频文件已移动到废纸篓', 'success');
-                } else {
-                    alert('视频文件已移动到废纸篓');
-                }
+                this.showToast('视频文件已移动到废纸篓', 'success');
             } else {
                 console.error('删除视频文件失败:', result.error);
                 alert('删除视频文件失败: ' + result.error);
@@ -1366,84 +1008,9 @@ class HomePage {
 
     // 渲染产品信息
     renderProductInfo(product) {
-        let infoHTML = '<div class="product-info-grid">';
-        
-        // 基本信息
-        infoHTML += '<div class="info-section">';
-        infoHTML += '<h4 class="section-subtitle">基本信息</h4>';
-        infoHTML += '<div class="info-list">';
-        infoHTML += `<div class="info-item"><span class="label">商品ID:</span><span class="value">${product.goodsId}</span></div>`;
-        if (product.itemId) {
-            infoHTML += `<div class="info-item"><span class="label">商品编号:</span><span class="value">${product.itemId}</span></div>`;
-        }
-        if (product.goodsCat1) {
-            infoHTML += `<div class="info-item"><span class="label">分类1:</span><span class="value">${product.goodsCat1}</span></div>`;
-        }
-        if (product.goodsCat2) {
-            infoHTML += `<div class="info-item"><span class="label">分类2:</span><span class="value">${product.goodsCat2}</span></div>`;
-        }
-        if (product.goodsCat3) {
-            infoHTML += `<div class="info-item"><span class="label">商品名称:</span><span class="value">${product.goodsCat3}</span></div>`;
-        }
-        infoHTML += '</div></div>';
-        
-        // 价格信息
-        if (product.skuList && product.skuList.length > 0) {
-            infoHTML += '<div class="info-section">';
-            infoHTML += '<h4 class="section-subtitle">价格信息</h4>';
-            infoHTML += '<div class="info-list">';
-            product.skuList.forEach((sku, index) => {
-                infoHTML += `<div class="info-item"><span class="label">SKU ${index + 1}:</span><span class="value">${sku.skuName || '未知'}</span></div>`;
-                if (sku.goodsPromoPrice) {
-                    infoHTML += `<div class="info-item"><span class="label">促销价:</span><span class="value price">${sku.goodsPromoPrice}</span></div>`;
-                }
-                if (sku.goodsNormalPrice) {
-                    infoHTML += `<div class="info-item"><span class="label">原价:</span><span class="value price">${sku.goodsNormalPrice}</span></div>`;
-                }
-            });
-            infoHTML += '</div></div>';
-        }
-        
-        // 销量信息
-        infoHTML += '<div class="info-section">';
-        infoHTML += '<h4 class="section-subtitle">销量信息</h4>';
-        infoHTML += '<div class="info-list">';
-        infoHTML += `<div class="info-item"><span class="label">销量:</span><span class="value">${Math.round(product.goodsSold || 0).toLocaleString()}</span></div>`;
-        if (product.collectTime) {
-            infoHTML += `<div class="info-item"><span class="label">采集时间:</span><span class="value">${this.formatCollectTime(product.collectTime)}</span></div>`;
-        }
-        infoHTML += '</div></div>';
-        
-        // 商品属性
-        if (product.goodsPropertyInfo) {
-            infoHTML += '<div class="info-section">';
-            infoHTML += '<h4>商品属性</h4>';
-            infoHTML += '<div class="info-list">';
-            Object.entries(product.goodsPropertyInfo).forEach(([key, value]) => {
-                infoHTML += `<div class="info-item"><span class="label">${key}:</span><span class="value">${value}</span></div>`;
-            });
-            infoHTML += '</div></div>';
-        }
-        
-        // 店铺信息
-        if (product.storeData) {
-            infoHTML += '<div class="info-section">';
-            infoHTML += '<h4>店铺信息</h4>';
-            infoHTML += '<div class="info-list">';
-            if (product.storeName) {
-                infoHTML += `<div class="info-item"><span class="label">店铺名称:</span><span class="value">${product.storeName}</span></div>`;
-            }
-            if (product.storeData.storeRating) {
-                infoHTML += `<div class="info-item"><span class="label">店铺评分:</span><span class="value">${product.storeData.storeRating}</span></div>`;
-            }
-            if (product.storeData.storeSold) {
-                infoHTML += `<div class="info-item"><span class="label">店铺销量:</span><span class="value">${Math.round(product.storeData.storeSold).toLocaleString()}</span></div>`;
-            }
-            infoHTML += '</div></div>';
-        }
-        
-        infoHTML += '</div>';
-        return infoHTML;
+        // 使用ProductInfoCard组件
+        const productInfoCard = new ProductInfoCard();
+        return productInfoCard.render(product);
     }
 
     // 渲染产品图表
@@ -1503,13 +1070,13 @@ class HomePage {
                 datasets: [{
                     label: '销量',
                     data: chartData.sales,
-                    borderColor: 'rgba(255, 255, 255, 0.8)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    borderColor: 'var(--color-primary-reverse)',
+                    backgroundColor: 'var(--color-background-normal)',
                     tension: 0.4,
                     pointRadius: 4,
                     pointHoverRadius: 6,
-                    pointBackgroundColor: 'rgba(255, 255, 255, 0.8)',
-                    pointBorderColor: 'rgba(255, 255, 255, 0.8)',
+                    pointBackgroundColor: 'var(--color-primary-reverse)',
+                    pointBorderColor: 'var(--color-primary-reverse)',
                     borderWidth: 2
                 }]
             },
@@ -1528,13 +1095,13 @@ class HomePage {
                             font: {
                                 family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
                             },
-                            color: 'var(--color-text-secondary)'
+                            color: 'var(--color-secondary)'
                         },
                         ticks: {
-                            color: 'var(--color-text-secondary)'
+                            color: 'var(--color-secondary)'
                         },
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
+                            color: 'var(--color-background-normal)'
                         }
                     },
                     y: {
@@ -1545,17 +1112,17 @@ class HomePage {
                             font: {
                                 family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
                             },
-                            color: 'var(--color-text-secondary)'
+                            color: 'var(--color-secondary)'
                         },
                         ticks: {
-                            color: 'var(--color-text-secondary)',
+                            color: 'var(--color-secondary)',
                             stepSize: 1,
                             callback: function(value) {
                                 return Math.round(value);
                             }
                         },
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
+                            color: 'var(--color-background-normal)'
                         }
                     }
                 },
@@ -1567,7 +1134,7 @@ class HomePage {
                             font: {
                                 family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
                             },
-                            color: 'var(--color-text-secondary)',
+                            color: 'var(--color-secondary)',
                             usePointStyle: true,
                             pointStyle: 'circle'
                         }
@@ -1598,25 +1165,25 @@ class HomePage {
                     {
                         label: '促销价',
                         data: chartData.promoPrice,
-                        borderColor: 'rgba(255, 255, 255, 0.6)',
-                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        borderColor: 'var(--color-border-focused)',
+                        backgroundColor: 'var(--color-background-normal)',
                         tension: 0.4,
                         pointRadius: 4,
                         pointHoverRadius: 6,
-                        pointBackgroundColor: 'rgba(255, 255, 255, 0.6)',
-                        pointBorderColor: 'rgba(255, 255, 255, 0.6)',
+                        pointBackgroundColor: 'var(--color-border-focused)',
+                        pointBorderColor: 'var(--color-border-focused)',
                         borderWidth: 2
                     },
                     {
                         label: '原价',
                         data: chartData.normalPrice,
-                        borderColor: 'rgba(255, 255, 255, 0.4)',
-                        backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                        borderColor: 'var(--color-border-normal)',
+                        backgroundColor: 'var(--color-background-normal)',
                         tension: 0.4,
                         pointRadius: 4,
                         pointHoverRadius: 6,
-                        pointBackgroundColor: 'rgba(255, 255, 255, 0.4)',
-                        pointBorderColor: 'rgba(255, 255, 255, 0.4)',
+                        pointBackgroundColor: 'var(--color-border-normal)',
+                        pointBorderColor: 'var(--color-border-normal)',
                         borderWidth: 2
                     }
                 ]
@@ -1636,13 +1203,13 @@ class HomePage {
                             font: {
                                 family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
                             },
-                            color: 'var(--color-text-secondary)'
+                            color: 'var(--color-secondary)'
                         },
                         ticks: {
-                            color: 'var(--color-text-secondary)'
+                            color: 'var(--color-secondary)'
                         },
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
+                            color: 'var(--color-background-normal)'
                         }
                     },
                     y: {
@@ -1653,17 +1220,17 @@ class HomePage {
                             font: {
                                 family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
                             },
-                            color: 'var(--color-text-secondary)'
+                            color: 'var(--color-secondary)'
                         },
                         ticks: {
-                            color: 'var(--color-text-secondary)',
+                            color: 'var(--color-secondary)',
                             stepSize: 1,
                             callback: function(value) {
                                 return Math.round(value);
                             }
                         },
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
+                            color: 'var(--color-background-normal)'
                         }
                     }
                 },
@@ -1674,7 +1241,7 @@ class HomePage {
                             font: {
                                 family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
                             },
-                            color: 'var(--color-text-secondary)'
+                            color: 'var(--color-secondary)'
                         }
                     }
                 }
@@ -1727,13 +1294,13 @@ class HomePage {
                             font: {
                                 family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
                             },
-                            color: 'var(--color-text-secondary)'
+                            color: 'var(--color-secondary)'
                         },
                         ticks: {
-                            color: 'var(--color-text-secondary)'
+                            color: 'var(--color-secondary)'
                         },
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
+                            color: 'var(--color-background-normal)'
                         }
                     },
                     y: {
@@ -1746,17 +1313,17 @@ class HomePage {
                             font: {
                                 family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
                             },
-                            color: 'var(--color-text-secondary)'
+                            color: 'var(--color-secondary)'
                         },
                         ticks: {
-                            color: 'var(--color-text-secondary)',
+                            color: 'var(--color-secondary)',
                             stepSize: 1,
                             callback: function(value) {
                                 return Math.round(value);
                             }
                         },
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
+                            color: 'var(--color-background-normal)'
                         }
                     }
                 },
@@ -1768,7 +1335,7 @@ class HomePage {
                             font: {
                                 family: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
                             },
-                            color: 'var(--color-text-secondary)',
+                            color: 'var(--color-secondary)',
                             usePointStyle: true,
                             pointStyle: 'circle'
                         }
@@ -2060,10 +1627,10 @@ class HomePage {
         pageContainer.innerHTML = `
             <div class="error-page">
                 <div class="error-icon">
-                    <i class="ph ph-warning"></i>
+                    <div class="svg-icon" data-icon="warning" data-filled="false"></div>
                 </div>
                 <div class="error-message">${message}</div>
-                <button class="btn btn-primary" onclick="homePageInstance.loadProductLibrary()">
+                <button class="btn btn-primary" onclick="mainAppInstance.loadProductLibrary()">
                     重试
                 </button>
             </div>
@@ -2072,9 +1639,7 @@ class HomePage {
 
     // 设置关于菜单监听器
     setupAboutMenuListener() {
-        console.log('设置关于菜单监听器');
         const handleAboutMenu = () => {
-            console.log('收到关于菜单事件');
             this.showAboutDialog();
         };
         
@@ -2086,7 +1651,6 @@ class HomePage {
 
     // 显示关于弹窗
     showAboutDialog() {
-        console.log('显示关于弹窗');
         // 创建弹窗遮罩
         const modalOverlay = document.createElement('div');
         modalOverlay.id = 'about-modal';
@@ -2097,7 +1661,7 @@ class HomePage {
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(0, 0, 0, 0.6);
+            background-color: var(--color-overlay);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -2108,34 +1672,34 @@ class HomePage {
         // 创建弹窗内容
         const modalContent = document.createElement('div');
         modalContent.style.cssText = `
-            background: var(--color-card-background, #ffffff);
-            border-radius: 12px;
+            background: var(--color-background-normal);
+            border-radius: var(--radius-large);
             padding: 32px;
             max-width: 400px;
             width: 90%;
             text-align: center;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--color-border, #e5e7eb);
+            border: 1px solid var(--color-border-normal);
         `;
 
         modalContent.innerHTML = `
             <div style="margin-bottom: 24px;">
                 <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
-                <h2 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 600; color: var(--color-text-primary, #1f2937);">关于 Hanli</h2>
-                <p style="margin: 0; font-size: 16px; color: var(--color-text-secondary, #6b7280); line-height: 1.5;">这是一个产品管理App</p>
+                <h2 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 600; color: var(--color-primary);">关于 Hanli</h2>
+                <p style="margin: 0; font-size: 16px; color: var(--color-secondary); line-height: 1.5;">这是一个产品管理App</p>
             </div>
             <button id="about-ok-btn" style="
-                background: var(--color-primary, #3b82f6);
+                background: var(--color-info);
                 color: white;
                 border: none;
-                border-radius: 8px;
+                border-radius: var(--radius-large);
                 padding: 12px 24px;
                 font-size: 14px;
                 font-weight: 500;
                 cursor: pointer;
                 transition: all 0.2s ease;
                 min-width: 100px;
-            " onmouseover="this.style.background='var(--color-primary-hover, #2563eb)'" onmouseout="this.style.background='var(--color-primary, #3b82f6)'">
+            " onmouseover="this.style.background='var(--color-info)'" onmouseout="this.style.background='var(--color-info)'">
                 我知道了
             </button>
         `;
@@ -2169,12 +1733,20 @@ class HomePage {
     // 清理资源
     cleanup() {
         // 移除事件监听器
-        document.removeEventListener('visibilitychange', this.handleVisibilityChange);
-        window.removeEventListener('focus', this.handleWindowFocus);
         if (this.handleAboutMenu) {
             window.removeEventListener('menu-about', this.handleAboutMenu);
         }
         
+        // 销毁管理器
+        if (this.themeManager) {
+            this.themeManager.destroy();
+        }
+        
+        if (this.productDataManager) {
+            this.productDataManager.destroy();
+        }
+        
+        // 销毁组件
         if (this.topBar) {
             this.topBar.destroy();
         }
@@ -2225,25 +1797,29 @@ class HomePage {
         }
     }
 
-    // 打开系统设置弹窗
-    openSettingsModal() {
+    // 打开系统设置页面
+    openSettingsPage() {
+        // 使用SettingsModal组件显示设置弹窗
         if (this.settingsModal) {
-            this.settingsModal.open();
+            this.settingsModal.show();
+        } else {
+            console.error('SettingsModal 未初始化');
+            this.showToast('设置组件未初始化，请重试', 'error');
         }
     }
 
     // 处理设置保存
     handleSettingsSave(settings) {
-        console.log('设置已保存:', settings);
+        console.log('✅ 设置已保存');
         
         // 应用主题设置
         if (settings.theme) {
-            this.setTheme(settings.theme);
+            this.themeManager.setTheme(settings.theme);
         }
         
         // 应用背景色设置
         if (settings.backgroundColor) {
-            this.setBackgroundColor(settings.backgroundColor);
+            this.themeManager.setBackgroundColor(settings.backgroundColor);
         }
         
         // 应用其他设置
@@ -2274,13 +1850,16 @@ class HomePage {
         const currentTheme = this.getCurrentTheme();
         
         return `
-            <div class="modal-overlay" onclick="homePageInstance.closeSettingsModal()">
+            <div class="modal-overlay" onclick="mainAppInstance.closeSettingsModal()">
                 <div class="modal-content settings-modal-content" onclick="event.stopPropagation()">
                     <div class="modal-header">
                         <h2 class="modal-title">系统设置</h2>
-                        <button class="modal-close" onclick="homePageInstance.closeSettingsModal()">
-                            <i class="ph ph-x"></i>
-                        </button>
+                        ${window.iconButtonInstance.render('x', {
+                            variant: 'ghost',
+                            size: 'small',
+                            title: '关闭',
+                            className: 'modal-close'
+                        })}
                     </div>
                     
                     <div class="modal-body">
@@ -2365,14 +1944,14 @@ class HomePage {
                                 <label class="setting-label">数据存储路径</label>
                                 <div class="setting-control">
                                     <input type="text" class="setting-input" id="data-path" value="${this.getDataPath()}" readonly>
-                                    <button class="btn btn-sm btn-secondary" onclick="homePageInstance.openDataFolder()">打开文件夹</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="mainAppInstance.openDataFolder()">打开文件夹</button>
                                 </div>
                             </div>
                             
                             <div class="setting-item">
                                 <label class="setting-label">缓存管理</label>
                                 <div class="setting-control">
-                                    <button class="btn btn-sm btn-warning" onclick="homePageInstance.clearCache()">清理缓存</button>
+                                    <button class="btn btn-sm btn-warning" onclick="mainAppInstance.clearCache()">清理缓存</button>
                                     <span class="setting-description">清理临时文件和缓存数据</span>
                                 </div>
                             </div>
@@ -2380,8 +1959,8 @@ class HomePage {
                     </div>
                     
                     <div class="modal-footer">
-                        <button class="btn btn-secondary" onclick="homePageInstance.closeSettingsModal()">取消</button>
-                        <button class="btn btn-primary" onclick="homePageInstance.saveSettings()">保存设置</button>
+                        <button class="btn btn-secondary" onclick="mainAppInstance.closeSettingsModal()">取消</button>
+                        <button class="btn btn-primary" onclick="mainAppInstance.saveSettings()">保存设置</button>
                     </div>
                 </div>
             </div>
@@ -2415,7 +1994,7 @@ class HomePage {
         const languageSelect = modal.querySelector('#language-select');
         if (languageSelect) {
             languageSelect.addEventListener('change', (e) => {
-                console.log('语言设置变更:', e.target.value);
+                // 语言设置变更，无需输出日志
             });
         }
 
@@ -2423,7 +2002,7 @@ class HomePage {
         const switches = modal.querySelectorAll('.switch input[type="checkbox"]');
         switches.forEach(switchEl => {
             switchEl.addEventListener('change', (e) => {
-                console.log('设置变更:', e.target.id, e.target.checked);
+                // 设置变更，无需输出日志
             });
         });
 
@@ -2493,7 +2072,7 @@ class HomePage {
 
     // 获取当前主题
     getCurrentTheme() {
-        return localStorage.getItem('app-theme') || 'auto';
+        return this.themeManager.getCurrentTheme();
     }
 
     // 获取数据存储路径
@@ -2536,7 +2115,6 @@ class HomePage {
             if (selectedThemeRadio) {
                 const selectedTheme = selectedThemeRadio.value;
                 localStorage.setItem('app-theme', selectedTheme);
-                console.log('主题设置已保存:', selectedTheme);
             }
 
             // 获取语言设置
@@ -2544,7 +2122,6 @@ class HomePage {
             if (languageSelect) {
                 const language = languageSelect.value;
                 localStorage.setItem('app-language', language);
-                console.log('语言设置已保存:', language);
             }
 
             // 获取功能设置
@@ -2554,13 +2131,11 @@ class HomePage {
             if (autoRefreshCheckbox) {
                 const autoRefresh = autoRefreshCheckbox.checked;
                 localStorage.setItem('app-auto-refresh', autoRefresh.toString());
-                console.log('自动刷新设置已保存:', autoRefresh);
             }
             
             if (showCollectTimeCheckbox) {
                 const showCollectTime = showCollectTimeCheckbox.checked;
                 localStorage.setItem('app-show-collect-time', showCollectTime.toString());
-                console.log('显示采集时间设置已保存:', showCollectTime);
             }
 
             // 应用设置
@@ -2581,8 +2156,7 @@ class HomePage {
 
     // 应用存储的主题
     applyStoredTheme() {
-        const theme = this.getCurrentTheme();
-        this.setTheme(theme);
+        this.themeManager.applyStoredTheme();
     }
 
     // 应用存储的设置
@@ -2591,7 +2165,7 @@ class HomePage {
         const autoRefresh = localStorage.getItem('app-auto-refresh') === 'true';
         if (autoRefresh && this.isOnHomePage()) {
             // 按需刷新产品总数
-            this.refreshProductCountIfNeeded();
+            this.productDataManager.refreshProductCountIfNeeded(() => this.isOnHomePage());
         }
     }
 
@@ -2618,11 +2192,8 @@ class HomePage {
             return;
         }
 
-        console.log('开始设置IPC监听器...');
-        
         // 监听来自主进程的商品详情页打开请求
         if (window.electronAPI) {
-            console.log('electronAPI可用，设置监听器');
             
             // 监听商品详情页打开请求
             window.addEventListener('navigate-to-product', (event) => {
@@ -2634,6 +2205,11 @@ class HomePage {
             window.electronAPI.onOpenProductDetail((event, data) => {
                 console.log('收到打开产品详情页请求:', data);
                 if (data && data.goodsId) {
+                    // 防止重复加载相同产品
+                    if (this.isLoadingProductDetail && this.loadingProductId === data.goodsId) {
+                        console.log('产品详情正在加载中，忽略主进程重复请求:', data.goodsId);
+                        return;
+                    }
                     console.log('准备打开产品详情页，商品ID:', data.goodsId);
                     this.viewProductDetail(data.goodsId);
                 } else {
@@ -2643,7 +2219,6 @@ class HomePage {
             
             // 标记为已初始化
             this.ipcListenersInitialized = true;
-            console.log('IPC监听器已设置完成');
         } else {
             console.error('electronAPI不可用，无法设置IPC监听器');
         }
@@ -2720,7 +2295,7 @@ class HomePage {
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(0, 0, 0, 0.6);
+            background-color: var(--color-overlay);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -2732,7 +2307,7 @@ class HomePage {
         const modalContent = document.createElement('div');
         modalContent.style.cssText = `
             background: var(--color-modal-background);
-            border-radius: 16px;
+            border-radius: var(--radius-large);
             padding: 32px;
             max-width: 500px;
             width: 90%;
@@ -2755,7 +2330,7 @@ class HomePage {
         successIcon.style.cssText = `
             width: 64px;
             height: 64px;
-            background: linear-gradient(135deg, #4CAF50, #45a049);
+            background: linear-gradient(135deg, var(--color-success), var(--color-success));
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -2783,7 +2358,7 @@ class HomePage {
         content.style.cssText = `
             margin-bottom: 24px;
             line-height: 1.5;
-            color: var(--color-text-secondary);
+            color: var(--color-secondary);
         `;
 
         const line1 = document.createElement('div');
@@ -2814,7 +2389,7 @@ class HomePage {
             padding: 12px 24px;
             background: transparent;
             border: 1px solid var(--color-border);
-            border-radius: 8px;
+            border-radius: var(--radius-large);
             color: var(--color-text-primary);
             cursor: pointer;
             font-size: 14px;
@@ -2836,7 +2411,7 @@ class HomePage {
             padding: 12px 24px;
             background: var(--color-primary);
             border: none;
-            border-radius: 8px;
+            border-radius: var(--radius-large);
             color: var(--color-primary-foreground);
             cursor: pointer;
             font-size: 14px;
@@ -2884,41 +2459,24 @@ class HomePage {
         this.showToast('商品数据采集成功！');
     }
 
-    // 显示Toast通知
-    showToast(message) {
-        const toast = document.createElement('div');
-        toast.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background-color: var(--color-card-background);
-            color: var(--color-text-primary);
-            padding: 12px 16px;
-            border-radius: 6px;
-            box-shadow: var(--shadow-hover);
-            z-index: 1001;
-            font-size: 14px;
-        `;
-        toast.textContent = message;
-        document.body.appendChild(toast);
-
-        setTimeout(() => {
-            toast.remove();
-        }, 3000);
-    }
 }
 
 // 页面加载完成后初始化
-let homePageInstance = null;
+let mainAppInstance = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    homePageInstance = new HomePage();
-    await homePageInstance.init();
+    mainAppInstance = new MainApp();
+    await mainAppInstance.init();
+    
+    // 确保所有图标都被正确处理
+    if (window.Icon) {
+        window.Icon.processDataIcons();
+    }
 });
 
 // 页面卸载时清理资源
 window.addEventListener('beforeunload', () => {
-    if (homePageInstance) {
-        homePageInstance.cleanup();
+    if (mainAppInstance) {
+        mainAppInstance.cleanup();
     }
 });

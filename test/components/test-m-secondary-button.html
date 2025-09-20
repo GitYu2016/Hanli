@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSecondaryButton 组件测试</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .theme-dark {
+            background-color: #272727;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .theme-light {
+            background-color: #e9e9e9;
+            color: rgba(0, 0, 0, 0.8);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .theme-light .section {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .section h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            background-color: var(--color-info, #3b82f6);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            z-index: 1000;
+        }
+
+        .theme-toggle:hover {
+            opacity: 0.9;
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 12px;
+            font-size: 14px;
+        }
+
+        .theme-dark .status {
+            background-color: rgba(0, 0, 0, 0.3);
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .theme-light .status {
+            background-color: rgba(0, 0, 0, 0.1);
+            color: rgba(0, 0, 0, 0.8);
+        }
+    </style>
+</head>
+<body class="theme-dark">
+    <button class="theme-toggle" onclick="toggleTheme()">切换到浅色主题</button>
+    
+    <div class="container">
+        <h1>MSecondaryButton 组件测试</h1>
+        
+        <!-- 基础按钮测试 -->
+        <div class="section">
+            <h2>基础按钮</h2>
+            <div class="button-group">
+                <button id="btn-basic">基础按钮</button>
+                <button id="btn-with-icon">带图标按钮</button>
+            </div>
+            <div id="status-basic" class="status">点击上面的按钮查看状态</div>
+        </div>
+
+        <!-- 状态测试 -->
+        <div class="section">
+            <h2>按钮状态</h2>
+            <div class="button-group">
+                <button id="btn-normal">正常状态</button>
+                <button id="btn-disabled">禁用状态</button>
+                <button id="btn-loading">加载状态</button>
+            </div>
+            <div id="status-states" class="status">点击上面的按钮查看状态</div>
+        </div>
+
+        <!-- 主题适配测试 -->
+        <div class="section">
+            <h2>主题适配测试</h2>
+            <p>请切换主题查看按钮在不同主题下的样式变化</p>
+            <div class="button-group">
+                <button id="btn-theme-test">主题测试按钮</button>
+                <button id="btn-hover-test">悬浮测试按钮</button>
+            </div>
+            <div id="status-theme" class="status">深色主题：背景色为白色半透明，文字为黑色半透明</div>
+        </div>
+
+        <!-- 动态操作测试 -->
+        <div class="section">
+            <h2>动态操作测试</h2>
+            <div class="button-group">
+                <button id="btn-dynamic">动态按钮</button>
+                <button id="btn-toggle-loading">切换加载状态</button>
+                <button id="btn-toggle-disabled">切换禁用状态</button>
+                <button id="btn-change-text">改变文本</button>
+            </div>
+            <div id="status-dynamic" class="status">使用动态按钮测试各种操作</div>
+        </div>
+    </div>
+
+    <!-- 引入必要的依赖 -->
+    <script src="../../../hanli-app/renderer/components/Common/StyleManager.js"></script>
+    <script src="../../../hanli-app/renderer/components/Common/Icon.js"></script>
+    <script src="../../../hanli-app/renderer/components/Common/MSecondaryButton.js"></script>
+    
+    <script>
+        let currentTheme = 'dark';
+        let dynamicButton = null;
+        let isLoading = false;
+        let isDisabled = false;
+
+        // 切换主题
+        function toggleTheme() {
+            const body = document.body;
+            const toggleBtn = document.querySelector('.theme-toggle');
+            
+            if (currentTheme === 'dark') {
+                body.className = 'theme-light';
+                toggleBtn.textContent = '切换到深色主题';
+                currentTheme = 'light';
+                document.getElementById('status-theme').textContent = '浅色主题：背景色为黑色半透明，文字为白色半透明';
+            } else {
+                body.className = 'theme-dark';
+                toggleBtn.textContent = '切换到浅色主题';
+                currentTheme = 'dark';
+                document.getElementById('status-theme').textContent = '深色主题：背景色为白色半透明，文字为黑色半透明';
+            }
+        }
+
+        // 等待组件加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeButtons();
+        });
+
+        function initializeButtons() {
+            // 基础按钮
+            const basicBtn = window.mSecondaryButtonInstance.create({
+                text: '基础按钮',
+                onClick: () => {
+                    document.getElementById('status-basic').textContent = '基础按钮被点击了！';
+                }
+            });
+            document.getElementById('btn-basic').replaceWith(basicBtn);
+
+            // 带图标按钮
+            const iconBtn = window.mSecondaryButtonInstance.create({
+                text: '带图标按钮',
+                icon: 'ph-heart',
+                onClick: () => {
+                    document.getElementById('status-basic').textContent = '带图标按钮被点击了！';
+                }
+            });
+            document.getElementById('btn-with-icon').replaceWith(iconBtn);
+
+            // 状态测试按钮
+            const normalBtn = window.mSecondaryButtonInstance.create({
+                text: '正常状态',
+                onClick: () => {
+                    document.getElementById('status-states').textContent = '正常状态按钮被点击了！';
+                }
+            });
+            document.getElementById('btn-normal').replaceWith(normalBtn);
+
+            const disabledBtn = window.mSecondaryButtonInstance.create({
+                text: '禁用状态',
+                disabled: true,
+                onClick: () => {
+                    document.getElementById('status-states').textContent = '禁用状态按钮被点击了！';
+                }
+            });
+            document.getElementById('btn-disabled').replaceWith(disabledBtn);
+
+            const loadingBtn = window.mSecondaryButtonInstance.create({
+                text: '加载状态',
+                loading: true,
+                onClick: () => {
+                    document.getElementById('status-states').textContent = '加载状态按钮被点击了！';
+                }
+            });
+            document.getElementById('btn-loading').replaceWith(loadingBtn);
+
+            // 主题测试按钮
+            const themeBtn = window.mSecondaryButtonInstance.create({
+                text: '主题测试按钮',
+                onClick: () => {
+                    document.getElementById('status-theme').textContent = `当前主题：${currentTheme}，按钮样式已适配`;
+                }
+            });
+            document.getElementById('btn-theme-test').replaceWith(themeBtn);
+
+            const hoverBtn = window.mSecondaryButtonInstance.create({
+                text: '悬浮测试按钮',
+                onClick: () => {
+                    document.getElementById('status-theme').textContent = '请悬浮查看按钮的悬浮效果';
+                }
+            });
+            document.getElementById('btn-hover-test').replaceWith(hoverBtn);
+
+            // 动态按钮
+            dynamicButton = window.mSecondaryButtonInstance.create({
+                text: '动态按钮',
+                onClick: () => {
+                    document.getElementById('status-dynamic').textContent = '动态按钮被点击了！';
+                }
+            });
+            document.getElementById('btn-dynamic').replaceWith(dynamicButton);
+
+            // 动态操作按钮
+            const toggleLoadingBtn = window.mSecondaryButtonInstance.create({
+                text: '切换加载状态',
+                onClick: () => {
+                    isLoading = !isLoading;
+                    window.mSecondaryButtonInstance.update(dynamicButton, { loading: isLoading });
+                    document.getElementById('status-dynamic').textContent = `加载状态：${isLoading ? '开启' : '关闭'}`;
+                }
+            });
+            document.getElementById('btn-toggle-loading').replaceWith(toggleLoadingBtn);
+
+            const toggleDisabledBtn = window.mSecondaryButtonInstance.create({
+                text: '切换禁用状态',
+                onClick: () => {
+                    isDisabled = !isDisabled;
+                    window.mSecondaryButtonInstance.update(dynamicButton, { disabled: isDisabled });
+                    document.getElementById('status-dynamic').textContent = `禁用状态：${isDisabled ? '开启' : '关闭'}`;
+                }
+            });
+            document.getElementById('btn-toggle-disabled').replaceWith(toggleDisabledBtn);
+
+            const changeTextBtn = window.mSecondaryButtonInstance.create({
+                text: '改变文本',
+                onClick: () => {
+                    const newText = `文本已改变 ${Date.now()}`;
+                    window.mSecondaryButtonInstance.update(dynamicButton, { text: newText });
+                    document.getElementById('status-dynamic').textContent = `文本已更新为：${newText}`;
+                }
+            });
+            document.getElementById('btn-change-text').replaceWith(changeTextBtn);
+        }
+    </script>
+</body>
+</html>

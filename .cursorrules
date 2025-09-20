@@ -2,14 +2,66 @@
 出色的工程师，精通mac客户端、chrome插件、开发框架。
 
 ## 规范
+
+### 数据格式规范
 - 项目里所有金钱单位都是RMB
 - 重量单位都是g  
 - 尺寸单位都是mm
 - ID统一用UUID生成，12位数字
 - 存储时间的格式，都用东八区时间："utcTime": "2024-09-07T00:00:00"
 - 所有颜色使用Radix颜色令牌
+
+### 图标系统规范
+- 统一使用Phosphor Icons图标库，通过CSS Mask实现
+- 图标类名格式：`ph ph-{icon-name}`，如 `ph ph-house`、`ph ph-package`
+- 图标颜色通过CSS变量控制：`--color-icon-primary`、`--color-icon-hover`、`--color-icon-active`
+- 图标透明度统一使用0.8（80%）
+- 新增图标必须在 `icons-fixed.css` 中定义，使用SVG内联数据URI
+- 图标大小默认为1em，支持通过CSS调整
+
+### 组件开发规范
 - 主要div元素需要添加id或class名称（使用缩写）
-- 使用toast通知显示登录和注册成功事件
-- 如果不清楚需求或不确定怎么实现，请询问用户
 - 尽量使用组件，避免文件太长
 - 所有弹窗、浮窗都做成独立的组件，放在 renderer/components 目录下
+- 组件文件使用驼峰命名法，如 `Button.js`、`PageContainer.js`
+- 每个组件都是独立的HTML文件，包含HTML结构、CSS样式、JavaScript逻辑
+- 组件按功能分类：Common/、Detail/、Modal/、Index/
+
+### 代码风格规范
+- JavaScript使用ES6+语法，优先使用const和let
+- 异步操作统一使用async/await，避免Promise链
+- 错误处理必须使用try-catch包装异步操作
+- 控制台输出使用console.log、console.error等，用于调试和错误追踪
+- 函数和类必须添加JSDoc注释，说明参数和返回值
+- 使用中文注释说明关键功能
+
+### 样式规范
+- CSS类名使用BEM命名规范
+- 使用CSS变量实现主题切换
+- 过渡动画统一使用0.2s ease
+- 圆角设计统一使用6px
+- 背景色透明度：正常状态0，悬浮状态0.05，选中状态0.1
+- 所有颜色必须使用 colors.css 中定义的颜色变量
+- 禁止随意新增颜色，如需新增颜色请先询问用户
+
+### 交互规范
+- 使用toast通知显示登录和注册成功事件
+- 按钮状态包括：normal、hover、active、disabled、loading
+- 支持键盘导航和快捷键操作
+- 所有交互元素必须有明确的视觉反馈
+
+### 文件组织规范
+- 页面文件放在 renderer/pages/ 目录
+- 组件文件放在 renderer/components/ 目录
+- 样式文件统一放在 renderer/styles.css
+- 图标定义放在 renderer/icons-fixed.css
+- 配置文件放在 renderer/config.js
+- 所有测试文件必须放在 test/ 目录下
+- 测试文件命名格式：`{功能名}.test.js` 或 `{组件名}.test.html`
+- 测试目录结构与源码目录结构保持一致
+
+### 开发流程规范
+- 如果不清楚需求或不确定怎么实现，请询问用户
+- 新增功能前先检查是否有现有组件可以复用
+- 修改现有组件时保持向后兼容性
+- 所有新功能必须经过测试验证

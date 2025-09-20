@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>卡片设计更新测试</title>
+    <style>
+        /* 引入全局样式 */
+        @import url('../../renderer/globals.css');
+        @import url('../../renderer/theme/light/colors.css');
+        
+        body {
+            padding: 20px;
+            background: var(--color-body-bg-default);
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            margin-bottom: 40px;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+        }
+        
+        /* 测试卡片样式 */
+        .test-card {
+            background: var(--color-background-normal);
+            border-radius: var(--radius-card);
+            padding: 20px;
+            margin-bottom: 16px;
+            transition: all 0.2s ease;
+        }
+        
+        .test-card:hover {
+            background: var(--color-background-focused);
+            transform: translateY(-2px);
+        }
+        
+        .test-card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin-bottom: 8px;
+        }
+        
+        .test-card-content {
+            color: var(--color-secondary);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        /* 测试网格布局 */
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        /* 测试按钮样式 */
+        .test-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: var(--color-background-normal);
+            border: none;
+            border-radius: var(--radius-card);
+            color: var(--color-primary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .test-btn:hover {
+            background: var(--color-background-focused);
+            transform: translateY(-1px);
+        }
+        
+        /* 测试列表样式 */
+        .test-list {
+            background: var(--color-background-normal);
+            border-radius: var(--radius-card);
+            padding: 16px;
+        }
+        
+        .test-list-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            transition: background-color 0.2s ease;
+        }
+        
+        .test-list-item:hover {
+            background: var(--color-background-focused);
+            border-radius: var(--radius-medium);
+            padding-left: 12px;
+            padding-right: 12px;
+            margin: 0 -12px;
+        }
+        
+        .test-list-item:not(:last-child) {
+            /* 移除分割线 */
+        }
+        
+        /* 对比样式 */
+        .comparison-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .old-style {
+            border-radius: var(--radius-medium);
+            border: 1px solid var(--color-border-normal);
+        }
+        
+        .new-style {
+            border-radius: var(--radius-card);
+            /* 无边框 */
+        }
+        
+        .old-style .test-list-item:not(:last-child) {
+            border-bottom: 1px solid var(--color-border-normal);
+        }
+        
+        .new-style .test-list-item:not(:last-child) {
+            /* 无分割线 */
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>卡片设计更新测试</h1>
+        <p>此页面用于测试卡片倒角更新和分割线移除的效果</p>
+        
+        <div class="test-section">
+            <h2 class="section-title">1. 卡片倒角对比</h2>
+            <div class="comparison-section">
+                <div>
+                    <h3>旧样式 (medium 倒角 + 边框)</h3>
+                    <div class="test-card old-style">
+                        <div class="test-card-title">旧样式卡片</div>
+                        <div class="test-card-content">使用 var(--radius-medium) 倒角，有边框和分割线</div>
+                    </div>
+                </div>
+                <div>
+                    <h3>新样式 (card 倒角 + 无边框)</h3>
+                    <div class="test-card new-style">
+                        <div class="test-card-title">新样式卡片</div>
+                        <div class="test-card-content">使用 var(--radius-card) 大倒角，无边框和分割线</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="section-title">2. 网格卡片布局</h2>
+            <div class="test-grid">
+                <div class="test-card">
+                    <div class="test-card-title">产品卡片</div>
+                    <div class="test-card-content">展示产品信息的大倒角卡片</div>
+                </div>
+                <div class="test-card">
+                    <div class="test-card-title">媒体卡片</div>
+                    <div class="test-card-content">展示图片和视频的大倒角卡片</div>
+                </div>
+                <div class="test-card">
+                    <div class="test-card-title">信息卡片</div>
+                    <div class="test-card-content">展示详细信息的大倒角卡片</div>
+                </div>
+                <div class="test-card">
+                    <div class="test-card-title">操作卡片</div>
+                    <div class="test-card-content">包含操作按钮的大倒角卡片</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="section-title">3. 按钮样式</h2>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <button class="test-btn">主要按钮</button>
+                <button class="test-btn">次要按钮</button>
+                <button class="test-btn">操作按钮</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="section-title">4. 列表分割线对比</h2>
+            <div class="comparison-section">
+                <div>
+                    <h3>旧样式 (有分割线)</h3>
+                    <div class="test-list old-style">
+                        <div class="test-list-item">
+                            <div style="width: 32px; height: 32px; background: var(--color-info); border-radius: var(--radius-small); display: flex; align-items: center; justify-content: center; color: white;">📦</div>
+                            <div>
+                                <div style="font-weight: 500; color: var(--color-primary);">产品项目 1</div>
+                                <div style="font-size: 12px; color: var(--color-secondary);">产品描述信息</div>
+                            </div>
+                        </div>
+                        <div class="test-list-item">
+                            <div style="width: 32px; height: 32px; background: var(--color-success); border-radius: var(--radius-small); display: flex; align-items: center; justify-content: center; color: white;">📊</div>
+                            <div>
+                                <div style="font-weight: 500; color: var(--color-primary);">产品项目 2</div>
+                                <div style="font-size: 12px; color: var(--color-secondary);">产品描述信息</div>
+                            </div>
+                        </div>
+                        <div class="test-list-item">
+                            <div style="width: 32px; height: 32px; background: var(--color-warning); border-radius: var(--radius-small); display: flex; align-items: center; justify-content: center; color: white;">⚙️</div>
+                            <div>
+                                <div style="font-weight: 500; color: var(--color-primary);">产品项目 3</div>
+                                <div style="font-size: 12px; color: var(--color-secondary);">产品描述信息</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3>新样式 (无分割线)</h3>
+                    <div class="test-list new-style">
+                        <div class="test-list-item">
+                            <div style="width: 32px; height: 32px; background: var(--color-info); border-radius: var(--radius-small); display: flex; align-items: center; justify-content: center; color: white;">📦</div>
+                            <div>
+                                <div style="font-weight: 500; color: var(--color-primary);">产品项目 1</div>
+                                <div style="font-size: 12px; color: var(--color-secondary);">产品描述信息</div>
+                            </div>
+                        </div>
+                        <div class="test-list-item">
+                            <div style="width: 32px; height: 32px; background: var(--color-success); border-radius: var(--radius-small); display: flex; align-items: center; justify-content: center; color: white;">📊</div>
+                            <div>
+                                <div style="font-weight: 500; color: var(--color-primary);">产品项目 2</div>
+                                <div style="font-size: 12px; color: var(--color-secondary);">产品描述信息</div>
+                            </div>
+                        </div>
+                        <div class="test-list-item">
+                            <div style="width: 32px; height: 32px; background: var(--color-warning); border-radius: var(--radius-small); display: flex; align-items: center; justify-content: center; color: white;">⚙️</div>
+                            <div>
+                                <div style="font-weight: 500; color: var(--color-primary);">产品项目 3</div>
+                                <div style="font-size: 12px; color: var(--color-secondary);">产品描述信息</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="section-title">5. 倒角变量说明</h2>
+            <div class="test-card">
+                <div class="test-card-title">CSS 变量定义</div>
+                <div class="test-card-content">
+                    <pre style="background: var(--color-background-focused); padding: 12px; border-radius: var(--radius-small); font-family: monospace; font-size: 12px; overflow-x: auto;">
+:root {
+    --radius-small: 4px;      /* 小倒角 */
+    --radius-medium: 6px;     /* 中等倒角（标准） */
+    --radius-large: 12px;     /* 大倒角 - 卡片专用 */
+    --radius-card: 12px;      /* 卡片专用大倒角 */
+}</pre>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="section-title">6. 更新说明</h2>
+            <div class="test-card">
+                <div class="test-card-title">本次更新内容</div>
+                <div class="test-card-content">
+                    <ul style="margin: 0; padding-left: 20px;">
+                        <li>✅ 更新全局倒角变量，新增 --radius-card (12px) 用于卡片</li>
+                        <li>✅ 移除媒体卡片组件的分割线</li>
+                        <li>✅ 移除首页卡片组件的边框和分割线</li>
+                        <li>✅ 移除附件卡片组件的分割线</li>
+                        <li>✅ 移除产品信息卡片的分割线</li>
+                        <li>✅ 移除设置页面的分割线</li>
+                        <li>✅ 移除产品库表格的分割线</li>
+                        <li>✅ 更新所有卡片组件使用大倒角</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

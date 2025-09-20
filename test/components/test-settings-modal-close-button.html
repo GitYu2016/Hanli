@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置关闭按钮测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .test-button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        
+        .test-button:hover {
+            background: #0056CC;
+        }
+        
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .test-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .test-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .test-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>系统设置关闭按钮测试</h1>
+        
+        <button class="test-button" onclick="openSettingsModal()">打开系统设置</button>
+        
+        <div id="test-results"></div>
+        
+        <h3>测试说明：</h3>
+        <ul>
+            <li>点击"打开系统设置"按钮打开设置弹窗</li>
+            <li>点击弹窗右上角的"X"关闭按钮</li>
+            <li>验证弹窗是否正确关闭</li>
+            <li>验证控制台是否有相关日志输出</li>
+        </ul>
+    </div>
+
+    <!-- 引入必要的组件 -->
+    <script src="../../hanli-app/renderer/components/Common/Icon.js"></script>
+    <script src="../../hanli-app/renderer/components/Common/IconButton.js"></script>
+    <script src="../../hanli-app/renderer/components/Common/ThemeSelector.js"></script>
+    <script src="../../hanli-app/renderer/components/Common/BackgroundColorSelector.js"></script>
+    <script src="../../hanli-app/renderer/components/Common/Switch.js"></script>
+    <script src="../../hanli-app/renderer/components/Modal/SettingsModal.js"></script>
+    
+    <!-- 引入主题样式 -->
+    <link rel="stylesheet" href="../../hanli-app/renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="../../hanli-app/renderer/globals.css">
+
+    <script>
+        let settingsModal;
+        
+        function logTest(message, type = 'info') {
+            const resultsDiv = document.getElementById('test-results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result test-${type}`;
+            resultDiv.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            resultsDiv.appendChild(resultDiv);
+            console.log(`[测试] ${message}`);
+        }
+        
+        function openSettingsModal() {
+            try {
+                logTest('开始测试：打开系统设置弹窗', 'info');
+                
+                // 创建设置弹窗实例
+                settingsModal = new SettingsModal();
+                
+                // 设置回调函数
+                settingsModal.setCallbacks({
+                    onSave: () => {
+                        logTest('设置保存回调被调用', 'success');
+                    },
+                    onCancel: () => {
+                        logTest('设置取消回调被调用', 'info');
+                    },
+                    onThemeChange: (theme) => {
+                        logTest(`主题变更回调被调用: ${theme}`, 'info');
+                    },
+                    onBackgroundColorChange: (bgColor) => {
+                        logTest(`背景色变更回调被调用: ${bgColor}`, 'info');
+                    }
+                });
+                
+                // 打开弹窗
+                settingsModal.open();
+                
+                // 检查弹窗是否成功创建
+                const modal = document.getElementById('settings-modal');
+                if (modal) {
+                    logTest('✓ 系统设置弹窗已成功创建', 'success');
+                    
+                    // 检查关闭按钮是否存在
+                    const closeButton = modal.querySelector('.modal-close');
+                    if (closeButton) {
+                        logTest('✓ 关闭按钮已找到', 'success');
+                        
+                        // 模拟点击关闭按钮
+                        setTimeout(() => {
+                            logTest('模拟点击关闭按钮...', 'info');
+                            closeButton.click();
+                            
+                            // 检查弹窗是否被关闭
+                            setTimeout(() => {
+                                const modalAfterClose = document.getElementById('settings-modal');
+                                if (!modalAfterClose) {
+                                    logTest('✓ 关闭按钮点击成功，弹窗已关闭', 'success');
+                                } else {
+                                    logTest('✗ 关闭按钮点击失败，弹窗仍然存在', 'error');
+                                }
+                            }, 100);
+                        }, 500);
+                    } else {
+                        logTest('✗ 未找到关闭按钮', 'error');
+                    }
+                } else {
+                    logTest('✗ 系统设置弹窗创建失败', 'error');
+                }
+                
+            } catch (error) {
+                logTest(`✗ 测试过程中发生错误: ${error.message}`, 'error');
+                console.error('测试错误:', error);
+            }
+        }
+        
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            logTest('测试页面已加载，准备开始测试', 'info');
+        });
+    </script>
+</body>
+</html>

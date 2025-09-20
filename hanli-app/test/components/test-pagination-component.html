@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分页组件测试</title>
+    <link rel="stylesheet" href="globals.css">
+    <link rel="stylesheet" href="theme/light/colors.css" id="theme-colors">
+    <link rel="stylesheet" href="icons-sprite.css">
+    <style>
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            background-color: var(--color-background);
+        }
+        
+        .test-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--color-foreground);
+        }
+        
+        .test-button {
+            background-color: var(--color-primary);
+            color: var(--color-primary-foreground);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .test-button:hover {
+            background-color: var(--color-primary-hover);
+        }
+        
+        .test-result {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: var(--color-hover);
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--color-foreground);
+        }
+        
+        .pagination-demo {
+            height: 200px;
+            background-color: var(--color-card-background);
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            margin: 20px 0;
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>分页组件测试</h1>
+        
+        <div class="test-section">
+            <div class="test-title">1. 基本功能测试</div>
+            <button class="test-button" onclick="testBasicPagination()">测试基本分页</button>
+            <button class="test-button" onclick="testPaginationWithData(50)">50条数据</button>
+            <button class="test-button" onclick="testPaginationWithData(150)">150条数据</button>
+            <button class="test-button" onclick="testPaginationWithData(500)">500条数据</button>
+            <div id="test-result-1" class="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">2. 分页交互测试</div>
+            <button class="test-button" onclick="testPageNavigation()">测试页面跳转</button>
+            <button class="test-button" onclick="testShowHide()">显示/隐藏测试</button>
+            <button class="test-button" onclick="testCallback()">回调函数测试</button>
+            <div id="test-result-2" class="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">3. 分页组件演示</div>
+            <div class="pagination-demo">
+                <div id="pagination-demo-container" style="position: absolute; bottom: 0; left: 0; right: 0;"></div>
+            </div>
+            <button class="test-button" onclick="initDemoPagination()">初始化演示分页</button>
+            <button class="test-button" onclick="updateDemoPagination()">更新演示数据</button>
+            <div id="test-result-3" class="test-result"></div>
+        </div>
+    </div>
+
+    <!-- 引入必要的组件 -->
+    <script src="components/Common/StyleManager.js"></script>
+    <script src="components/Common/Pagination.js"></script>
+
+    <script>
+        let demoPagination = null;
+        let testCallbackCount = 0;
+
+        // 初始化测试
+        document.addEventListener('DOMContentLoaded', () => {
+            logResult('test-result-1', '分页组件测试页面已加载');
+        });
+
+        function logResult(resultId, message) {
+            const resultEl = document.getElementById(resultId);
+            if (resultEl) {
+                const timestamp = new Date().toLocaleTimeString();
+                resultEl.innerHTML += `[${timestamp}] ${message}<br>`;
+                resultEl.scrollTop = resultEl.scrollHeight;
+            }
+        }
+
+        function testBasicPagination() {
+            try {
+                // 创建临时容器
+                let tempContainer = document.getElementById('temp-pagination');
+                if (!tempContainer) {
+                    tempContainer = document.createElement('div');
+                    tempContainer.id = 'temp-pagination';
+                    tempContainer.style.position = 'absolute';
+                    tempContainer.style.bottom = '0';
+                    tempContainer.style.left = '0';
+                    tempContainer.style.right = '0';
+                    tempContainer.style.display = 'flex';
+                    document.body.appendChild(tempContainer);
+                }
+                
+                // 创建临时分页组件
+                const tempPagination = new Pagination('temp-pagination');
+                
+                // 测试基本数据更新
+                tempPagination.updatePagination({
+                    totalItems: 100,
+                    currentPage: 1,
+                    itemsPerPage: 10,
+                    totalPages: 10
+                });
+                
+                logResult('test-result-1', '✓ 基本分页功能测试通过');
+                
+                // 清理
+                tempPagination.destroy();
+                if (tempContainer && tempContainer.parentNode) {
+                    tempContainer.parentNode.removeChild(tempContainer);
+                }
+            } catch (error) {
+                logResult('test-result-1', `✗ 基本分页功能测试失败: ${error.message}`);
+            }
+        }
+
+        function testPaginationWithData(itemCount) {
+            try {
+                // 创建临时容器
+                let tempContainer = document.getElementById('temp-pagination');
+                if (!tempContainer) {
+                    tempContainer = document.createElement('div');
+                    tempContainer.id = 'temp-pagination';
+                    tempContainer.style.position = 'absolute';
+                    tempContainer.style.bottom = '0';
+                    tempContainer.style.left = '0';
+                    tempContainer.style.right = '0';
+                    tempContainer.style.display = 'flex';
+                    document.body.appendChild(tempContainer);
+                }
+                
+                const tempPagination = new Pagination('temp-pagination');
+                
+                const totalPages = Math.ceil(itemCount / 10);
+                tempPagination.updatePagination({
+                    totalItems: itemCount,
+                    currentPage: 1,
+                    itemsPerPage: 10,
+                    totalPages: totalPages
+                });
+                
+                const data = tempPagination.getPaginationData();
+                logResult('test-result-1', `✓ ${itemCount}条数据测试通过 - 总页数: ${data.totalPages}`);
+                
+                tempPagination.destroy();
+                if (tempContainer && tempContainer.parentNode) {
+                    tempContainer.parentNode.removeChild(tempContainer);
+                }
+            } catch (error) {
+                logResult('test-result-1', `✗ ${itemCount}条数据测试失败: ${error.message}`);
+            }
+        }
+
+        function testPageNavigation() {
+            try {
+                // 创建临时容器
+                let tempContainer = document.getElementById('temp-pagination');
+                if (!tempContainer) {
+                    tempContainer = document.createElement('div');
+                    tempContainer.id = 'temp-pagination';
+                    tempContainer.style.position = 'absolute';
+                    tempContainer.style.bottom = '0';
+                    tempContainer.style.left = '0';
+                    tempContainer.style.right = '0';
+                    tempContainer.style.display = 'flex';
+                    document.body.appendChild(tempContainer);
+                }
+                
+                const tempPagination = new Pagination('temp-pagination');
+                
+                tempPagination.updatePagination({
+                    totalItems: 100,
+                    currentPage: 1,
+                    itemsPerPage: 10,
+                    totalPages: 10
+                });
+                
+                // 测试跳转到第5页
+                tempPagination.goToPage(5);
+                const data = tempPagination.getPaginationData();
+                
+                if (data.currentPage === 5) {
+                    logResult('test-result-2', '✓ 页面跳转测试通过');
+                } else {
+                    logResult('test-result-2', `✗ 页面跳转测试失败 - 期望第5页，实际第${data.currentPage}页`);
+                }
+                
+                tempPagination.destroy();
+                if (tempContainer && tempContainer.parentNode) {
+                    tempContainer.parentNode.removeChild(tempContainer);
+                }
+            } catch (error) {
+                logResult('test-result-2', `✗ 页面跳转测试失败: ${error.message}`);
+            }
+        }
+
+        function testShowHide() {
+            try {
+                // 创建临时容器
+                let tempContainer = document.getElementById('temp-pagination');
+                if (!tempContainer) {
+                    tempContainer = document.createElement('div');
+                    tempContainer.id = 'temp-pagination';
+                    tempContainer.style.position = 'absolute';
+                    tempContainer.style.bottom = '0';
+                    tempContainer.style.left = '0';
+                    tempContainer.style.right = '0';
+                    tempContainer.style.display = 'flex';
+                    document.body.appendChild(tempContainer);
+                }
+                
+                const tempPagination = new Pagination('temp-pagination');
+                
+                tempPagination.updatePagination({
+                    totalItems: 100,
+                    currentPage: 1,
+                    itemsPerPage: 10,
+                    totalPages: 10
+                });
+                
+                // 测试显示/隐藏
+                tempPagination.hide();
+                tempPagination.show();
+                
+                logResult('test-result-2', '✓ 显示/隐藏测试通过');
+                
+                tempPagination.destroy();
+                if (tempContainer && tempContainer.parentNode) {
+                    tempContainer.parentNode.removeChild(tempContainer);
+                }
+            } catch (error) {
+                logResult('test-result-2', `✗ 显示/隐藏测试失败: ${error.message}`);
+            }
+        }
+
+        function testCallback() {
+            try {
+                // 创建临时容器
+                let tempContainer = document.getElementById('temp-pagination');
+                if (!tempContainer) {
+                    tempContainer = document.createElement('div');
+                    tempContainer.id = 'temp-pagination';
+                    tempContainer.style.position = 'absolute';
+                    tempContainer.style.bottom = '0';
+                    tempContainer.style.left = '0';
+                    tempContainer.style.right = '0';
+                    tempContainer.style.display = 'flex';
+                    document.body.appendChild(tempContainer);
+                }
+                
+                const tempPagination = new Pagination('temp-pagination');
+                
+                // 设置回调函数
+                tempPagination.setOnPageChange((page, data) => {
+                    testCallbackCount++;
+                    logResult('test-result-2', `✓ 回调函数被调用 - 页码: ${page}, 调用次数: ${testCallbackCount}`);
+                });
+                
+                tempPagination.updatePagination({
+                    totalItems: 100,
+                    currentPage: 1,
+                    itemsPerPage: 10,
+                    totalPages: 10
+                });
+                
+                // 触发页面变化
+                tempPagination.goToPage(3);
+                
+                tempPagination.destroy();
+                if (tempContainer && tempContainer.parentNode) {
+                    tempContainer.parentNode.removeChild(tempContainer);
+                }
+            } catch (error) {
+                logResult('test-result-2', `✗ 回调函数测试失败: ${error.message}`);
+            }
+        }
+
+        function initDemoPagination() {
+            try {
+                if (demoPagination) {
+                    demoPagination.destroy();
+                }
+                
+                demoPagination = new Pagination('pagination-demo-container');
+                
+                demoPagination.setOnPageChange((page, data) => {
+                    logResult('test-result-3', `演示分页跳转到第${page}页`);
+                });
+                
+                demoPagination.updatePagination({
+                    totalItems: 250,
+                    currentPage: 1,
+                    itemsPerPage: 20,
+                    totalPages: 13
+                });
+                
+                logResult('test-result-3', '✓ 演示分页初始化完成');
+            } catch (error) {
+                logResult('test-result-3', `✗ 演示分页初始化失败: ${error.message}`);
+            }
+        }
+
+        function updateDemoPagination() {
+            if (demoPagination) {
+                const randomItems = Math.floor(Math.random() * 500) + 50;
+                const itemsPerPage = 15;
+                const totalPages = Math.ceil(randomItems / itemsPerPage);
+                
+                demoPagination.updatePagination({
+                    totalItems: randomItems,
+                    currentPage: 1,
+                    itemsPerPage: itemsPerPage,
+                    totalPages: totalPages
+                });
+                
+                logResult('test-result-3', `✓ 演示分页数据已更新 - ${randomItems}条数据，${totalPages}页`);
+            } else {
+                logResult('test-result-3', '✗ 请先初始化演示分页');
+            }
+        }
+    </script>
+</body>
+</html>

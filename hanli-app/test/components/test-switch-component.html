@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Switch 组件测试</title>
+    <link rel="stylesheet" href="../../renderer/globals.css">
+    <link rel="stylesheet" href="../../renderer/theme/light/colors.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--color-body-bg-default);
+            color: var(--color-text-primary);
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--color-modal-background);
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: var(--color-shadow) 0 4px 12px;
+        }
+        
+        .test-section {
+            margin-bottom: 32px;
+            padding: 20px;
+            border: 1px solid var(--color-border-normal);
+            border-radius: 6px;
+            background: var(--color-background-normal);
+        }
+        
+        .test-section h3 {
+            margin-top: 0;
+            margin-bottom: 16px;
+            color: var(--color-text-primary);
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .test-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid var(--color-border-normal);
+        }
+        
+        .test-label {
+            min-width: 120px;
+            font-weight: 500;
+            color: var(--color-text-primary);
+        }
+        
+        .test-description {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            border: 1px solid var(--color-border-normal);
+            border-radius: 4px;
+            background: var(--color-background-normal);
+            color: var(--color-text-primary);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+        
+        .btn:hover {
+            background: var(--color-background-focused);
+            border-color: var(--color-border-focused);
+        }
+        
+        .status-display {
+            background: var(--color-background-normal);
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid var(--color-border-normal);
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        
+        .log {
+            background: var(--color-background-normal);
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid var(--color-border-normal);
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Switch 组件测试</h1>
+        <p>测试Switch组件的各种功能和状态</p>
+        
+        <!-- 基础功能测试 -->
+        <div class="test-section">
+            <h3>基础功能测试</h3>
+            
+            <div class="test-row">
+                <span class="test-label">默认开关</span>
+                <div id="basic-switch-container"></div>
+                <div class="status-display" id="basic-status">状态: false</div>
+            </div>
+            
+            <div class="test-row">
+                <span class="test-label">带标签</span>
+                <div id="labeled-switch-container"></div>
+            </div>
+            
+            <div class="test-row">
+                <span class="test-label">带描述</span>
+                <div id="described-switch-container"></div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn" onclick="toggleBasicSwitch()">切换状态</button>
+                <button class="btn" onclick="setBasicSwitch(true)">设为开启</button>
+                <button class="btn" onclick="setBasicSwitch(false)">设为关闭</button>
+            </div>
+        </div>
+        
+        <!-- 尺寸测试 -->
+        <div class="test-section">
+            <h3>尺寸测试</h3>
+            
+            <div class="test-row">
+                <span class="test-label">小尺寸</span>
+                <div id="small-switch-container"></div>
+            </div>
+            
+            <div class="test-row">
+                <span class="test-label">中尺寸</span>
+                <div id="medium-switch-container"></div>
+            </div>
+            
+            <div class="test-row">
+                <span class="test-label">大尺寸</span>
+                <div id="large-switch-container"></div>
+            </div>
+        </div>
+        
+        <!-- 变体测试 -->
+        <div class="test-section">
+            <h3>颜色变体测试</h3>
+            
+            <div class="test-row">
+                <span class="test-label">默认</span>
+                <div id="default-variant-container"></div>
+            </div>
+            
+            <div class="test-row">
+                <span class="test-label">成功</span>
+                <div id="success-variant-container"></div>
+            </div>
+            
+            <div class="test-row">
+                <span class="test-label">警告</span>
+                <div id="warning-variant-container"></div>
+            </div>
+            
+            <div class="test-row">
+                <span class="test-label">错误</span>
+                <div id="error-variant-container"></div>
+            </div>
+            
+            <div class="test-row">
+                <span class="test-label">信息</span>
+                <div id="info-variant-container"></div>
+            </div>
+        </div>
+        
+        <!-- 状态测试 -->
+        <div class="test-section">
+            <h3>状态测试</h3>
+            
+            <div class="test-row">
+                <span class="test-label">禁用状态</span>
+                <div id="disabled-switch-container"></div>
+            </div>
+            
+            <div class="test-row">
+                <span class="test-label">加载状态</span>
+                <div id="loading-switch-container"></div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn" onclick="toggleDisabledSwitch()">切换禁用状态</button>
+                <button class="btn" onclick="toggleLoadingSwitch()">切换加载状态</button>
+            </div>
+        </div>
+        
+        <!-- 事件日志 -->
+        <div class="test-section">
+            <h3>事件日志</h3>
+            <div class="log" id="event-log">事件日志将显示在这里...\n</div>
+            <div class="controls">
+                <button class="btn" onclick="clearLog()">清空日志</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入组件 -->
+    <script src="../../renderer/components/Common/Switch.js"></script>
+    
+    <script>
+        let switches = {};
+        
+        function log(message) {
+            const logElement = document.getElementById('event-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('event-log').textContent = '事件日志将显示在这里...\n';
+        }
+        
+        // 基础功能测试
+        switches.basic = new Switch({
+            id: 'basic-switch',
+            checked: false,
+            onChange: (checked) => {
+                document.getElementById('basic-status').textContent = `状态: ${checked}`;
+                log(`基础开关状态变更: ${checked}`);
+            }
+        });
+        
+        switches.labeled = new Switch({
+            id: 'labeled-switch',
+            checked: true,
+            label: '带标签的开关',
+            onChange: (checked) => {
+                log(`带标签开关状态变更: ${checked}`);
+            }
+        });
+        
+        switches.described = new Switch({
+            id: 'described-switch',
+            checked: false,
+            label: '带描述的开关',
+            description: '这是一个带有详细描述的开关组件',
+            onChange: (checked) => {
+                log(`带描述开关状态变更: ${checked}`);
+            }
+        });
+        
+        // 尺寸测试
+        switches.small = new Switch({
+            id: 'small-switch',
+            size: 'small',
+            checked: true,
+            onChange: (checked) => {
+                log(`小尺寸开关状态变更: ${checked}`);
+            }
+        });
+        
+        switches.medium = new Switch({
+            id: 'medium-switch',
+            size: 'medium',
+            checked: false,
+            onChange: (checked) => {
+                log(`中尺寸开关状态变更: ${checked}`);
+            }
+        });
+        
+        switches.large = new Switch({
+            id: 'large-switch',
+            size: 'large',
+            checked: true,
+            onChange: (checked) => {
+                log(`大尺寸开关状态变更: ${checked}`);
+            }
+        });
+        
+        // 变体测试
+        switches.default = new Switch({
+            id: 'default-variant',
+            variant: 'default',
+            checked: true,
+            onChange: (checked) => {
+                log(`默认变体开关状态变更: ${checked}`);
+            }
+        });
+        
+        switches.success = new Switch({
+            id: 'success-variant',
+            variant: 'success',
+            checked: true,
+            onChange: (checked) => {
+                log(`成功变体开关状态变更: ${checked}`);
+            }
+        });
+        
+        switches.warning = new Switch({
+            id: 'warning-variant',
+            variant: 'warning',
+            checked: true,
+            onChange: (checked) => {
+                log(`警告变体开关状态变更: ${checked}`);
+            }
+        });
+        
+        switches.error = new Switch({
+            id: 'error-variant',
+            variant: 'error',
+            checked: true,
+            onChange: (checked) => {
+                log(`错误变体开关状态变更: ${checked}`);
+            }
+        });
+        
+        switches.info = new Switch({
+            id: 'info-variant',
+            variant: 'info',
+            checked: true,
+            onChange: (checked) => {
+                log(`信息变体开关状态变更: ${checked}`);
+            }
+        });
+        
+        // 状态测试
+        switches.disabled = new Switch({
+            id: 'disabled-switch',
+            checked: true,
+            disabled: true,
+            onChange: (checked) => {
+                log(`禁用开关状态变更: ${checked}`);
+            }
+        });
+        
+        switches.loading = new Switch({
+            id: 'loading-switch',
+            checked: false,
+            loading: true,
+            onChange: (checked) => {
+                log(`加载开关状态变更: ${checked}`);
+            }
+        });
+        
+        // 渲染所有开关
+        function renderAllSwitches() {
+            Object.keys(switches).forEach(key => {
+                const container = document.getElementById(`${key}-switch-container`);
+                if (container) {
+                    container.innerHTML = switches[key].render();
+                    switches[key].bindEvents();
+                }
+                
+                const variantContainer = document.getElementById(`${key}-variant-container`);
+                if (variantContainer) {
+                    variantContainer.innerHTML = switches[key].render();
+                    switches[key].bindEvents();
+                }
+            });
+        }
+        
+        // 控制函数
+        function toggleBasicSwitch() {
+            switches.basic.toggle();
+        }
+        
+        function setBasicSwitch(checked) {
+            switches.basic.setChecked(checked);
+        }
+        
+        function toggleDisabledSwitch() {
+            const currentState = switches.disabled.disabled;
+            switches.disabled.setDisabled(!currentState);
+            log(`禁用开关状态: ${!currentState ? '禁用' : '启用'}`);
+        }
+        
+        function toggleLoadingSwitch() {
+            const currentState = switches.loading.loading;
+            switches.loading.setLoading(!currentState);
+            log(`加载开关状态: ${!currentState ? '加载中' : '正常'}`);
+        }
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            renderAllSwitches();
+            log('Switch组件测试页面已加载');
+        });
+    </script>
+</body>
+</html>

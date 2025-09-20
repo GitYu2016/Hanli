@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON预览弹窗测试</title>
+    <link rel="stylesheet" href="globals.css">
+    <link rel="stylesheet" href="icons-sprite.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: var(--color-background-primary);
+            color: var(--color-text-primary);
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .test-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--color-text-primary);
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--color-background-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+        }
+        
+        .test-section h3 {
+            margin: 0 0 15px 0;
+            font-size: 18px;
+            color: var(--color-text-primary);
+        }
+        
+        .test-description {
+            margin-bottom: 15px;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+        }
+        
+        .test-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .json-data-preview {
+            background: var(--color-background-primary);
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 10px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="test-title">JSON预览弹窗测试</h1>
+        
+        <div class="test-section">
+            <h3>基本功能测试</h3>
+            <p class="test-description">
+                测试JSON预览弹窗的基本功能，包括打开、关闭、复制等操作。
+            </p>
+            <div class="test-buttons" id="basic-test-buttons">
+                <!-- 按钮将通过JavaScript动态创建 -->
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>不同数据类型测试</h3>
+            <p class="test-description">
+                测试不同类型的JSON数据在预览弹窗中的显示效果。
+            </p>
+            <div class="test-buttons" id="data-type-test-buttons">
+                <!-- 按钮将通过JavaScript动态创建 -->
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>错误处理测试</h3>
+            <p class="test-description">
+                测试无效JSON数据的错误处理机制。
+            </p>
+            <div class="test-buttons" id="error-test-buttons">
+                <!-- 按钮将通过JavaScript动态创建 -->
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>示例数据预览</h3>
+            <p class="test-description">
+                以下是用于测试的示例JSON数据：
+            </p>
+            <div class="json-data-preview" id="sample-data-preview">
+                <!-- 示例数据将通过JavaScript动态加载 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入必要的组件 -->
+    <script src="components/Common/Button.js"></script>
+    <script src="components/Modal/JsonPreviewModal.js"></script>
+    <script src="components/Modal/JsonPreviewModalExample.js"></script>
+    
+    <script>
+        // 测试数据
+        const testData = {
+            // 简单对象
+            simple: {
+                "name": "测试产品",
+                "price": 99.99,
+                "available": true
+            },
+            
+            // 复杂嵌套对象
+            complex: {
+                "id": "123456789012",
+                "product": {
+                    "name": "高级智能手机",
+                    "price": 2999.99,
+                    "currency": "RMB",
+                    "specifications": {
+                        "screen": "6.1英寸",
+                        "processor": "A17 Pro",
+                        "storage": "256GB",
+                        "camera": {
+                            "main": "48MP",
+                            "ultra": "12MP",
+                            "telephoto": "12MP"
+                        }
+                    },
+                    "features": ["5G", "无线充电", "防水", "面部识别"],
+                    "reviews": {
+                        "average": 4.8,
+                        "count": 1250,
+                        "distribution": {
+                            "5": 950,
+                            "4": 200,
+                            "3": 80,
+                            "2": 15,
+                            "1": 5
+                        }
+                    }
+                },
+                "metadata": {
+                    "created": "2024-09-07T00:00:00",
+                    "updated": "2024-09-07T12:00:00",
+                    "version": "1.0.0",
+                    "tags": ["电子产品", "手机", "苹果", "5G"]
+                }
+            },
+            
+            // 数组数据
+            array: [
+                {"id": 1, "name": "产品A", "price": 100},
+                {"id": 2, "name": "产品B", "price": 200},
+                {"id": 3, "name": "产品C", "price": 300}
+            ],
+            
+            // 无效JSON
+            invalid: '{"name": "测试", "price": 99.99, "missing": }'
+        };
+
+        // 创建测试按钮
+        function createTestButtons() {
+            const buttonInstance = window.buttonInstance;
+            if (!buttonInstance) {
+                console.error('Button组件未加载');
+                return;
+            }
+
+            // 基本功能测试按钮
+            const basicButtons = document.getElementById('basic-test-buttons');
+            if (basicButtons) {
+                const openButton = buttonInstance.primary({
+                    text: '打开JSON预览',
+                    size: 'M',
+                    icon: 'ph-code',
+                    onClick: () => {
+                        if (window.jsonPreviewModalInstance) {
+                            window.jsonPreviewModalInstance.open(testData.complex);
+                        }
+                    }
+                });
+                
+                const openStringButton = buttonInstance.secondary({
+                    text: '打开字符串JSON',
+                    size: 'M',
+                    icon: 'ph-file-text',
+                    onClick: () => {
+                        if (window.jsonPreviewModalInstance) {
+                            const jsonString = JSON.stringify(testData.complex, null, 2);
+                            window.jsonPreviewModalInstance.open(jsonString);
+                        }
+                    }
+                });
+                
+                basicButtons.appendChild(openButton);
+                basicButtons.appendChild(openStringButton);
+            }
+
+            // 数据类型测试按钮
+            const dataTypeButtons = document.getElementById('data-type-test-buttons');
+            if (dataTypeButtons) {
+                const simpleButton = buttonInstance.secondary({
+                    text: '简单对象',
+                    size: 'S',
+                    onClick: () => {
+                        if (window.jsonPreviewModalInstance) {
+                            window.jsonPreviewModalInstance.open(testData.simple);
+                        }
+                    }
+                });
+                
+                const arrayButton = buttonInstance.secondary({
+                    text: '数组数据',
+                    size: 'S',
+                    onClick: () => {
+                        if (window.jsonPreviewModalInstance) {
+                            window.jsonPreviewModalInstance.open(testData.array);
+                        }
+                    }
+                });
+                
+                const complexButton = buttonInstance.secondary({
+                    text: '复杂嵌套',
+                    size: 'S',
+                    onClick: () => {
+                        if (window.jsonPreviewModalInstance) {
+                            window.jsonPreviewModalInstance.open(testData.complex);
+                        }
+                    }
+                });
+                
+                dataTypeButtons.appendChild(simpleButton);
+                dataTypeButtons.appendChild(arrayButton);
+                dataTypeButtons.appendChild(complexButton);
+            }
+
+            // 错误处理测试按钮
+            const errorButtons = document.getElementById('error-test-buttons');
+            if (errorButtons) {
+                const invalidButton = buttonInstance.error({
+                    text: '无效JSON',
+                    size: 'S',
+                    onClick: () => {
+                        if (window.jsonPreviewModalInstance) {
+                            window.jsonPreviewModalInstance.open(testData.invalid);
+                        }
+                    }
+                });
+                
+                errorButtons.appendChild(invalidButton);
+            }
+        }
+
+        // 显示示例数据
+        function showSampleData() {
+            const preview = document.getElementById('sample-data-preview');
+            if (preview) {
+                preview.textContent = JSON.stringify(testData.complex, null, 2);
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 等待组件加载完成
+            setTimeout(() => {
+                createTestButtons();
+                showSampleData();
+                console.log('JSON预览弹窗测试页面已加载');
+            }, 100);
+        });
+    </script>
+</body>
+</html>

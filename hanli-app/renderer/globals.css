@@ -1,0 +1,1482 @@
+/* 全局CSS变量定义 */
+:root {
+    /* 倒角变量 */
+    --radius-small: 4px;      /* 小倒角 */
+    --radius-medium: 6px;     /* 中等倒角（标准） */
+    --radius-large: 12px;     /* 大倒角 - 卡片专用 */
+    --radius-card: 12px;      /* 卡片专用大倒角 */
+}
+
+/* 全局样式重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: inherit;
+    -webkit-user-select: none; /* 禁用WebKit浏览器的文字选择 */
+    -moz-user-select: none;    /* 禁用Firefox的文字选择 */
+    -ms-user-select: none;     /* 禁用IE的文字选择 */
+    user-select: none;         /* 禁用所有浏览器的文字选择 */
+}
+
+/* 确保所有文本元素使用系统字体 */
+*,
+*::before,
+*::after {
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* 允许特定元素进行文字选择 */
+input,
+textarea,
+[contenteditable="true"],
+.selectable {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
+body {
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: var(--color-body-bg-default) !important;
+    color: var(--color-primary) !important;
+    overflow: hidden;
+    -webkit-app-region: no-drag; /* 默认不可拖拽 */
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 自定义窗口控制按钮 */
+.window-controls {
+    position: fixed;
+    top: 23px;
+    left: 12px;
+    display: flex;
+    gap: 4px;
+    z-index: 1000;
+    -webkit-app-region: no-drag;
+}
+
+.window-control-btn {
+    width: 12px;
+    height: 12px;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    -webkit-app-region: no-drag;
+    padding: 2px;
+}
+
+.window-control-btn i {
+    font-size: 6px;
+    color: rgba(0, 0, 0, 0.5) !important; /* 黑色半透明，固定颜色 */
+}
+
+.window-control-btn:hover {
+    /* 窗口控制按钮悬停效果不受主题影响 */
+    opacity: 0.8;
+}
+
+.close-btn {
+    background-color: var(--color-error);
+}
+
+.close-btn:hover {
+    background-color: var(--color-error);
+    opacity: 0.8;
+}
+
+.close-btn:hover i {
+    color: rgba(0, 0, 0, 0.5) !important; /* 保持黑色半透明 */
+}
+
+.minimize-btn {
+    background-color: var(--color-warning);
+}
+
+.minimize-btn:hover {
+    background-color: var(--color-warning);
+    opacity: 0.8;
+}
+
+.minimize-btn:hover i {
+    color: rgba(0, 0, 0, 0.5) !important; /* 保持黑色半透明 */
+}
+
+.fullscreen-btn {
+    background-color: var(--color-success);
+}
+
+.fullscreen-btn:hover {
+    background-color: var(--color-success);
+    opacity: 0.8;
+}
+
+.fullscreen-btn:hover i {
+    color: rgba(0, 0, 0, 0.5) !important; /* 保持黑色半透明 */
+}
+
+/* 背景色切换类 */
+.bg-body-default {
+    background-color: var(--color-body-bg-default) !important;
+}
+
+.bg-body-blue {
+    background-color: var(--color-body-bg-blue) !important;
+}
+
+.bg-body-green {
+    background-color: var(--color-body-bg-green) !important;
+}
+
+.bg-body-purple {
+    background-color: var(--color-body-bg-purple) !important;
+}
+
+.bg-body-orange {
+    background-color: var(--color-body-bg-orange) !important;
+}
+
+.bg-body-pink {
+    background-color: var(--color-body-bg-pink) !important;
+}
+
+.bg-body-gray {
+    background-color: var(--color-body-bg-gray) !important;
+}
+
+.bg-body-indigo {
+    background-color: var(--color-body-bg-indigo) !important;
+}
+
+/* 主容器布局 */
+.home-page {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* 确保所有可交互元素不可拖拽 */
+button, input, select, textarea, a, .sidebar-item, .settings-icon, .top-bar-tabs, .top-bar-tab, .top-bar-tab-icon, .top-bar-tab-title, .top-bar-tab-close {
+    -webkit-app-region: no-drag;
+}
+
+.main-layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    flex-direction: row;
+    gap: 0;
+}
+
+/* TopBar 样式已迁移到 TopBar.js 组件中 */
+
+/* SideBar 样式已迁移到 SideBar.js 组件中 */
+
+/* PageContainer 样式已迁移到 PageContainer.js 组件中 */
+
+/* 首页内容样式已迁移到 HomePageContent.js 组件中 */
+
+
+/* 扫描结果样式 */
+.scan-results {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.scan-summary {
+    text-align: center;
+}
+
+.scan-count {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--color-primary);
+    line-height: 1;
+}
+
+.scan-label {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    margin-top: 4px;
+}
+
+/* URL列表区域样式 */
+.url-list-section {
+    margin-top: 24px;
+    margin-bottom: 32px;
+}
+
+.url-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 0 4px;
+}
+
+.url-count {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    background: var(--color-muted);
+    padding: 4px 12px;
+    border-radius: var(--radius-medium);
+    font-weight: 500;
+}
+
+
+/* 按钮禁用状态 */
+.monitor-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.monitor-btn:disabled:hover {
+    background-color: var(--color-primary);
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 监控按钮容器 */
+.monitor-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* 更新监控数据按钮样式 */
+.monitor-btn.update-btn {
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+}
+
+.monitor-btn.update-btn:hover:not(:disabled) {
+    background-color: rgba(0, 0, 0, 0.9);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.monitor-btn.update-btn:disabled {
+    background-color: rgba(0, 0, 0, 0.4);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.monitor-btn.update-btn:disabled:hover {
+    background-color: rgba(0, 0, 0, 0.4);
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 任务结果样式 */
+.task-results {
+    text-align: center;
+    padding: 16px 0;
+}
+
+.task-summary {
+    margin-bottom: 16px;
+}
+
+.task-count {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--color-primary);
+    line-height: 1;
+}
+
+.task-label {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    margin-top: 4px;
+}
+
+.task-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-small);
+    color: rgba(0, 0, 0, 0.8);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.task-status i {
+    font-size: 16px;
+    color: rgba(0, 0, 0, 0.8);
+}
+
+.task-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+/* 采集界面样式 */
+.collection-progress {
+    margin-bottom: 20px;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.progress-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.progress-stats {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+.current-count {
+    color: var(--color-primary);
+}
+
+.separator {
+    color: var(--color-text-secondary);
+}
+
+.total-count {
+    color: var(--color-text-secondary);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: var(--color-muted);
+    border-radius: var(--radius-large);
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-primary-hover));
+    border-radius: var(--radius-large);
+    transition: width 0.3s ease;
+}
+
+.current-item {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    text-align: center;
+    padding: 8px;
+    background: var(--color-muted);
+    border-radius: var(--radius-small);
+    min-height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.collection-controls {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.collection-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: var(--radius-medium);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 120px;
+    justify-content: center;
+}
+
+.collection-btn i {
+    font-size: 16px;
+}
+
+.pause-btn {
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+}
+
+.pause-btn:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+    transform: translateY(-1px);
+}
+
+.stop-btn {
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+}
+
+.stop-btn:hover {
+    background-color: rgba(0, 0, 0, 0.9);
+    transform: translateY(-1px);
+}
+
+.collection-btn:active {
+    transform: translateY(0);
+}
+
+/* 监控区域样式 */
+.monitor-section {
+    margin-bottom: 32px;
+}
+
+.monitor-section .monitor-card {
+    background-color: var(--color-background-normal);
+    border-radius: var(--radius-large);
+    padding: 32px;
+    text-align: center;
+    transition: transform 0.2s ease;
+    min-width: 200px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.monitor-section .monitor-card:hover {
+    transform: translateY(-2px);
+}
+
+/* 快速操作样式已迁移到 HomePageContent.js 组件中 */
+
+/* 最近活动样式已迁移到 HomePageContent.js 组件中 */
+
+/* 产品库组件样式已迁移到 ProductLibrary.js 组件中 */
+
+.page-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.recent-activity {
+    margin-bottom: 32px;
+}
+
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: var(--radius-medium);
+    transition: background-color 0.2s ease;
+}
+
+.activity-item:hover {
+    background-color: var(--color-hover);
+}
+
+.activity-icon {
+    font-size: 20px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-icon-background);
+    border-radius: var(--radius-small);
+}
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-text {
+    font-size: 14px;
+    color: var(--color-text-primary);
+    margin-bottom: 4px;
+}
+
+.activity-time {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+/* 弹窗样式 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--color-overlay);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-content {
+    background-color: var(--color-modal-background) !important;
+    border-radius: var(--radius-large);
+    width: 800px;
+    max-width: 90vw;
+    transition: background-color 0.3s ease;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.modal-close {
+    font-size: 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    padding: 4px;
+    border-radius: var(--radius-small);
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close i {
+    font-size: 18px;
+    color: inherit;
+}
+
+.modal-close:hover {
+    background-color: var(--color-hover);
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.setting-group {
+    margin-bottom: 20px;
+}
+
+.setting-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 8px;
+}
+
+.setting-select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-small);
+    background-color: var(--color-background-normal);
+    color: var(--color-text-primary);
+    font-size: 14px;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    padding: 20px 24px;
+    border-top: 1px solid var(--color-border);
+}
+
+/* 按钮样式已迁移到 Button.js 组件中 */
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .main-layout {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+        height: auto;
+        max-height: 200px;
+        margin: 8px;
+        border-radius: var(--radius-medium);
+    }
+    
+    .page-container {
+        margin: 8px;
+        border-radius: var(--radius-medium);
+    }
+    
+    .top-bar {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+    
+    .top-bar-center {
+        max-width: 80%; /* 移动端给Tab更多空间 */
+    }
+    
+    .logo {
+        font-size: 18px;
+    }
+    
+    .settings-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 18px;
+    }
+    
+    /* 首页响应式样式已迁移到 HomePageContent.js 组件中 */
+}
+
+@media (max-width: 480px) {
+    .top-bar {
+        height: 48px; /* 小屏幕减少高度 */
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+    
+    .top-bar-center {
+        max-width: 80%; /* 小屏幕给Tab更多空间 */
+    }
+    
+    .logo {
+        font-size: 16px;
+    }
+    
+    .settings-icon {
+        width: 28px;
+        height: 28px;
+        font-size: 16px;
+        padding: 6px;
+    }
+    
+    /* Tab样式已迁移到TopBar.js组件中 */
+    
+    /* 首页响应式样式已迁移到 HomePageContent.js 组件中 */
+    
+}
+
+/* 产品库页面样式已迁移到 ProductLibrary.js 组件中 */
+
+
+/* 错误页面样式 */
+.error-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    padding: 40px;
+}
+
+.error-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-destructive);
+}
+
+.error-icon i {
+    font-size: 48px;
+    color: inherit;
+}
+
+.error-message {
+    font-size: 18px;
+    color: var(--color-text-secondary);
+    margin-bottom: 24px;
+}
+
+/* 按钮样式已迁移到 Button.js 组件中 */
+
+/* 产品详情页面样式 */
+.product-detail-page {
+    padding: 0;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.product-detail-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.detail-section {
+    margin-bottom: 16px;
+}
+
+.section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0 0 6px 0;
+    padding: 0 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detail-card {
+    background: var(--color-background-normal);
+    border-radius: var(--radius-medium);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+    padding: 16px;
+}
+
+
+/* 图表卡片样式 */
+/* 图表卡片简化样式 */
+.chart-card {
+    background: var(--color-background-normal);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+}
+
+
+
+/* 统一的小标题样式 */
+.section-subtitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0 0 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-subtitle::before {
+    content: "";
+    width: 3px;
+    height: 14px;
+    background: var(--color-primary);
+    border-radius: var(--radius-small);
+}
+
+
+/* 简化采集信息样式 */
+.collect-info-simple {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    flex-wrap: wrap;
+}
+
+.collect-person,
+.collect-time,
+.collect-link {
+    color: var(--color-text-secondary);
+}
+
+
+.collect-url-link {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.collect-url-link:hover {
+    color: var(--color-primary-hover);
+    text-decoration: underline;
+}
+
+.copy-btn-small {
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--radius-small);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.copy-btn-small:hover {
+    background-color: var(--color-hover);
+    color: var(--color-primary);
+}
+
+.copy-btn-small i {
+    font-size: 12px;
+}
+
+/* 附件列表样式已迁移到 AttachmentCard 组件中 */
+
+
+/* JSON模态框样式已迁移到 AttachmentCard 组件中 */
+
+.chart-container {
+    padding: 16px;
+    background: transparent;
+    border-radius: var(--radius-small);
+    margin: 0;
+    text-align: center;
+    height: 200px;
+    position: relative;
+}
+
+#sales-chart,
+#price-chart {
+    max-width: 100%;
+    height: 100%;
+    border-radius: var(--radius-small);
+    background: transparent;
+}
+
+/* 图表加载状态 */
+.chart-container.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-secondary);
+}
+
+.chart-container.loading::after {
+    content: "📈 加载图表中...";
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* 图表错误状态 */
+.chart-container.error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-error-bg);
+    border-color: var(--color-error);
+}
+
+.chart-container.error::after {
+    content: "❌ 图表加载失败";
+    color: var(--color-error);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* URL区域样式 */
+.url-section {
+    margin-bottom: 16px;
+}
+
+.url-label {
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 8px;
+    display: block;
+}
+
+.url-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--color-muted);
+    border-radius: var(--radius-small);
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+}
+
+.url-link {
+    flex: 1;
+    color: rgba(0, 0, 0, 0.8);
+    text-decoration: none;
+    font-size: 13px;
+    word-break: break-all;
+    line-height: 1.4;
+    transition: color 0.2s ease;
+}
+
+.url-link:hover {
+    color: rgba(0, 0, 0, 0.9);
+    text-decoration: underline;
+}
+
+.url-link:visited {
+    color: rgba(0, 0, 0, 0.6);
+}
+
+.copy-btn {
+    background: var(--color-secondary);
+    color: var(--color-secondary-foreground);
+    border: none;
+    border-radius: var(--radius-small);
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    min-width: 32px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.copy-btn i {
+    font-size: 14px;
+    color: inherit;
+}
+
+.copy-btn:hover {
+    background: var(--color-secondary-hover);
+    transform: translateY(-1px);
+}
+
+.copy-btn:active {
+    transform: translateY(0);
+}
+
+.collect-time {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.time-label {
+    font-weight: 500;
+}
+
+.time-value {
+    color: var(--color-text-primary);
+    font-family: monospace;
+    background: var(--color-muted);
+    padding: 2px 6px;
+    border-radius: var(--radius-small);
+    font-size: 12px;
+}
+
+/* Toast通知样式已迁移到 JavaScript 中 */
+
+/* 媒体卡片样式已迁移到 MediaCard.js 组件中 */
+
+/* 产品信息卡片样式已迁移到 ProductInfoCard.js 组件中 */
+
+/* 图片模态框样式 */
+.image-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-modal-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 90%;
+    background: white;
+    border-radius: var(--radius-medium);
+    overflow: hidden;
+}
+
+.image-modal-content img {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+}
+
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close i {
+    font-size: 16px;
+    color: inherit;
+}
+
+.modal-close:hover {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .product-detail-page {
+        padding: 0;
+    }
+    
+    
+    
+    
+    /* 移动端图表优化 */
+    .chart-card {
+        margin-bottom: 16px;
+        border-radius: var(--radius-medium);
+    }
+    
+    .chart-card .card-header {
+        padding: 16px 20px 12px 20px;
+    }
+    
+    .chart-title {
+        font-size: 16px;
+    }
+    
+    
+    .chart-container {
+        height: 200px;
+        padding: 16px;
+    }
+    
+    #product-chart {
+        width: 100%;
+        height: 300px;
+    }
+}
+
+
+
+/* 系统设置弹窗样式 */
+.settings-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.settings-modal-content {
+    background: var(--color-modal-background) !important;
+    border-radius: var(--radius-large);
+    max-width: 900px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: background-color 0.3s ease;
+}
+
+.modal-header {
+    padding: 24px 24px 16px 24px;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--color-muted);
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--radius-small);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close i {
+    font-size: 20px;
+    color: inherit;
+}
+
+.modal-close:hover {
+    background: var(--color-hover);
+    color: var(--color-text-primary);
+}
+
+.modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* 设置弹窗左右分栏布局 */
+.settings-modal-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.settings-sidebar {
+    width: 200px;
+    background: var(--color-surface-secondary);
+    border-right: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-content {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+}
+
+/* 左侧菜单样式 */
+.settings-menu {
+    padding: 16px 0;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--color-text-secondary);
+    border-left: 3px solid transparent;
+}
+
+.menu-item:hover {
+    background: var(--color-background-focused);
+    color: var(--color-text-primary);
+}
+
+.menu-item.active {
+    background: var(--color-background-focused);
+    color: var(--color-text-primary);
+    border-left-color: var(--color-info);
+}
+
+.menu-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 12px;
+    opacity: 0.8;
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    background-color: currentColor;
+}
+
+.menu-label {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* 响应式设计 - 移动端优化 */
+@media (max-width: 768px) {
+    .settings-modal-content {
+        max-width: 95%;
+        max-height: 90vh;
+    }
+    
+    .settings-modal-body {
+        flex-direction: column;
+    }
+    
+    .settings-sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+    }
+    
+    .settings-menu {
+        display: flex;
+        padding: 12px 0;
+        overflow-x: auto;
+    }
+    
+    .menu-item {
+        min-width: 120px;
+        border-left: none;
+        border-bottom: 3px solid transparent;
+        justify-content: center;
+        flex-direction: column;
+        padding: 8px 12px;
+    }
+    
+    .menu-item.active {
+        border-left: none;
+        border-bottom-color: var(--color-info);
+    }
+    
+    .menu-icon {
+        margin-right: 0;
+        margin-bottom: 4px;
+    }
+    
+    .menu-label {
+        font-size: 12px;
+    }
+    
+    .settings-content {
+        padding: 16px;
+    }
+}
+
+
+/* 设置区域样式 */
+.settings-section {
+    margin-bottom: 32px;
+}
+
+.settings-section:last-child {
+    margin-bottom: 0;
+}
+
+.section-title {
+    margin: 0 0 16px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 16px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.setting-item:last-child {
+    border-bottom: none;
+}
+
+.setting-label {
+    font-weight: 500;
+    color: var(--color-text-primary);
+    min-width: 120px;
+    margin-right: 16px;
+}
+
+.setting-control {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.setting-description {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin-top: 4px;
+}
+
+
+/* 开关样式 */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--color-border);
+    transition: 0.3s;
+    border-radius: var(--radius-large);
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: var(--color-primary);
+}
+
+input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+/* 选择框样式 */
+.setting-select {
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-small);
+    background: var(--color-background-normal);
+    color: var(--color-text-primary);
+    font-size: 14px;
+    min-width: 120px;
+}
+
+.setting-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+/* 输入框样式 */
+.setting-input {
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-small);
+    background: var(--color-background-normal);
+    color: var(--color-text-primary);
+    font-size: 14px;
+    flex: 1;
+    margin-right: 8px;
+}
+
+.setting-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+/* 按钮样式扩展已迁移到 Button.js 组件中 */
+
+/* 响应式设计 */
+@media (max-width: 480px) {
+    .settings-modal-content {
+        width: 95%;
+        max-height: 90vh;
+    }
+    
+    .modal-body {
+        padding: 16px;
+    }
+    
+    .setting-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .setting-label {
+        min-width: auto;
+        margin-right: 0;
+    }
+    
+    .theme-selector {
+        justify-content: center;
+    }
+    
+    .theme-option {
+        min-width: 100px;
+    }
+}
+
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    /* 响应式样式 */
+}
+
+/* Button 组件样式已迁移到 JavaScript 中 */
+
+/* 右键菜单样式已迁移到 AttachmentCard 组件中 */
+
+/* 搜索弹窗样式已迁移到 SearchModal.js 组件中 */
+
+/* MoreMenu 组件样式已迁移到 ProductMoreMenu.js 组件中 */
+
+/* 页面标题区域样式 */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 4px 24px 4px;
+}
+
+.page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* MoreMenu 响应式样式已迁移到 ProductMoreMenu.js 组件中 */
+
+/* Toast 通知组件样式已迁移到 JavaScript 中 */
+
+/* 媒体卡片组件样式已迁移到 MediaCard.js 组件中 */

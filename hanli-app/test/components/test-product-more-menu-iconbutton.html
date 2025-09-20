@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProductMoreMenu + IconButton 集成测试</title>
+    <link rel="stylesheet" href="../../renderer/globals.css">
+    <link rel="stylesheet" href="../../renderer/theme/light/colors.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--color-background-primary);
+            color: var(--color-text-primary);
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background-color: var(--color-surface-primary);
+            border-radius: var(--radius-medium);
+            border: 1px solid var(--color-border-normal);
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--color-text-primary);
+        }
+        
+        .test-description {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            margin-bottom: 20px;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--color-border-normal);
+            margin-bottom: 20px;
+        }
+        
+        .page-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+            color: var(--color-text-primary);
+        }
+        
+        .page-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .product-more-menu-wrapper {
+            position: relative;
+        }
+        
+        .test-info {
+            background-color: var(--color-background-focused);
+            padding: 12px;
+            border-radius: var(--radius-small);
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+        
+        .test-button {
+            background-color: var(--color-primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: var(--radius-small);
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 8px;
+        }
+        
+        .test-button:hover {
+            background-color: var(--color-primary-hover);
+        }
+        
+        .test-button:active {
+            background-color: var(--color-primary-active);
+        }
+        
+        .test-results {
+            margin-top: 20px;
+            padding: 16px;
+            background-color: var(--color-surface-secondary);
+            border-radius: var(--radius-small);
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>ProductMoreMenu + IconButton 集成测试</h1>
+        
+        <div class="test-section">
+            <div class="test-title">测试 1: 基本功能测试</div>
+            <div class="test-description">
+                测试IconButton和ProductMoreMenu的基本集成功能，包括点击打开/关闭菜单。
+            </div>
+            <div class="test-info">
+                <strong>测试步骤：</strong><br>
+                1. 点击右侧的三个点按钮<br>
+                2. 验证菜单是否正确打开<br>
+                3. 点击菜单项验证功能<br>
+                4. 点击外部区域验证菜单关闭
+            </div>
+            
+            <div class="page-header">
+                <h1 class="page-title">产品详情测试</h1>
+                <div class="page-header-actions">
+                    <div id="more-menu-container-1" class="product-more-menu-wrapper"></div>
+                </div>
+            </div>
+            
+            <button class="test-button" onclick="testBasicFunctionality()">开始测试</button>
+            <button class="test-button" onclick="clearResults()">清除结果</button>
+            <div id="test-results-1" class="test-results"></div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">测试 2: 菜单项功能测试</div>
+            <div class="test-description">
+                测试不同菜单项的功能，包括动态添加菜单项。
+            </div>
+            <div class="test-info">
+                <strong>测试步骤：</strong><br>
+                1. 点击菜单查看默认菜单项<br>
+                2. 点击"添加TEMU链接"按钮<br>
+                3. 重新打开菜单验证新菜单项<br>
+                4. 测试所有菜单项功能
+            </div>
+            
+            <div class="page-header">
+                <h1 class="page-title">产品详情测试 (动态菜单)</h1>
+                <div class="page-header-actions">
+                    <div id="more-menu-container-2" class="product-more-menu-wrapper"></div>
+                </div>
+            </div>
+            
+            <button class="test-button" onclick="addTemuLink()">添加TEMU链接</button>
+            <button class="test-button" onclick="removeTemuLink()">移除TEMU链接</button>
+            <button class="test-button" onclick="testMenuItems()">测试菜单项</button>
+            <div id="test-results-2" class="test-results"></div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">测试 3: 样式和主题测试</div>
+            <div class="test-description">
+                测试IconButton和ProductMoreMenu在不同主题下的样式表现。
+            </div>
+            <div class="test-info">
+                <strong>测试步骤：</strong><br>
+                1. 切换主题查看样式变化<br>
+                2. 测试按钮的hover和active状态<br>
+                3. 测试菜单的动画效果
+            </div>
+            
+            <div class="page-header">
+                <h1 class="page-title">产品详情测试 (主题)</h1>
+                <div class="page-header-actions">
+                    <button class="test-button" onclick="toggleTheme()">切换主题</button>
+                    <button class="test-button" onclick="testHoverState()">测试Hover状态</button>
+                    <div id="more-menu-container-3" class="product-more-menu-wrapper"></div>
+                </div>
+            </div>
+            
+            <div id="test-results-3" class="test-results"></div>
+        </div>
+    </div>
+
+    <!-- 加载必要的组件 -->
+    <script src="../../renderer/components/Common/Icon.js"></script>
+    <script src="../../renderer/components/Common/Button/IconButton.js"></script>
+    <script src="../../renderer/components/Modal/ProductMoreMenu.js"></script>
+    
+    <script>
+        // 测试数据
+        const testProduct = {
+            goodsId: '123456789012',
+            collectUrl: 'https://www.temu.com/product/test',
+            collectTime: '2024-01-01T12:00:00Z'
+        };
+        
+        let moreMenuInstances = {};
+        let currentTheme = 'light';
+        
+        // 初始化测试
+        document.addEventListener('DOMContentLoaded', function() {
+            initTest1();
+            initTest2();
+            initTest3();
+        });
+        
+        // 测试1: 基本功能
+        function initTest1() {
+            const container = document.getElementById('more-menu-container-1');
+            if (container) {
+                initMoreMenu(container, 'test1', [
+                    {
+                        label: '在 Finder 中显示',
+                        action: 'show-in-finder',
+                        icon: 'folder-open'
+                    }
+                ]);
+            }
+        }
+        
+        // 测试2: 动态菜单
+        function initTest2() {
+            const container = document.getElementById('more-menu-container-2');
+            if (container) {
+                initMoreMenu(container, 'test2', [
+                    {
+                        label: '在 Finder 中显示',
+                        action: 'show-in-finder',
+                        icon: 'folder-open'
+                    }
+                ]);
+            }
+        }
+        
+        // 测试3: 主题测试
+        function initTest3() {
+            const container = document.getElementById('more-menu-container-3');
+            if (container) {
+                initMoreMenu(container, 'test3', [
+                    {
+                        label: '在 Finder 中显示',
+                        action: 'show-in-finder',
+                        icon: 'folder-open'
+                    },
+                    {
+                        label: '访问 TEMU 链接',
+                        action: 'visit-temu-link',
+                        icon: 'eye'
+                    }
+                ]);
+            }
+        }
+        
+        // 初始化更多菜单
+        function initMoreMenu(container, testId, menuItems) {
+            try {
+                // 创建完整的菜单结构
+                container.innerHTML = `
+                    <div class="product-more-menu-container">
+                        <div class="product-more-menu-trigger-wrapper">
+                            <!-- IconButton将在这里渲染 -->
+                        </div>
+                        <div class="product-more-menu-dropdown" id="product-more-menu-dropdown-${testId}">
+                            <div class="product-more-menu-content">
+                                ${renderMenuItems(menuItems)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // 使用IconButton渲染更多按钮
+                const iconButton = new IconButton();
+                const moreButtonHTML = iconButton.render('dots-three-vertical', {
+                    size: 'normal',
+                    variant: 'normal',
+                    className: 'product-more-menu-trigger',
+                    title: '更多操作'
+                });
+                
+                const triggerWrapper = container.querySelector('.product-more-menu-trigger-wrapper');
+                if (triggerWrapper) {
+                    triggerWrapper.innerHTML = moreButtonHTML;
+                }
+                
+                // 创建ProductMoreMenu浮窗实例
+                const moreMenu = new ProductMoreMenu();
+                moreMenu.container = container;
+                moreMenu.menuItems = menuItems;
+                moreMenu.isOpen = false;
+                
+                // 设置菜单点击回调
+                moreMenu.setMenuClickCallback((action, menuItem) => {
+                    handleMoreMenuClick(action, menuItem, testId);
+                });
+                
+                // 绑定IconButton点击事件
+                const moreButton = container.querySelector('.icon-button');
+                if (moreButton) {
+                    moreButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        moreMenu.toggle();
+                    });
+                }
+                
+                // 绑定点击外部关闭菜单事件
+                moreMenu.handleDocumentClick = (e) => {
+                    if (container && !container.contains(e.target)) {
+                        moreMenu.close();
+                    }
+                };
+                document.addEventListener('click', moreMenu.handleDocumentClick);
+                
+                moreMenuInstances[testId] = moreMenu;
+                
+                logResult(testId, `更多菜单 ${testId} 初始化成功`);
+            } catch (error) {
+                logResult(testId, `更多菜单 ${testId} 初始化失败: ${error.message}`);
+            }
+        }
+        
+        // 渲染菜单项
+        function renderMenuItems(menuItems) {
+            if (!menuItems || menuItems.length === 0) {
+                return '<div class="product-more-menu-item disabled">暂无操作</div>';
+            }
+
+            return menuItems.map(item => {
+                const disabledClass = item.disabled ? 'disabled' : '';
+                
+                return `
+                    <div class="product-more-menu-item ${disabledClass}" 
+                         data-action="${item.action}">
+                        ${item.icon ? `<div class="svg-icon" data-icon="${item.icon}" data-filled="false"></div>` : ''}
+                        <span>${item.label}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 处理菜单点击
+        function handleMoreMenuClick(action, menuItem, testId) {
+            logResult(testId, `菜单项被点击: ${action}`);
+            
+            switch (action) {
+                case 'show-in-finder':
+                    logResult(testId, '执行: 在 Finder 中显示');
+                    break;
+                case 'visit-temu-link':
+                    logResult(testId, '执行: 访问 TEMU 链接');
+                    break;
+                default:
+                    logResult(testId, `未知操作: ${action}`);
+            }
+        }
+        
+        // 测试基本功能
+        function testBasicFunctionality() {
+            logResult('test1', '开始测试基本功能...');
+            
+            const moreMenu = moreMenuInstances['test1'];
+            if (moreMenu) {
+                logResult('test1', '菜单实例存在');
+                logResult('test1', '当前菜单状态: ' + (moreMenu.isOpen ? '打开' : '关闭'));
+                
+                // 测试打开菜单
+                moreMenu.open();
+                setTimeout(() => {
+                    logResult('test1', '菜单打开后状态: ' + (moreMenu.isOpen ? '打开' : '关闭'));
+                    
+                    // 测试关闭菜单
+                    moreMenu.close();
+                    setTimeout(() => {
+                        logResult('test1', '菜单关闭后状态: ' + (moreMenu.isOpen ? '打开' : '关闭'));
+                        logResult('test1', '基本功能测试完成');
+                    }, 100);
+                }, 100);
+            } else {
+                logResult('test1', '菜单实例不存在');
+            }
+        }
+        
+        // 添加TEMU链接
+        function addTemuLink() {
+            const moreMenu = moreMenuInstances['test2'];
+            if (moreMenu) {
+                moreMenu.menuItems.push({
+                    label: '访问 TEMU 链接',
+                    action: 'visit-temu-link',
+                    icon: 'eye'
+                });
+                
+                // 重新渲染菜单
+                const dropdown = document.getElementById('product-more-menu-dropdown-test2');
+                if (dropdown) {
+                    const content = dropdown.querySelector('.product-more-menu-content');
+                    if (content) {
+                        content.innerHTML = renderMenuItems(moreMenu.menuItems);
+                    }
+                }
+                
+                logResult('test2', 'TEMU链接已添加到菜单');
+            }
+        }
+        
+        // 移除TEMU链接
+        function removeTemuLink() {
+            const moreMenu = moreMenuInstances['test2'];
+            if (moreMenu) {
+                moreMenu.menuItems = moreMenu.menuItems.filter(item => item.action !== 'visit-temu-link');
+                
+                // 重新渲染菜单
+                const dropdown = document.getElementById('product-more-menu-dropdown-test2');
+                if (dropdown) {
+                    const content = dropdown.querySelector('.product-more-menu-content');
+                    if (content) {
+                        content.innerHTML = renderMenuItems(moreMenu.menuItems);
+                    }
+                }
+                
+                logResult('test2', 'TEMU链接已从菜单移除');
+            }
+        }
+        
+        // 测试菜单项
+        function testMenuItems() {
+            const moreMenu = moreMenuInstances['test2'];
+            if (moreMenu) {
+                logResult('test2', `当前菜单项数量: ${moreMenu.menuItems.length}`);
+                moreMenu.menuItems.forEach((item, index) => {
+                    logResult('test2', `菜单项 ${index + 1}: ${item.label} (${item.action})`);
+                });
+            }
+        }
+        
+        // 切换主题
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            logResult('test3', `主题已切换到: ${currentTheme}`);
+            
+            // 验证IconButton颜色
+            setTimeout(() => {
+                verifyIconButtonColors();
+            }, 100);
+        }
+        
+        // 验证IconButton颜色
+        function verifyIconButtonColors() {
+            const iconButtons = document.querySelectorAll('.icon-button');
+            logResult('test3', `找到 ${iconButtons.length} 个IconButton`);
+            
+            iconButtons.forEach((button, index) => {
+                const computedStyle = window.getComputedStyle(button);
+                const color = computedStyle.color;
+                const backgroundColor = computedStyle.backgroundColor;
+                
+                logResult('test3', `IconButton ${index + 1}:`);
+                logResult('test3', `  - 默认状态颜色: ${color}`);
+                logResult('test3', `  - 默认状态背景色: ${backgroundColor}`);
+                
+                // 检查SVG图标颜色
+                const svgIcon = button.querySelector('.svg-icon');
+                if (svgIcon) {
+                    const svgColor = window.getComputedStyle(svgIcon).color;
+                    logResult('test3', `  - SVG图标颜色: ${svgColor}`);
+                }
+                
+                // 验证颜色是否符合规范
+                const expectedColor = currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)';
+                const expectedBgColor = 'rgba(0, 0, 0, 0)';
+                
+                const colorMatch = color.includes('0.5') || color.includes('0.498'); // 允许轻微的颜色差异
+                const bgMatch = backgroundColor.includes('0, 0, 0, 0)') || backgroundColor === 'transparent';
+                
+                logResult('test3', `  - 颜色验证: ${colorMatch ? '✓ 符合' : '✗ 不符合'} (期望: --color-secondary)`);
+                logResult('test3', `  - 背景色验证: ${bgMatch ? '✓ 符合' : '✗ 不符合'} (期望: transparent)`);
+            });
+        }
+        
+        // 测试hover状态
+        function testHoverState() {
+            logResult('test3', '开始测试IconButton hover状态...');
+            
+            const iconButtons = document.querySelectorAll('.icon-button');
+            if (iconButtons.length > 0) {
+                const firstButton = iconButtons[0];
+                
+                // 测试hover状态
+                firstButton.dispatchEvent(new Event('mouseenter'));
+                setTimeout(() => {
+                    const hoverStyle = window.getComputedStyle(firstButton);
+                    const hoverColor = hoverStyle.color;
+                    const hoverBgColor = hoverStyle.backgroundColor;
+                    
+                    logResult('test3', `Hover状态测试:`);
+                    logResult('test3', `  - Hover颜色: ${hoverColor}`);
+                    logResult('test3', `  - Hover背景色: ${hoverBgColor}`);
+                    
+                    // 验证hover状态颜色
+                    const expectedHoverColor = currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+                    const expectedHoverBg = currentTheme === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)';
+                    
+                    const hoverColorMatch = hoverColor.includes('0.8') || hoverColor.includes('0.796'); // 允许轻微的颜色差异
+                    const hoverBgMatch = hoverBgColor.includes('0.1') || hoverBgColor.includes('0.3');
+                    
+                    logResult('test3', `  - Hover颜色验证: ${hoverColorMatch ? '✓ 符合' : '✗ 不符合'} (期望: --color-primary)`);
+                    logResult('test3', `  - Hover背景色验证: ${hoverBgMatch ? '✓ 符合' : '✗ 不符合'} (期望: --color-background-normal)`);
+                    
+                    // 测试active状态
+                    firstButton.dispatchEvent(new Event('mousedown'));
+                    setTimeout(() => {
+                        const activeStyle = window.getComputedStyle(firstButton);
+                        const activeColor = activeStyle.color;
+                        const activeBgColor = activeStyle.backgroundColor;
+                        
+                        logResult('test3', `Active状态测试:`);
+                        logResult('test3', `  - Active颜色: ${activeColor}`);
+                        logResult('test3', `  - Active背景色: ${activeBgColor}`);
+                        
+                        // 恢复状态
+                        firstButton.dispatchEvent(new Event('mouseup'));
+                        firstButton.dispatchEvent(new Event('mouseleave'));
+                        
+                        logResult('test3', 'Hover状态测试完成');
+                    }, 100);
+                }, 100);
+            } else {
+                logResult('test3', '未找到IconButton元素');
+            }
+        }
+        
+        // 记录测试结果
+        function logResult(testId, message) {
+            const resultsContainer = document.getElementById(`test-results-${testId}`);
+            if (resultsContainer) {
+                const timestamp = new Date().toLocaleTimeString();
+                resultsContainer.textContent += `[${timestamp}] ${message}\n`;
+                resultsContainer.scrollTop = resultsContainer.scrollHeight;
+            }
+        }
+        
+        // 清除结果
+        function clearResults() {
+            const resultsContainers = document.querySelectorAll('.test-results');
+            resultsContainers.forEach(container => {
+                container.textContent = '';
+            });
+        }
+    </script>
+</body>
+</html>

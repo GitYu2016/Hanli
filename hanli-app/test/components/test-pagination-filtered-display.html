@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分页组件筛选显示测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .test-description {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .test-controls {
+            margin-bottom: 20px;
+        }
+        
+        .test-btn {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .test-btn:hover {
+            background: #0056CC;
+        }
+        
+        .test-result {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        
+        .success {
+            color: #28a745;
+        }
+        
+        .error {
+            color: #dc3545;
+        }
+        
+        .info {
+            color: #17a2b8;
+        }
+        
+        #pagination-container {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>分页组件筛选显示测试</h1>
+        
+        <div class="test-section">
+            <div class="test-title">测试说明</div>
+            <div class="test-description">
+                此测试验证分页组件能够正确显示：
+                <br>1. 全局产品总数（主要显示）
+                <br>2. 当前筛选结果数量（当有筛选时显示）
+                <br>3. 分页控件根据筛选结果正确计算页数
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">测试控制</div>
+            <div class="test-controls">
+                <button class="test-btn" onclick="testGlobalCount()">测试全局总数</button>
+                <button class="test-btn" onclick="testWithFilter()">测试带筛选</button>
+                <button class="test-btn" onclick="testNoFilter()">测试无筛选</button>
+                <button class="test-btn" onclick="testLargeFilter()">测试大量筛选</button>
+                <button class="test-btn" onclick="clearTest()">清除测试</button>
+            </div>
+            <div id="test-result" class="test-result">点击上方按钮开始测试...</div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">分页组件显示</div>
+            <div id="pagination-container"></div>
+        </div>
+    </div>
+
+    <!-- 引入必要的依赖 -->
+    <script src="../../renderer/components/Common/StyleManager.js"></script>
+    <script src="../../renderer/components/Common/Pagination.js"></script>
+    
+    <script>
+        let testPagination = null;
+        
+        // 初始化测试
+        function initTest() {
+            if (!testPagination) {
+                testPagination = new Pagination('pagination-container');
+                logResult('✓ 分页组件初始化成功');
+            }
+        }
+        
+        // 记录测试结果
+        function logResult(message, type = 'info') {
+            const resultEl = document.getElementById('test-result');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            resultEl.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            resultEl.scrollTop = resultEl.scrollHeight;
+        }
+        
+        // 测试全局总数显示
+        function testGlobalCount() {
+            initTest();
+            logResult('🧪 测试全局总数显示...');
+            
+            testPagination.updatePagination({
+                totalItems: 1000,
+                currentPage: 1,
+                itemsPerPage: 100
+            });
+            
+            const data = testPagination.getPaginationData();
+            logResult(`✓ 全局总数: ${data.totalItems}, 总页数: ${data.totalPages}`, 'success');
+        }
+        
+        // 测试带筛选的情况
+        function testWithFilter() {
+            initTest();
+            logResult('🧪 测试带筛选的情况...');
+            
+            testPagination.updatePagination({
+                totalItems: 1000,        // 全局总数
+                filteredItems: 250,      // 筛选后数量
+                currentPage: 1,
+                itemsPerPage: 50
+            });
+            
+            const data = testPagination.getPaginationData();
+            logResult(`✓ 全局总数: ${data.totalItems}, 筛选后: ${data.filteredItems}, 总页数: ${data.totalPages}`, 'success');
+        }
+        
+        // 测试无筛选的情况
+        function testNoFilter() {
+            initTest();
+            logResult('🧪 测试无筛选的情况...');
+            
+            testPagination.updatePagination({
+                totalItems: 500,
+                filteredItems: null,     // 无筛选
+                currentPage: 2,
+                itemsPerPage: 25
+            });
+            
+            const data = testPagination.getPaginationData();
+            logResult(`✓ 全局总数: ${data.totalItems}, 筛选后: ${data.filteredItems}, 总页数: ${data.totalPages}`, 'success');
+        }
+        
+        // 测试大量筛选的情况
+        function testLargeFilter() {
+            initTest();
+            logResult('🧪 测试大量筛选的情况...');
+            
+            testPagination.updatePagination({
+                totalItems: 10000,      // 全局总数很大
+                filteredItems: 15,      // 筛选后很少
+                currentPage: 1,
+                itemsPerPage: 10
+            });
+            
+            const data = testPagination.getPaginationData();
+            logResult(`✓ 全局总数: ${data.totalItems}, 筛选后: ${data.filteredItems}, 总页数: ${data.totalPages}`, 'success');
+        }
+        
+        // 清除测试
+        function clearTest() {
+            if (testPagination) {
+                testPagination.destroy();
+                testPagination = null;
+            }
+            document.getElementById('pagination-container').innerHTML = '';
+            document.getElementById('test-result').innerHTML = '测试已清除，点击上方按钮开始新测试...';
+        }
+        
+        // 页面加载完成后自动初始化
+        window.addEventListener('load', () => {
+            logResult('🚀 测试页面加载完成，可以开始测试');
+        });
+    </script>
+</body>
+</html>

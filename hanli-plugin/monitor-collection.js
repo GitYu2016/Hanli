@@ -888,9 +888,9 @@ class MonitorCollectionManager {
         this.progressFillEl.style.width = progress + '%';
         
         if (this.isCollecting) {
-            this.progressTextEl.textContent = `采集中... ${completed}/${total}`;
+            this.progressTextEl.textContent = `${completed}/${total}`;
         } else if (completed === total && total > 0) {
-            this.progressTextEl.textContent = `采集完成 ${completed}/${total}`;
+            this.progressTextEl.textContent = `${completed}/${total}`;
         } else {
             this.progressTextEl.textContent = `准备就绪 ${completed}/${total}`;
         }

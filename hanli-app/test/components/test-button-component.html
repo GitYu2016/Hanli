@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试Button组件</title>
+    <link rel="stylesheet" href="../renderer/globals.css">
+    <link rel="stylesheet" href="../renderer/theme/light/colors.css" id="theme-colors">
+    <link rel="stylesheet" href="../renderer/icons-sprite.css">
+    <script src="../renderer/config.js"></script>
+    <script src="../renderer/components/Common/Button.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            background: var(--color-card);
+            border-radius: var(--radius-medium);
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid var(--color-border);
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--color-text-primary);
+        }
+        
+        .test-description {
+            color: var(--color-text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        
+        .button-demo {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .demo-group {
+            margin-bottom: 24px;
+        }
+        
+        .demo-group-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .test-result {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: var(--radius-small);
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .test-result.success {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            color: #0c4a6e;
+        }
+        
+        .test-result.error {
+            background: #fef2f2;
+            border: 1px solid #ef4444;
+            color: #991b1b;
+        }
+        
+        .test-result.info {
+            background: #f8fafc;
+            border: 1px solid #64748b;
+            color: #334155;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Button组件测试</h1>
+        
+        <!-- 主题切换按钮 -->
+        <div class="theme-toggle">
+            <button id="theme-toggle-btn" class="btn btn-m btn-secondary">
+                <i class="ph ph-gear btn-icon"></i>
+                <span class="btn-text">切换主题</span>
+            </button>
+        </div>
+        
+        <!-- 按钮尺寸测试 -->
+        <div class="test-section">
+            <div class="test-title">按钮尺寸 (L, M, S)</div>
+            <div class="test-description">
+                测试三种不同尺寸的按钮：大(L)、中(M)、小(S)
+            </div>
+            <div class="demo-group">
+                <div class="demo-group-title">主要按钮</div>
+                <div class="button-demo">
+                    <div id="btn-large-primary"></div>
+                    <div id="btn-medium-primary"></div>
+                    <div id="btn-small-primary"></div>
+                </div>
+            </div>
+            <div class="demo-group">
+                <div class="demo-group-title">次要按钮</div>
+                <div class="button-demo">
+                    <div id="btn-large-secondary"></div>
+                    <div id="btn-medium-secondary"></div>
+                    <div id="btn-small-secondary"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 按钮类型测试 -->
+        <div class="test-section">
+            <div class="test-title">按钮类型</div>
+            <div class="test-description">
+                测试不同类型的按钮：主要、次要、成功、警告、错误
+            </div>
+            <div class="demo-group">
+                <div class="demo-group-title">所有类型</div>
+                <div class="button-demo">
+                    <div id="btn-primary"></div>
+                    <div id="btn-secondary"></div>
+                    <div id="btn-success"></div>
+                    <div id="btn-warning"></div>
+                    <div id="btn-error"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 按钮状态测试 -->
+        <div class="test-section">
+            <div class="test-title">按钮状态</div>
+            <div class="test-description">
+                测试按钮的不同状态：正常、禁用、加载中
+            </div>
+            <div class="demo-group">
+                <div class="demo-group-title">状态演示</div>
+                <div class="button-demo">
+                    <div id="btn-normal"></div>
+                    <div id="btn-disabled"></div>
+                    <div id="btn-loading"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 带图标的按钮 -->
+        <div class="test-section">
+            <div class="test-title">带图标的按钮</div>
+            <div class="test-description">
+                测试带有不同图标的按钮
+            </div>
+            <div class="demo-group">
+                <div class="demo-group-title">图标按钮</div>
+                <div class="button-demo">
+                    <div id="btn-with-icon"></div>
+                    <div id="btn-only-icon"></div>
+                    <div id="btn-loading-icon"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 按钮组测试 -->
+        <div class="test-section">
+            <div class="test-title">按钮组</div>
+            <div class="test-description">
+                测试按钮组和工具栏布局
+            </div>
+            <div class="demo-group">
+                <div class="demo-group-title">按钮组</div>
+                <div class="btn-group" id="button-group"></div>
+            </div>
+            <div class="demo-group">
+                <div class="demo-group-title">按钮工具栏</div>
+                <div class="btn-toolbar" id="button-toolbar"></div>
+            </div>
+        </div>
+        
+        <!-- 动态测试 -->
+        <div class="test-section">
+            <div class="test-title">动态测试</div>
+            <div class="test-description">
+                测试按钮的动态更新功能
+            </div>
+            <div class="button-demo">
+                <div id="dynamic-btn"></div>
+                <button class="btn btn-m btn-secondary" onclick="testDynamicUpdate()">更新按钮</button>
+                <button class="btn btn-m btn-warning" onclick="testLoadingState()">测试加载状态</button>
+            </div>
+        </div>
+        
+        <!-- 测试结果 -->
+        <div class="test-section">
+            <div class="test-title">测试结果</div>
+            <div id="test-results" class="test-result info">等待测试...</div>
+        </div>
+    </div>
+
+    <script>
+        let currentTheme = 'light';
+        let dynamicButton = null;
+        
+        // 初始化测试
+        function initTest() {
+            logResult('info', '开始初始化Button组件测试...');
+            
+            // 测试按钮尺寸
+            testButtonSizes();
+            
+            // 测试按钮类型
+            testButtonTypes();
+            
+            // 测试按钮状态
+            testButtonStates();
+            
+            // 测试带图标的按钮
+            testButtonsWithIcons();
+            
+            // 测试按钮组
+            testButtonGroups();
+            
+            // 测试动态按钮
+            testDynamicButton();
+            
+            // 设置主题切换
+            setupThemeToggle();
+            
+            logResult('success', 'Button组件测试初始化完成！');
+        }
+        
+        // 测试按钮尺寸
+        function testButtonSizes() {
+            // 主要按钮
+            document.getElementById('btn-large-primary').appendChild(
+                buttonInstance.large({ text: '大按钮', type: 'primary' })
+            );
+            document.getElementById('btn-medium-primary').appendChild(
+                buttonInstance.medium({ text: '中按钮', type: 'primary' })
+            );
+            document.getElementById('btn-small-primary').appendChild(
+                buttonInstance.small({ text: '小按钮', type: 'primary' })
+            );
+            
+            // 次要按钮
+            document.getElementById('btn-large-secondary').appendChild(
+                buttonInstance.large({ text: '大按钮', type: 'secondary' })
+            );
+            document.getElementById('btn-medium-secondary').appendChild(
+                buttonInstance.medium({ text: '中按钮', type: 'secondary' })
+            );
+            document.getElementById('btn-small-secondary').appendChild(
+                buttonInstance.small({ text: '小按钮', type: 'secondary' })
+            );
+        }
+        
+        // 测试按钮类型
+        function testButtonTypes() {
+            document.getElementById('btn-primary').appendChild(
+                buttonInstance.primary({ text: '主要按钮' })
+            );
+            document.getElementById('btn-secondary').appendChild(
+                buttonInstance.secondary({ text: '次要按钮' })
+            );
+            document.getElementById('btn-success').appendChild(
+                buttonInstance.success({ text: '成功按钮' })
+            );
+            document.getElementById('btn-warning').appendChild(
+                buttonInstance.warning({ text: '警告按钮' })
+            );
+            document.getElementById('btn-error').appendChild(
+                buttonInstance.error({ text: '错误按钮' })
+            );
+        }
+        
+        // 测试按钮状态
+        function testButtonStates() {
+            document.getElementById('btn-normal').appendChild(
+                buttonInstance.medium({ text: '正常按钮', type: 'primary' })
+            );
+            document.getElementById('btn-disabled').appendChild(
+                buttonInstance.medium({ text: '禁用按钮', type: 'primary', disabled: true })
+            );
+            document.getElementById('btn-loading').appendChild(
+                buttonInstance.medium({ text: '加载按钮', type: 'primary', loading: true })
+            );
+        }
+        
+        // 测试带图标的按钮
+        function testButtonsWithIcons() {
+            document.getElementById('btn-with-icon').appendChild(
+                buttonInstance.medium({ 
+                    text: '带图标', 
+                    type: 'primary', 
+                    icon: 'ph-package' 
+                })
+            );
+            document.getElementById('btn-only-icon').appendChild(
+                buttonInstance.medium({ 
+                    text: '', 
+                    type: 'secondary', 
+                    icon: 'ph-gear' 
+                })
+            );
+            document.getElementById('btn-loading-icon').appendChild(
+                buttonInstance.medium({ 
+                    text: '加载中', 
+                    type: 'success', 
+                    loading: true 
+                })
+            );
+        }
+        
+        // 测试按钮组
+        function testButtonGroups() {
+            const group = document.getElementById('button-group');
+            group.appendChild(buttonInstance.small({ text: '保存', type: 'success' }));
+            group.appendChild(buttonInstance.small({ text: '取消', type: 'secondary' }));
+            group.appendChild(buttonInstance.small({ text: '删除', type: 'error' }));
+            
+            const toolbar = document.getElementById('button-toolbar');
+            toolbar.appendChild(buttonInstance.medium({ text: '新建', type: 'primary', icon: 'ph-plus' }));
+            toolbar.appendChild(buttonInstance.medium({ text: '编辑', type: 'secondary', icon: 'ph-pencil' }));
+            toolbar.appendChild(buttonInstance.medium({ text: '删除', type: 'error', icon: 'ph-trash' }));
+            toolbar.appendChild(buttonInstance.medium({ text: '刷新', type: 'warning', icon: 'ph-arrow-clockwise' }));
+        }
+        
+        // 测试动态按钮
+        function testDynamicButton() {
+            dynamicButton = buttonInstance.medium({ 
+                text: '动态按钮', 
+                type: 'primary',
+                onClick: () => logResult('info', '动态按钮被点击了！')
+            });
+            document.getElementById('dynamic-btn').appendChild(dynamicButton);
+        }
+        
+        // 设置主题切换
+        function setupThemeToggle() {
+            const themeBtn = document.getElementById('theme-toggle-btn');
+            themeBtn.addEventListener('click', toggleTheme);
+        }
+        
+        // 切换主题
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            
+            // 更新主题CSS文件
+            const themeLink = document.getElementById('theme-colors');
+            themeLink.href = `../renderer/theme/${currentTheme}/colors.css`;
+            
+            logResult('info', `主题已切换到: ${currentTheme}`);
+        }
+        
+        // 测试动态更新
+        function testDynamicUpdate() {
+            if (dynamicButton) {
+                const texts = ['动态按钮', '已更新', '再次更新', '最终状态'];
+                const types = ['primary', 'success', 'warning', 'error'];
+                const icons = ['ph-package', 'ph-gear', 'ph-star', 'ph-heart'];
+                
+                const randomIndex = Math.floor(Math.random() * texts.length);
+                
+                buttonInstance.update(dynamicButton, {
+                    text: texts[randomIndex],
+                    type: types[randomIndex],
+                    icon: icons[randomIndex]
+                });
+                
+                logResult('info', `按钮已更新: ${texts[randomIndex]}`);
+            }
+        }
+        
+        // 测试加载状态
+        function testLoadingState() {
+            if (dynamicButton) {
+                // 开始加载
+                buttonInstance.update(dynamicButton, { loading: true });
+                logResult('info', '按钮开始加载...');
+                
+                // 2秒后停止加载
+                setTimeout(() => {
+                    buttonInstance.update(dynamicButton, { loading: false });
+                    logResult('success', '按钮加载完成！');
+                }, 2000);
+            }
+        }
+        
+        // 记录测试结果
+        function logResult(type, message) {
+            const resultsDiv = document.getElementById('test-results');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n\n`;
+            
+            resultsDiv.textContent += logEntry;
+            resultsDiv.className = `test-result ${type}`;
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            logResult('info', 'Button组件测试页面已加载');
+            initTest();
+        });
+    </script>
+</body>
+</html>

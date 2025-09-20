@@ -1,15 +1,95 @@
 /**
  * TopBar 组件
  * 负责顶部导航栏的渲染和交互逻辑
+ * 样式定义在JavaScript中，通过StyleManager管理
  */
 class TopBar {
     constructor() {
         this.tabManager = null;
+        this.topBarTabs = null;
         this.settingsCallback = null;
         this.tabSwitchCallback = null;
         this.searchModal = null;
         this.searchCallback = null;
+        this.initStyles();
         this.init();
+    }
+
+    /**
+     * 初始化TopBar样式
+     */
+    initStyles() {
+        // 确保StyleManager已加载
+        if (typeof window.styleManager === 'undefined') {
+            console.error('StyleManager未加载，请确保已引入StyleManager.js');
+            return;
+        }
+
+        // 定义TopBar样式
+        const topBarStyles = {
+            // TopBar容器
+            '.top-bar': {
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'space-between',
+                'height': '56px',
+                'border-bottom': '1px solid var(--color-border-normal)',
+                'padding': '0 20px 0 68px',
+                'position': 'relative',
+                'z-index': '1000',
+                'user-select': 'none'
+            },
+
+            // TopBar左侧
+            '.top-bar-left': {
+                'display': 'flex',
+                'align-items': 'center',
+                'flex-shrink': '0'
+            },
+
+            // Logo
+            '.top-bar .logo': {
+                'font-size': '20px',
+                'font-weight': '700',
+                'color': 'var(--color-primary)',
+                'letter-spacing': '-0.5px'
+            },
+
+            // TopBar中间
+            '.top-bar-center': {
+                'display': 'flex',
+                'align-items': 'center',
+                'flex': '1',
+                'justify-content': 'center',
+                'gap': '8px',
+                'height': '100%'
+            },
+
+
+
+            // TopBar右侧
+            '.top-bar-right': {
+                'display': 'flex',
+                'align-items': 'center',
+                'gap': '12px',
+                'flex-shrink': '0'
+            },
+
+
+
+            // 响应式设计
+            '@media (max-width: 768px)': {
+                '.top-bar': {
+                    'padding': '0 16px'
+                },
+                '.top-bar-center': {
+                    'gap': '8px'
+                },
+            }
+        };
+
+        // 注册样式到StyleManager
+        window.styleManager.defineStyles('TopBar', topBarStyles);
     }
 
     /**
@@ -26,6 +106,21 @@ class TopBar {
      */
     setTabManager(tabManager) {
         this.tabManager = tabManager;
+        
+        // 初始化TopBarTabs组件
+        if (typeof TopBarTabs !== 'undefined') {
+            this.topBarTabs = new TopBarTabs({
+                containerId: 'top-bar-tabs'
+            });
+            this.topBarTabs.setTabManager(tabManager);
+            this.topBarTabs.setTabSwitchCallback((tab) => {
+                if (this.tabSwitchCallback) {
+                    this.tabSwitchCallback(tab);
+                }
+            });
+        } else {
+            console.error('TopBarTabs component not found');
+        }
     }
 
     /**
@@ -62,16 +157,16 @@ class TopBar {
                     <div class="logo">Hanli</div>
                 </div>
                 <div class="top-bar-center">
-                    <div class="search-icon" id="search-btn">
-                        <i class="ph ph-magnifying-glass"></i>
+                    <div id="search-btn">
+                        ${window.iconButtonInstance.render('search', { title: '搜索' })}
                     </div>
                     <div id="top-bar-tabs" class="top-bar-tabs">
                         <!-- Tabs will be dynamically rendered here -->
                     </div>
                 </div>
                 <div class="top-bar-right">
-                    <div class="settings-icon" id="settings-btn">
-                        <i class="ph ph-gear"></i>
+                    <div id="settings-btn">
+                        ${window.iconButtonInstance.render('settings', { title: '设置' })}
                     </div>
                 </div>
             </div>
@@ -80,11 +175,17 @@ class TopBar {
         // 查找现有的top-bar元素并替换
         const existingTopBar = document.getElementById('top-bar');
         if (existingTopBar) {
+            // 直接替换整个元素
             existingTopBar.outerHTML = topBarHTML;
         } else {
             // 如果不存在，插入到body开始处
             document.body.insertAdjacentHTML('afterbegin', topBarHTML);
         }
+        
+        // 绑定事件监听器 - 使用setTimeout确保DOM更新完成
+        setTimeout(() => {
+            this.bindEvents();
+        }, 0);
     }
 
     /**
@@ -94,19 +195,25 @@ class TopBar {
         // 设置按钮点击事件
         const settingsBtn = document.getElementById('settings-btn');
         if (settingsBtn) {
-            settingsBtn.addEventListener('click', () => {
-                if (this.settingsCallback) {
-                    this.settingsCallback();
-                }
-            });
+            const button = settingsBtn.querySelector('.icon-button');
+            if (button) {
+                button.addEventListener('click', () => {
+                    if (this.settingsCallback) {
+                        this.settingsCallback();
+                    }
+                });
+            }
         }
 
         // 搜索按钮点击事件
         const searchBtn = document.getElementById('search-btn');
         if (searchBtn) {
-            searchBtn.addEventListener('click', () => {
-                this.openSearchModal();
-            });
+            const button = searchBtn.querySelector('.icon-button');
+            if (button) {
+                button.addEventListener('click', () => {
+                    this.openSearchModal();
+                });
+            }
         }
 
         // 检测运行环境
@@ -130,165 +237,54 @@ class TopBar {
     }
 
     /**
-     * 渲染Tabs
+     * 渲染Tabs - 委托给TopBarTabs组件
      */
     renderTabs() {
-        if (!this.tabManager) {
-            console.warn('TabManager not set for TopBar');
-            return;
+        if (this.topBarTabs) {
+            this.topBarTabs.renderTabs();
         }
-
-        const tabsContainer = document.getElementById('top-bar-tabs');
-        if (!tabsContainer) return;
-
-        tabsContainer.innerHTML = '';
-
-        this.tabManager.tabs.forEach(tab => {
-            const tabElement = this.createTabElement(tab);
-            tabsContainer.appendChild(tabElement);
-        });
     }
 
     /**
-     * 创建Tab元素
-     * @param {Object} tab - Tab数据对象
-     * @returns {HTMLElement} Tab元素
-     */
-    createTabElement(tab) {
-        const tabDiv = document.createElement('div');
-        const isSingleTab = this.tabManager.tabs.length === 1;
-        const isNotClosable = !tab.closable;
-        const closableClass = isNotClosable ? 'not-closable' : '';
-        
-        tabDiv.className = `tab ${tab.isActive ? 'active' : ''} ${isSingleTab ? 'single-tab' : ''} ${closableClass}`;
-        tabDiv.dataset.tabId = tab.id;
-        tabDiv.dataset.pageType = tab.pageType;
-
-        const icon = this.getPageIcon(tab.pageType);
-        
-        tabDiv.innerHTML = `
-            <div class="tab-icon">${icon}</div>
-            <div class="tab-text">${tab.title}</div>
-            <div class="tab-close">
-                <i class="ph ph-x"></i>
-            </div>
-        `;
-
-        // 添加点击事件
-        tabDiv.addEventListener('click', (e) => {
-            // 检查是否点击了关闭按钮或其子元素
-            if (e.target.closest('.tab-close')) {
-                e.stopPropagation();
-                // 只有可关闭的Tab才能被关闭
-                if (tab.closable) {
-                    this.closeTab(tab.id);
-                }
-            } else {
-                this.switchTab(tab.id);
-            }
-        });
-
-        return tabDiv;
-    }
-
-    /**
-     * 获取页面图标
-     * @param {string} pageType - 页面类型
-     * @returns {string} 图标HTML
-     */
-    getPageIcon(pageType) {
-        const PAGE_ICONS = {
-            home: `<i class="ph ph-house"></i>`,
-            productDetail: `<i class="ph ph-image"></i>`,
-            goodsList: `<i class="ph ph-package"></i>`
-        };
-        return PAGE_ICONS[pageType] || PAGE_ICONS.home;
-    }
-
-    /**
-     * 切换Tab
+     * 切换Tab - 委托给TopBarTabs组件
      * @param {string} tabId - Tab ID
      */
     switchTab(tabId) {
-        if (!this.tabManager) return;
-
-        this.tabManager.setActiveTab(tabId);
-        this.renderTabs();
-        
-        // 触发TabManager的onTabSwitch方法，这会触发tabSwitch事件
-        const tab = this.tabManager.tabs.find(t => t.id === tabId);
-        if (tab) {
-            this.tabManager.onTabSwitch(tab);
+        if (this.topBarTabs) {
+            this.topBarTabs.switchTab(tabId);
         }
     }
 
     /**
-     * 关闭Tab
+     * 关闭Tab - 委托给TopBarTabs组件
      * @param {string} tabId - Tab ID
      */
     closeTab(tabId) {
-        if (!this.tabManager) return;
-
-        const tabIndex = this.tabManager.tabs.findIndex(tab => tab.id === tabId);
-        if (tabIndex === -1) return;
-
-        const isActiveTab = this.tabManager.tabs[tabIndex].isActive;
-        
-        // 添加关闭动画
-        const tabElement = document.querySelector(`[data-tab-id="${tabId}"]`);
-        if (tabElement) {
-            tabElement.style.transform = 'scale(0.8)';
-            tabElement.style.opacity = '0';
-            
-            setTimeout(() => {
-                this.tabManager.closeTab(tabId);
-                this.renderTabs();
-                
-                // 如果关闭的是活动Tab，需要触发页面切换
-                if (isActiveTab && this.tabManager.tabs.length > 0) {
-                    const newActiveTab = this.tabManager.tabs[Math.max(0, tabIndex - 1)];
-                    this.tabManager.onTabSwitch(newActiveTab);
-                }
-            }, 200);
-        } else {
-            // 如果找不到元素，直接执行关闭逻辑
-            this.tabManager.closeTab(tabId);
-            this.renderTabs();
-            
-            // 如果关闭的是活动Tab，需要触发页面切换
-            if (isActiveTab && this.tabManager.tabs.length > 0) {
-                const newActiveTab = this.tabManager.tabs[Math.max(0, tabIndex - 1)];
-                this.tabManager.onTabSwitch(newActiveTab);
-            }
+        if (this.topBarTabs) {
+            this.topBarTabs.closeTab(tabId);
         }
     }
 
     /**
-     * 更新Tab状态
+     * 更新Tab状态 - 委托给TopBarTabs组件
      * @param {string} tabId - Tab ID
      * @param {boolean} isActive - 是否激活
      */
     updateTabState(tabId, isActive) {
-        const tabElement = document.querySelector(`[data-tab-id="${tabId}"]`);
-        if (tabElement) {
-            if (isActive) {
-                tabElement.classList.add('active');
-            } else {
-                tabElement.classList.remove('active');
-            }
+        if (this.topBarTabs) {
+            this.topBarTabs.updateTabState(tabId, isActive);
         }
     }
 
     /**
-     * 添加新Tab
+     * 添加新Tab - 委托给TopBarTabs组件
      * @param {Object} tabData - Tab数据
      */
     addTab(tabData) {
-        if (!this.tabManager) return;
-
-        const tabId = this.tabManager.addTab(tabData);
-        this.renderTabs();
-        return tabId;
+        if (this.topBarTabs) {
+            return this.topBarTabs.addTab(tabData);
+        }
+        return null;
     }
 
     /**
@@ -321,7 +317,6 @@ class TopBar {
             this.searchCallback(query);
         } else {
             // 默认搜索逻辑 - 可以在这里添加产品搜索功能
-            console.log('搜索关键词:', query);
             await this.performDefaultSearch(query);
         }
     }
@@ -405,11 +400,11 @@ class TopBar {
             searchBtn.replaceWith(searchBtn.cloneNode(true));
         }
 
-        // 清理Tab事件监听器
-        const tabElements = document.querySelectorAll('.tab');
-        tabElements.forEach(tab => {
-            tab.replaceWith(tab.cloneNode(true));
-        });
+        // 清理TopBarTabs组件
+        if (this.topBarTabs) {
+            this.topBarTabs.destroy();
+            this.topBarTabs = null;
+        }
 
         // 清理搜索弹窗
         if (this.searchModal) {

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bold样式图标测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .test-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        
+        .test-section h2 {
+            color: #555;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .icon-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fafafa;
+        }
+        
+        .icon-item .icon {
+            margin-right: 15px;
+        }
+        
+        .icon-item .label {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .style-comparison {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .style-item {
+            text-align: center;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+        
+        .style-item h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bold样式图标测试</h1>
+        
+        <div id="status" class="status info">
+            正在初始化图标系统...
+        </div>
+        
+        <div class="test-section">
+            <h2>样式对比测试</h2>
+            <div class="style-comparison">
+                <div class="style-item">
+                    <h3>Regular</h3>
+                    <div id="regular-icons"></div>
+                </div>
+                <div class="style-item">
+                    <h3>Fill</h3>
+                    <div id="fill-icons"></div>
+                </div>
+                <div class="style-item">
+                    <h3>Bold</h3>
+                    <div id="bold-icons"></div>
+                </div>
+                <div class="style-item">
+                    <h3>Duotone</h3>
+                    <div id="duotone-icons"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>侧边栏图标测试 (Bold样式)</h2>
+            <div id="sidebar-icons" class="icon-grid">
+                <!-- 侧边栏图标将通过JavaScript动态加载 -->
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Tabs图标测试 (Bold样式)</h2>
+            <div id="tabs-icons" class="icon-grid">
+                <!-- Tabs图标将通过JavaScript动态加载 -->
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>常用图标测试 (Bold样式)</h2>
+            <div id="common-icons" class="icon-grid">
+                <!-- 常用图标将通过JavaScript动态加载 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入Icon组件 -->
+    <script src="./components/Common/Icon.js"></script>
+    
+    <script>
+        // 测试用的图标列表
+        const testIcons = [
+            'home', 'package', 'settings', 'search', 'download', 'copy',
+            'eye', 'warning', 'check-circle', 'x', 'minus', 'arrows-out',
+            'arrow-clockwise', 'dots-three-vertical', 'image', 'info',
+            'spinner', 'warning-circle', 'caret-left', 'caret-right',
+            'help', 'success', 'error', 'loading', 'sun', 'moon'
+        ];
+        
+        // 侧边栏常用图标
+        const sidebarIcons = ['house', 'package', 'gear', 'magnifying-glass'];
+        
+        // Tabs常用图标
+        const tabsIcons = ['house', 'image', 'package', 'x'];
+        
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+        
+        // 测试样式对比
+        async function testStyleComparison() {
+            try {
+                const styles = ['regular', 'fill', 'bold', 'duotone'];
+                const testIcon = 'house';
+                
+                for (const style of styles) {
+                    const container = document.getElementById(`${style}-icons`);
+                    const iconHtml = await Icon.render(testIcon, { 
+                        size: 'large', 
+                        style: style,
+                        filled: style === 'fill'
+                    });
+                    
+                    const iconItem = document.createElement('div');
+                    iconItem.className = 'icon-item';
+                    iconItem.innerHTML = `
+                        <div class="icon">${iconHtml}</div>
+                        <div class="label">${testIcon}</div>
+                    `;
+                    container.appendChild(iconItem);
+                }
+                
+            } catch (error) {
+                console.error('样式对比测试错误:', error);
+            }
+        }
+        
+        // 测试侧边栏图标
+        async function testSidebarIcons() {
+            try {
+                const container = document.getElementById('sidebar-icons');
+                
+                for (const iconName of sidebarIcons) {
+                    const iconHtml = await Icon.render(iconName, { 
+                        size: 'large', 
+                        style: 'bold' 
+                    });
+                    
+                    const iconItem = document.createElement('div');
+                    iconItem.className = 'icon-item';
+                    iconItem.innerHTML = `
+                        <div class="icon">${iconHtml}</div>
+                        <div class="label">${iconName} (Bold)</div>
+                    `;
+                    container.appendChild(iconItem);
+                }
+                
+            } catch (error) {
+                console.error('侧边栏图标测试错误:', error);
+            }
+        }
+        
+        // 测试Tabs图标
+        async function testTabsIcons() {
+            try {
+                const container = document.getElementById('tabs-icons');
+                
+                for (const iconName of tabsIcons) {
+                    const iconHtml = await Icon.render(iconName, { 
+                        size: 'large', 
+                        style: 'bold' 
+                    });
+                    
+                    const iconItem = document.createElement('div');
+                    iconItem.className = 'icon-item';
+                    iconItem.innerHTML = `
+                        <div class="icon">${iconHtml}</div>
+                        <div class="label">${iconName} (Bold)</div>
+                    `;
+                    container.appendChild(iconItem);
+                }
+                
+            } catch (error) {
+                console.error('Tabs图标测试错误:', error);
+            }
+        }
+        
+        // 测试常用图标
+        async function testCommonIcons() {
+            try {
+                const container = document.getElementById('common-icons');
+                
+                for (const iconName of testIcons.slice(0, 12)) {
+                    const iconHtml = await Icon.render(iconName, { 
+                        size: 'large', 
+                        style: 'bold' 
+                    });
+                    
+                    const iconItem = document.createElement('div');
+                    iconItem.className = 'icon-item';
+                    iconItem.innerHTML = `
+                        <div class="icon">${iconHtml}</div>
+                        <div class="label">${iconName} (Bold)</div>
+                    `;
+                    container.appendChild(iconItem);
+                }
+                
+            } catch (error) {
+                console.error('常用图标测试错误:', error);
+            }
+        }
+        
+        // 页面加载完成后运行测试
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // 初始化图标系统
+                Icon.init();
+                
+                updateStatus('正在运行Bold样式图标测试...', 'info');
+                
+                // 运行所有测试
+                await Promise.all([
+                    testStyleComparison(),
+                    testSidebarIcons(),
+                    testTabsIcons(),
+                    testCommonIcons()
+                ]);
+                
+                updateStatus('Bold样式图标测试完成！', 'success');
+                
+            } catch (error) {
+                updateStatus(`测试失败: ${error.message}`, 'error');
+                console.error('测试错误:', error);
+            }
+        });
+    </script>
+</body>
+</html>

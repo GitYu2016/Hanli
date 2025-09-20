@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置页面简单测试</title>
+    
+    <!-- 引入主题样式 -->
+    <link rel="stylesheet" href="../../renderer/theme/light/colors.css" id="theme-colors">
+    <link rel="stylesheet" href="../../renderer/globals.css">
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-body-bg-default);
+            color: var(--color-primary);
+        }
+        
+        .test-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .test-header {
+            padding: 16px 24px;
+            background: var(--color-background-normal);
+            border-bottom: 1px solid var(--color-border-normal);
+            text-align: center;
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .test-content {
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        /* 设置页面样式 */
+        .settings-page {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--color-body-bg-default);
+        }
+        
+        .settings-container {
+            flex: 1;
+            display: flex;
+            min-height: 0;
+        }
+        
+        .settings-sidebar {
+            width: 240px;
+            background: var(--color-background-normal);
+            border-right: 1px solid var(--color-border-normal);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid var(--color-border-normal);
+        }
+        
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin: 0;
+        }
+        
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 0;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--color-secondary);
+            border-left: 3px solid transparent;
+        }
+        
+        .nav-item:hover {
+            background: var(--color-background-focused);
+            color: var(--color-primary);
+        }
+        
+        .nav-item.active {
+            background: var(--color-background-focused);
+            color: var(--color-focused);
+            border-left-color: var(--color-info);
+        }
+        
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            background: var(--color-secondary);
+            border-radius: 2px;
+        }
+        
+        .nav-item.active .nav-icon {
+            background: var(--color-focused);
+        }
+        
+        .nav-label {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .settings-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 24px 32px;
+            overflow-y: auto;
+        }
+        
+        .content-header {
+            margin-bottom: 32px;
+        }
+        
+        .content-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin: 0 0 8px 0;
+        }
+        
+        .content-description {
+            font-size: 14px;
+            color: var(--color-secondary);
+            margin: 0;
+        }
+        
+        .content-body {
+            flex: 1;
+            margin-bottom: 32px;
+        }
+        
+        .content-footer {
+            padding-top: 24px;
+            border-top: 1px solid var(--color-border-normal);
+        }
+        
+        .settings-section {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+        
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .group-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin: 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--color-border-normal);
+        }
+        
+        .setting-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 16px 0;
+        }
+        
+        .setting-label {
+            min-width: 120px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-primary);
+            margin: 0;
+            padding-top: 8px;
+        }
+        
+        .setting-control {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .setting-description {
+            font-size: 12px;
+            color: var(--color-secondary);
+            margin: 0;
+        }
+        
+        .setting-select {
+            padding: 8px 12px;
+            border: 1px solid var(--color-border-normal);
+            border-radius: 6px;
+            background: var(--color-background-normal);
+            color: var(--color-primary);
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        
+        .setting-select:focus {
+            outline: none;
+            border-color: var(--color-info);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid var(--color-border-normal);
+            border-radius: 6px;
+            background: var(--color-background-normal);
+            color: var(--color-primary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn:hover {
+            background: var(--color-background-focused);
+        }
+        
+        .btn-primary {
+            background: var(--color-info);
+            color: white;
+            border-color: var(--color-info);
+        }
+        
+        .btn-primary:hover {
+            background: var(--color-info);
+            opacity: 0.9;
+        }
+        
+        .btn-secondary {
+            background: var(--color-background-normal);
+            color: var(--color-primary);
+            border: 1px solid var(--color-border-normal);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--color-background-focused);
+        }
+        
+        .btn-warning {
+            background: var(--color-warning);
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background: var(--color-warning);
+            opacity: 0.9;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        .btn-m {
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+        
+        .footer-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        
+        .shortcuts-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 16px;
+            background: var(--color-background-normal);
+            border-radius: 6px;
+            border: 1px solid var(--color-border-normal);
+        }
+        
+        .shortcut-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: var(--color-background-focused);
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        
+        .shortcut-item:hover {
+            background: var(--color-background-focused);
+            border-color: var(--color-info);
+        }
+        
+        .shortcut-key {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            background: var(--color-background-normal);
+            border: 1px solid var(--color-border-normal);
+            border-radius: 4px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-primary);
+            min-width: 80px;
+            justify-content: center;
+        }
+        
+        .shortcut-description {
+            font-size: 13px;
+            color: var(--color-secondary);
+            flex: 1;
+            margin-left: 12px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .settings-container {
+                flex-direction: column;
+            }
+            
+            .settings-sidebar {
+                width: 100%;
+                height: auto;
+            }
+            
+            .sidebar-nav {
+                display: flex;
+                overflow-x: auto;
+                padding: 0 16px;
+            }
+            
+            .nav-item {
+                flex-shrink: 0;
+                white-space: nowrap;
+                border-left: none;
+                border-bottom: 3px solid transparent;
+            }
+            
+            .nav-item.active {
+                border-left: none;
+                border-bottom-color: var(--color-info);
+            }
+            
+            .settings-content {
+                padding: 16px;
+            }
+            
+            .setting-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+            
+            .setting-label {
+                min-width: auto;
+                padding-top: 0;
+            }
+            
+            .shortcut-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .shortcut-description {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1 class="test-title">系统设置页面布局测试</h1>
+        </div>
+        
+        <div class="test-content">
+            <!-- 系统设置页面布局 -->
+            <div class="settings-page">
+                <div class="settings-container">
+                    <!-- 左侧菜单 -->
+                    <div class="settings-sidebar">
+                        <div class="sidebar-header">
+                            <h2 class="sidebar-title">系统设置</h2>
+                        </div>
+                        
+                        <nav class="sidebar-nav">
+                            <div class="nav-item active" data-section="general">
+                                <div class="nav-icon"></div>
+                                <span class="nav-label">通用设置</span>
+                            </div>
+                            
+                            <div class="nav-item" data-section="function">
+                                <div class="nav-icon"></div>
+                                <span class="nav-label">功能设置</span>
+                            </div>
+                            
+                            <div class="nav-item" data-section="shortcuts">
+                                <div class="nav-icon"></div>
+                                <span class="nav-label">快捷键</span>
+                            </div>
+                        </nav>
+                    </div>
+                    
+                    <!-- 右侧内容区域 -->
+                    <div class="settings-content">
+                        <div class="content-header">
+                            <h3 class="content-title">通用设置</h3>
+                            <p class="content-description">设置应用的外观偏好</p>
+                        </div>
+                        
+                        <div class="content-body">
+                            <div class="settings-section">
+                                <div class="setting-group">
+                                    <h4 class="group-title">外观设置</h4>
+                                    
+                                    <div class="setting-item">
+                                        <label class="setting-label">主题设置</label>
+                                        <div class="setting-control">
+                                            <select class="setting-select">
+                                                <option value="light">浅色主题</option>
+                                                <option value="dark">深色主题</option>
+                                                <option value="auto" selected>跟随系统</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="setting-item">
+                                        <label class="setting-label">背景色设置</label>
+                                        <div class="setting-control">
+                                            <select class="setting-select">
+                                                <option value="default" selected>默认</option>
+                                                <option value="blue">海洋蓝</option>
+                                                <option value="green">森林绿</option>
+                                                <option value="purple">紫罗兰</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </div>
+                        
+                        <div class="content-footer">
+                            <div class="footer-actions">
+                                <button class="btn btn-secondary btn-m">取消</button>
+                                <button class="btn btn-primary btn-m">保存设置</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 简单的菜单切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const navItems = document.querySelectorAll('.nav-item');
+            const contentTitle = document.querySelector('.content-title');
+            const contentDescription = document.querySelector('.content-description');
+            
+            const sectionTitles = {
+                general: '通用设置',
+                function: '功能设置',
+                shortcuts: '快捷键'
+            };
+            
+            const sectionDescriptions = {
+                general: '设置应用的外观偏好',
+                function: '配置应用功能和数据管理选项',
+                shortcuts: '查看和管理应用快捷键'
+            };
+            
+            navItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    // 移除所有active类
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    
+                    // 添加active类到当前项
+                    item.classList.add('active');
+                    
+                    // 更新内容标题和描述
+                    const section = item.dataset.section;
+                    if (contentTitle) {
+                        contentTitle.textContent = sectionTitles[section] || '设置';
+                    }
+                    if (contentDescription) {
+                        contentDescription.textContent = sectionDescriptions[section] || '';
+                    }
+                    
+                    console.log('切换到区域:', section);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

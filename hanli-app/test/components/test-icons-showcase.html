@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图标展示 - Hanli Icons</title>
+    <link rel="stylesheet" href="../renderer/icons-sprite.css">
+    <link rel="stylesheet" href="../renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="../renderer/theme/dark/colors.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+            line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background-color: var(--color-card-background);
+            border-radius: 12px;
+            border: 1px solid var(--color-border);
+        }
+
+        .header h1 {
+            color: var(--color-text-primary);
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .header p {
+            color: var(--color-text-secondary);
+            font-size: 16px;
+        }
+
+        .theme-toggle {
+            background: var(--color-primary);
+            color: var(--color-primary-foreground);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin: 20px 10px 0;
+        }
+
+        .theme-toggle:hover {
+            background: var(--color-primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .section {
+            margin: 30px 0;
+            padding: 25px;
+            background-color: var(--color-card-background);
+            border-radius: 12px;
+            border: 1px solid var(--color-border);
+        }
+
+        .section h2 {
+            color: var(--color-text-primary);
+            margin-bottom: 20px;
+            font-size: 24px;
+            border-bottom: 2px solid var(--color-primary);
+            padding-bottom: 10px;
+        }
+
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .icon-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 20px;
+            background-color: var(--color-hover);
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .icon-item:hover {
+            background-color: var(--color-active);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .icon-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            background-color: var(--color-card-background);
+            border: 2px solid var(--color-border);
+            transition: all 0.2s ease;
+        }
+
+        .icon-container i {
+            font-size: 28px;
+            color: var(--color-text-primary);
+        }
+
+        .icon-item:hover .icon-container {
+            background-color: var(--color-primary);
+            border-color: var(--color-primary);
+        }
+
+        .icon-item:hover .icon-container i {
+            color: var(--color-primary-foreground);
+        }
+
+        .icon-name {
+            font-weight: 600;
+            color: var(--color-text-primary);
+            font-size: 14px;
+        }
+
+        .icon-class {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 11px;
+            color: var(--color-text-secondary);
+            background-color: var(--color-input-background);
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin: 4px 0;
+        }
+
+        .icon-usage {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            font-style: italic;
+            max-width: 150px;
+        }
+
+        .usage-section {
+            margin: 30px 0;
+        }
+
+        .usage-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .usage-item {
+            padding: 20px;
+            background-color: var(--color-card-background);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+        }
+
+        .usage-title {
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .usage-example {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: var(--color-hover);
+            border-radius: 6px;
+        }
+
+        .usage-example i {
+            font-size: 20px;
+            color: var(--color-text-primary);
+        }
+
+        .usage-example span {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+        }
+
+        .code-block {
+            background-color: var(--color-input-background);
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+        }
+
+        .highlight {
+            background-color: var(--color-primary);
+            color: var(--color-primary-foreground);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--color-card-background);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--color-primary);
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: var(--color-text-secondary);
+            font-size: 14px;
+        }
+
+        .category-badge {
+            display: inline-block;
+            background-color: var(--color-primary);
+            color: var(--color-primary-foreground);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 Hanli 图标库</h1>
+            <p>基于 Phosphor Icons 的完整图标系统展示</p>
+            <button class="theme-toggle" onclick="toggleTheme()">切换主题</button>
+            <span id="current-theme">当前主题：亮色</span>
+        </div>
+
+        <!-- 统计信息 -->
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-number">20</div>
+                <div class="stat-label">图标总数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">2</div>
+                <div class="stat-label">主题模式</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">8</div>
+                <div class="stat-label">使用场景</div>
+            </div>
+        </div>
+
+        <!-- 导航图标 -->
+        <div class="section">
+            <h2>🧭 导航图标</h2>
+            <div class="icon-grid">
+                <div class="icon-item">
+                    <div class="icon-container">
+                        <i class="ph ph-house"></i>
+                    </div>
+                    <div class="category-badge">导航</div>
+                    <div class="icon-name">首页</div>
+                    <div class="icon-class">ph-house</div>
+                    <div class="icon-usage">侧边栏首页、顶部Tab首页</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-container">
+                        <i class="ph ph-package"></i>
+                    </div>
+                    <div class="category-badge">导航</div>
+                    <div class="icon-name">产品库</div>
+                    <div class="icon-class">ph-package</div>
+                    <div class="icon-usage">侧边栏产品库、顶部Tab产品库、仪表盘卡片</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-container">
+                        <i class="ph ph-sliders"></i>
+                    </div>
+                    <div class="category-badge">导航</div>
+                    <div class="icon-name">设置</div>
+                    <div class="icon-class">ph-sliders</div>
+                    <div class="icon-usage">顶部导航栏设置按钮</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作图标 -->
+        <div class="section">
+            <h2>⚡ 操作图标</h2>
+            <div class="icon-grid">
+                <div class="icon-item">
+                    <div class="icon-container">
+                        <i class="ph ph-x"></i>
+                    </div>
+                    <div class="category-badge">操作</div>
+                    <div class="icon-name">关闭</div>
+                    <div class="icon-class">ph-x</div>
+                    <div class="icon-usage">Tab关闭按钮、弹窗关闭按钮</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-container">
+                        <i class="ph ph-copy"></i>
+                    </div>
+                    <div class="category-badge">操作</div>
+                    <div class="icon-name">复制</div>
+                    <div class="icon-class">ph-copy</div>
+                    <div class="icon-usage">复制链接、复制文本</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-container">
+                        <i class="ph ph-download"></i>
+                    </div>
+                    <div class="category-badge">操作</div>
+                    <div class="icon-name">下载</div>
+                    <div class="icon-class">ph-download</div>
+                    <div class="icon-usage">附件下载按钮</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-container">
+                        <i class="ph ph-eye"></i>
+                    </div>
+                    <div class="category-badge">操作</div>
+                    <div class="icon-name">查看</div>
+                    <div class="icon-class">ph-eye</div>
+                    <div class="icon-usage">查看JSON文件、预览内容</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 内容图标 -->
+        <div class="section">
+            <h2>📄 内容图标</h2>
+            <div class="icon-grid">
+                <div class="icon-item">
+                    <div class="icon-container">
+                        <i class="ph ph-image"></i>
+                    </div>
+                    <div class="category-badge">内容</div>
+                    <div class="icon-name">产品详情</div>
+                    <div class="icon-class">ph-image</div>
+                    <div class="icon-usage">产品详情Tab图标</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-container">
+                        <i class="ph ph-file-json"></i>
+                    </div>
+                    <div class="category-badge">内容</div>
+                    <div class="icon-name">JSON文件</div>
+                    <div class="icon-class">ph-file-json</div>
+                    <div class="icon-usage">JSON附件图标</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-container">
+                        <i class="ph ph-file-pdf"></i>
+                    </div>
+                    <div class="category-badge">内容</div>
+                    <div class="icon-name">PDF文件</div>
+                    <div class="icon-class">ph-file-pdf</div>
+                    <div class="icon-usage">PDF附件图标</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 状态图标 -->
+        <div class="section">
+            <h2>⚠️ 状态图标</h2>
+            <div class="icon-grid">
+                <div class="icon-item">
+                    <div class="icon-container">
+                        <i class="ph ph-warning"></i>
+                    </div>
+                    <div class="category-badge">状态</div>
+                    <div class="icon-name">警告</div>
+                    <div class="icon-class">ph-warning</div>
+                    <div class="icon-usage">错误提示、警告信息</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-container">
+                        <i class="ph ph-info"></i>
+                    </div>
+                    <div class="category-badge">状态</div>
+                    <div class="icon-name">信息</div>
+                    <div class="icon-class">ph-info</div>
+                    <div class="icon-usage">信息提示、帮助说明</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 系统图标 -->
+        <div class="section">
+            <h2>🔧 系统图标</h2>
+            <div class="icon-grid">
+                <div class="icon-item">
+                    <div class="icon-container">
+                        <i class="ph ph-gear"></i>
+                    </div>
+                    <div class="category-badge">系统</div>
+                    <div class="icon-name">齿轮</div>
+                    <div class="icon-class">ph-gear</div>
+                    <div class="icon-usage">传统设置图标（备用）</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-container">
+                        <i class="ph ph-dots-three"></i>
+                    </div>
+                    <div class="category-badge">系统</div>
+                    <div class="icon-name">更多</div>
+                    <div class="icon-class">ph-dots-three</div>
+                    <div class="icon-usage">更多菜单（已移除）</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-container">
+                        <i class="ph ph-arrow-clockwise"></i>
+                    </div>
+                    <div class="category-badge">系统</div>
+                    <div class="icon-name">刷新</div>
+                    <div class="icon-class">ph-arrow-clockwise</div>
+                    <div class="icon-usage">刷新按钮（已移除）</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-container">
+                        <i class="ph ph-upload"></i>
+                    </div>
+                    <div class="category-badge">系统</div>
+                    <div class="icon-name">上传</div>
+                    <div class="icon-class">ph-upload</div>
+                    <div class="icon-usage">导出功能（已移除）</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 使用示例 -->
+        <div class="section">
+            <h2>💻 使用示例</h2>
+            <div class="usage-grid">
+                <div class="usage-item">
+                    <div class="usage-title">HTML 使用</div>
+                    <div class="usage-example">
+                        <i class="ph ph-house"></i>
+                        <span>侧边栏首页图标</span>
+                    </div>
+                    <div class="code-block">
+&lt;i class="<span class="highlight">ph ph-house</span>"&gt;&lt;/i&gt;
+                    </div>
+                </div>
+
+                <div class="usage-item">
+                    <div class="usage-title">JavaScript 使用</div>
+                    <div class="usage-example">
+                        <i class="ph ph-package"></i>
+                        <span>动态生成Tab图标</span>
+                    </div>
+                    <div class="code-block">
+const PAGE_ICONS = {
+    home: `&lt;i class="<span class="highlight">ph ph-house</span>"&gt;&lt;/i&gt;`,
+    productDetail: `&lt;i class="<span class="highlight">ph ph-image</span>"&gt;&lt;/i&gt;`,
+    goodsList: `&lt;i class="<span class="highlight">ph ph-package</span>"&gt;&lt;/i&gt;`
+};
+                    </div>
+                </div>
+
+                <div class="usage-item">
+                    <div class="usage-title">CSS 自定义</div>
+                    <div class="usage-example">
+                        <i class="ph ph-sliders"></i>
+                        <span>设置图标样式</span>
+                    </div>
+                    <div class="code-block">
+.settings-icon i {
+    font-size: 20px;
+    color: <span class="highlight">var(--color-text-secondary)</span>;
+    transition: all 0.2s ease;
+}
+
+.settings-icon:hover i {
+    color: <span class="highlight">var(--color-text-primary)</span>;
+}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 技术说明 -->
+        <div class="section">
+            <h2>🔧 技术实现</h2>
+            <div class="code-block">
+<span class="highlight">/* 图标库实现 */</span>
+.ph {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: middle;
+    opacity: 0.8; /* 半透明效果 */
+}
+
+.ph-house::before {
+    content: "";
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z' stroke='%23666666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M9 22V12H15V22' stroke='%23666666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+}
+
+<span class="highlight">/* 暗色主题适配 */</span>
+.theme-dark .ph-house::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M9 22V12H15V22' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+            </div>
+        </div>
+
+        <!-- 主题切换说明 -->
+        <div class="section">
+            <h2>🌓 主题适配</h2>
+            <p>所有图标都支持亮色和暗色主题的自动切换。图标颜色会根据当前主题自动调整：</p>
+            <ul style="margin: 15px 0; padding-left: 20px; color: var(--color-text-secondary);">
+                <li><strong>亮色主题</strong>：图标使用深灰色 (#666666)</li>
+                <li><strong>暗色主题</strong>：图标使用白色 (#ffffff)</li>
+                <li><strong>悬停效果</strong>：图标颜色会根据主题和悬停状态动态变化</li>
+                <li><strong>半透明效果</strong>：所有图标默认透明度为 0.8</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let isDarkTheme = false;
+
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.className = isDarkTheme ? 'theme-dark' : 'theme-light';
+            
+            const themeText = document.getElementById('current-theme');
+            themeText.textContent = `当前主题：${isDarkTheme ? '暗色' : '亮色'}`;
+        }
+
+        // 初始化
+        document.body.className = 'theme-light';
+    </script>
+</body>
+</html>

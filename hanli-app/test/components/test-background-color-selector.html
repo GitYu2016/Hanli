@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>背景色选择器测试</title>
+    <link rel="stylesheet" href="../../renderer/globals.css">
+    <link rel="stylesheet" href="../../renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="../../renderer/icons-fixed.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: var(--color-background-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .test-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .test-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin: 0 0 8px 0;
+        }
+        
+        .test-description {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            margin: 0;
+        }
+        
+        .test-section {
+            background: var(--color-surface-primary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin: 0 0 16px 0;
+        }
+        
+        .demo-area {
+            background: var(--color-surface-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .demo-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-text-primary);
+            margin-bottom: 12px;
+            display: block;
+        }
+        
+        .current-selection {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            margin-top: 16px;
+            padding: 12px;
+            background: var(--color-background-focused);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--color-border);
+        }
+        
+        .selection-value {
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+        
+        .info-text {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            color: var(--color-text-secondary);
+        }
+        
+        .feature-item::before {
+            content: "✓";
+            color: var(--color-success);
+            font-weight: bold;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1 class="test-title">背景色选择器测试</h1>
+            <p class="test-description">测试简化的圆圈背景色选择器</p>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="section-title">背景色选择器演示</h2>
+            
+            <div class="demo-area">
+                <label class="demo-label">选择背景色：</label>
+                <div id="background-color-selector-container"></div>
+                <div class="current-selection">
+                    当前选择：<span class="selection-value" id="current-selection">default</span>
+                </div>
+                <div class="info-text">
+                    点击圆圈可以选择不同的背景色，圆圈会显示对应的颜色预览。
+                    选中的圆圈会有边框高亮和缩放效果。
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="section-title">功能特性</h2>
+            <ul class="feature-list">
+                <li class="feature-item">简化为圆圈形式，去掉文字说明</li>
+                <li class="feature-item">圆圈直径32px，移动端28px</li>
+                <li class="feature-item">悬浮时放大1.1倍，选中时放大1.15倍</li>
+                <li class="feature-item">选中状态有边框高亮和阴影效果</li>
+                <li class="feature-item">支持8种背景色：默认、海洋蓝、森林绿、紫罗兰、夕阳橙、樱花粉、石墨灰、靛青</li>
+                <li class="feature-item">响应式设计，移动端间距和大小自动调整</li>
+                <li class="feature-item">使用项目标准颜色变量</li>
+            </ul>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="section-title">技术实现</h2>
+            <ul class="feature-list">
+                <li class="feature-item">移除backgroundColors数组中的name字段</li>
+                <li class="feature-item">CSS样式改为圆形设计（border-radius: 50%）</li>
+                <li class="feature-item">删除文字标签和选中指示器</li>
+                <li class="feature-item">优化悬浮和选中状态的视觉效果</li>
+                <li class="feature-item">简化HTML结构，只保留圆圈元素</li>
+                <li class="feature-item">保持原有的事件处理和回调机制</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 引入背景色选择器组件 -->
+    <script src="../../renderer/components/Common/BackgroundColorSelector.js"></script>
+    
+    <script>
+        // 创建背景色选择器实例
+        const backgroundColorSelector = new BackgroundColorSelector({
+            currentBackgroundColor: 'default',
+            onBackgroundColorChange: (bgColor) => {
+                console.log('背景色切换:', bgColor);
+                document.getElementById('current-selection').textContent = bgColor;
+                
+                // 预览背景色效果
+                const root = document.documentElement;
+                const body = document.body;
+                
+                // 移除现有背景色类
+                const bgClasses = ['bg-body-default', 'bg-body-blue', 'bg-body-green', 'bg-body-purple', 'bg-body-orange', 'bg-body-pink', 'bg-body-gray', 'bg-body-indigo'];
+                bgClasses.forEach(cls => {
+                    root.classList.remove(cls);
+                    body.classList.remove(cls);
+                });
+                
+                // 添加新背景色类
+                root.classList.add(`bg-body-${bgColor}`);
+                body.classList.add(`bg-body-${bgColor}`);
+            }
+        });
+        
+        // 渲染背景色选择器
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('background-color-selector-container');
+            container.innerHTML = backgroundColorSelector.render();
+            backgroundColorSelector.bindEvents(container);
+            
+            console.log('背景色选择器测试页面加载完成');
+        });
+    </script>
+</body>
+</html>

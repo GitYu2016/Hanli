@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品库组件样式测试</title>
+    <link rel="stylesheet" href="../renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="../renderer/icons-sprite.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-background);
+            color: var(--color-text-primary);
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-medium);
+            background: var(--color-card-background);
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--color-text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>产品库组件样式测试</h1>
+        
+        <div class="test-section">
+            <div class="test-title">产品库页面布局测试</div>
+            <div id="product-library-test"></div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">分类筛选器测试</div>
+            <div class="category-filter">
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-category="all">全部</button>
+                    <button class="filter-btn" data-category="电子产品">电子产品</button>
+                    <button class="filter-btn" data-category="服装">服装</button>
+                    <button class="filter-btn" data-category="家居">家居</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">产品表格测试</div>
+            <div class="product-table-container">
+                <table class="product-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-sort="goodsCat3">产品标题</th>
+                            <th class="sortable" data-sort="goodsCat2">二级分类</th>
+                            <th class="sortable" data-sort="totalSales">总销量</th>
+                            <th class="sortable sort-desc" data-sort="collectTime">采集日期</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="product-row">
+                            <td class="product-name clickable">
+                                <div class="name-content">
+                                    <div class="product-thumbnail placeholder">📦</div>
+                                    <span class="product-title">测试产品标题 - 这是一个很长的产品标题用来测试文本截断功能</span>
+                                </div>
+                            </td>
+                            <td class="product-category">电子产品</td>
+                            <td class="product-sales">1,234</td>
+                            <td class="product-time">2024-01-15 14:30</td>
+                        </tr>
+                        <tr class="product-row">
+                            <td class="product-name clickable">
+                                <div class="name-content">
+                                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23e0e0e0'/%3E%3Ctext x='16' y='20' text-anchor='middle' font-size='12'%3E📱%3C/text%3E%3C/svg%3E" alt="产品图片" class="product-thumbnail">
+                                    <span class="product-title">带图片的产品</span>
+                                </div>
+                            </td>
+                            <td class="product-category">手机</td>
+                            <td class="product-sales">5,678</td>
+                            <td class="product-time">2024-01-14 09:15</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">状态显示测试</div>
+            <div class="loading-products">
+                <i class="ph ph-spinner"></i>
+                <p>正在加载产品数据...</p>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">空状态测试</div>
+            <div class="no-products">
+                <i class="ph ph-package"></i>
+                <p>暂无产品数据</p>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">错误状态测试</div>
+            <div class="error-products">
+                <i class="ph ph-warning"></i>
+                <p>加载失败，请重试</p>
+                <button class="retry-btn">
+                    <i class="ph ph-arrow-clockwise"></i> 重试
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 导入产品库组件
+        import { ProductLibraryComponent } from '../renderer/pages/ProductLibrary.js';
+        
+        // 初始化测试
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('产品库样式测试页面已加载');
+            
+            // 测试样式注入
+            const testContainer = document.getElementById('product-library-test');
+            if (testContainer) {
+                const component = new ProductLibraryComponent();
+                component.init(testContainer);
+                
+                // 设置一些测试数据
+                const testProducts = [
+                    {
+                        goodsId: '123456789012',
+                        goodsCat3: '测试产品1',
+                        goodsCat2: '电子产品',
+                        collectTime: '2024-01-15T14:30:00',
+                        monitoringData: [{
+                            goodsData: { goodsSold: '1,234件' }
+                        }]
+                    },
+                    {
+                        goodsId: '123456789013',
+                        goodsCat3: '测试产品2',
+                        goodsCat2: '服装',
+                        collectTime: '2024-01-14T09:15:00',
+                        monitoringData: [{
+                            goodsData: { goodsSold: '5,678件' }
+                        }]
+                    }
+                ];
+                
+                component.setProducts(testProducts, testProducts.length);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "hanli-n8n",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "n8n",
+    "dev": "n8n start",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "n8n": "^1.111.0"
+  }
+}

@@ -272,7 +272,7 @@ calculateImageMemory(width, height, channels = 4) {
   - `showInFinder()`: 调用 API 显示文件
 
 ### 12.4 样式实现
-- **文件**: `hanli-app/renderer/styles.css`
+- **文件**: `hanli-app/renderer/globals.css`
 - **样式类**: `.context-menu` 和 `.context-menu-item`
 - **特性**: 支持主题切换、毛玻璃效果、悬停动画
 

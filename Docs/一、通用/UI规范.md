@@ -17,6 +17,8 @@
 --radius-large: 12px;   /* 大元素：页面容器、侧边栏等 */
 ```
 
+**注意**: 当前项目中倒角变量已统一使用，但具体的CSS变量定义位置在组件的StyleManager中管理，而不是在主题颜色文件中。
+
 ### 使用规范
 
 #### 小元素 (6px)
@@ -65,7 +67,7 @@
 ### 实施情况
 
 #### 已统一的文件
-- ✅ `hanli-app/renderer/styles.css` - 主样式文件
+- ✅ `hanli-app/renderer/globals.css` - 主样式文件
 - ✅ `hanli-plugin/content.js` - 插件内容脚本
 - ✅ `hanli-plugin/components/CollectionProgressDialog.js` - 采集进度对话框
 - ✅ `hanli-plugin/collectionManager.js` - 采集管理器
@@ -310,40 +312,107 @@
 
 ### 颜色系统规范
 
+#### 颜色系统架构
+基于Radix颜色令牌设计，采用层次化颜色架构：
+
+1. **基础颜色令牌** (Base Color Tokens)
+   - 中性色系：从纯白到纯黑的11个层级
+   - 透明度级别：0-100%的11个透明度级别
+   - 为所有颜色提供基础支撑
+
+2. **语义化颜色** (Semantic Colors)
+   - 表面颜色：背景层次系统
+   - 文本颜色：层次化文本系统
+   - 边框颜色：层次化边框系统
+   - 交互颜色：状态反馈系统
+
+3. **功能颜色** (Functional Colors)
+   - 品牌色：主色调和次要色调
+   - 状态色：成功、警告、错误、信息色
+
+4. **组件专用颜色** (Component Colors)
+   - 卡片、模态框、输入框、标签页等组件专用颜色
+
 #### 颜色定义位置
-- 所有颜色定义统一在 `src/styles/colors.css` 中
+- **浅色主题**：`hanli-app/renderer/theme/light/colors.css`
+- **深色主题**：`hanli-app/renderer/theme/dark/colors.css`
+- **图标系统**：`hanli-app/renderer/icons-fixed.css`
+- **组件样式**：通过StyleManager在JavaScript中管理，使用CSS-in-JS方式
 - 组件CSS文件不定义颜色，只使用CSS变量
 - 支持浅色、深色、系统主题三种模式
 
 #### 颜色命名规范
-- `--color-{component}-{property}`: 组件特定颜色
-- `--color-{state}`: 通用状态颜色
-- 使用语义化命名，便于理解和维护
+- **基础色**：`--color-neutral-{level}` (0-1000)
+- **透明度**：`--opacity-{level}` (0-100)
+- **表面色**：`--color-surface-{type}` (primary, secondary, tertiary, elevated, overlay)
+- **文本色**：`--color-text-{type}` (primary, secondary, tertiary, disabled, inverse)
+- **边框色**：`--color-border-{type}` (primary, secondary, subtle, strong)
+- **交互色**：`--color-interactive-{state}` (hover, active, focus, selected, disabled)
+- **品牌色**：`--color-brand-{type}` (primary, secondary, 及其变体)
+- **状态色**：`--color-status-{type}` (success, warning, error, info, 及其变体)
+- **组件色**：`--color-{component}-{property}` (card-background, modal-overlay等)
+- **图标色**：`--color-icon-{type}` (primary, secondary, hover, active, disabled, background)
 
 #### 图标颜色规范
-- **统一使用RGBA颜色值**：确保图标在不同主题下的颜色一致性
-- **亮色主题**：图标使用 `rgba(102, 102, 102, 0.8)` (黑色半透明)
-- **暗色主题**：图标使用 `rgba(255, 255, 255, 0.8)` (白色半透明)
-- **实现方式**：使用CSS变量 `--icon-color` 控制SVG的stroke属性
-- **透明度标准**：统一使用 `0.8` (80%) 透明度
-- **禁用滤镜**：不使用CSS filter属性，直接设置颜色值
+- **实现方式**：使用本地SVG文件，通过CSS类名控制颜色
+- **颜色变量**：使用`--color-primary`、`--color-secondary`等语义化变量
+- **透明度标准**：统一使用`opacity: 0.8` (80%) 透明度
+- **状态变化**：支持hover、active、disabled等状态
+- **主题适配**：自动适配浅色/深色主题
+- **图标库**：使用Phosphor Icons本地化方案
+- **文件位置**：`hanli-app/renderer/components/Common/Icon.js`
 
-### Vite + Tailwind CSS 集成
+#### 半透明色规范（核心规范）
+- **强制使用半透明色**：所有颜色必须使用半透明色（RGBA格式）
+- **禁止纯色**：禁止使用纯色（如 `#ffffff`、`#000000`）
+- **透明度标准**：
+  - 浅色主题：使用黑色半透明 `rgba(0, 0, 0, var(--opacity-{level}))`
+  - 深色主题：使用白色半透明 `rgba(255, 255, 255, var(--opacity-{level}))`
+  - 彩色背景：使用8%-12%透明度
+- **背景色规范**：
+  - 浅色主题背景色：`rgba(颜色, 0.08)`
+  - 深色主题背景色：`rgba(颜色, 0.12)`
+  - 页面容器背景：比主背景色透明度高4%
+
+#### 背景色主题变体
+支持多种背景色主题变体：
+- **默认背景**：`.bg-default`
+- **海洋蓝背景**：`.bg-blue`
+- **森林绿背景**：`.bg-green`
+- **紫罗兰背景**：`.bg-purple`
+- **夕阳橙背景**：`.bg-orange`
+- **樱花粉背景**：`.bg-pink`
+- **石墨灰背景**：`.bg-gray`
+- **靛青背景**：`.bg-indigo`
+
+#### 阴影系统
+- **基础阴影**：`--shadow-{size}` (xs, sm, md, lg, xl, 2xl)
+- **特殊阴影**：`--shadow-hover`、`--shadow-modal`、`--shadow-focus`
+- **主题适配**：浅色主题使用黑色半透明，深色主题使用黑色半透明
+
+#### 圆角系统
+- **基础圆角**：`--radius-{size}` (none, xs, sm, md, lg, xl, 2xl, full)
+- **语义化圆角**：`--radius-{component}` (button, input, card, modal)
+- **兼容性变量**：`--radius-small`、`--radius-medium`、`--radius-large`
+
+### 样式管理系统
 
 #### 样式处理方式
-- 使用Tailwind CSS作为主要样式框架
-- 全局样式定义在 `src/styles/global.css`
-- 颜色系统定义在 `src/styles/colors.css`
-- 组件样式使用Tailwind类名和CSS-in-JS (styled-jsx)
+- 使用原生CSS + CSS-in-JS混合方案
+- 全局样式定义在 `renderer/globals.css`
+- 颜色系统定义在 `renderer/theme/light/colors.css` 和 `renderer/theme/dark/colors.css`
+- 组件样式通过StyleManager在JavaScript中管理
+- 图标样式定义在 `renderer/components/Common/Icon.js`
 
 #### 开发环境
-- Vite Dev Server提供热更新
-- Tailwind CSS JIT模式，按需生成样式
+- Electron内置开发模式
+- 支持热重载和实时预览
 - 支持CSS变量和主题切换
+- 使用ES6模块系统
 
 #### 构建优化
-- Vite自动优化CSS和JS
-- Tailwind CSS PurgeCSS自动移除未使用的样式
+- Electron Builder自动优化资源
+- 组件样式按需加载
 - 生产环境输出优化的静态资源
 
 ## 注意事项

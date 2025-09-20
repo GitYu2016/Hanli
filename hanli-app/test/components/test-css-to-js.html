@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS到JavaScript样式系统演示</title>
+    <link rel="stylesheet" href="globals.css">
+    <link rel="stylesheet" href="theme/light/colors.css" id="theme-colors">
+    <link rel="stylesheet" href="icons-sprite.css">
+    <script src="config.js"></script>
+    <script src="components/Common/StyleManager.js"></script>
+    <script src="components/Common/Button.js"></script>
+</head>
+<body>
+    <div style="padding: 20px; max-width: 800px; margin: 0 auto;">
+        <h1>CSS到JavaScript样式系统演示</h1>
+        
+        <h2>1. 按钮组件演示</h2>
+        <div id="button-demo" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 30px;">
+            <!-- 按钮将通过JavaScript动态创建 -->
+        </div>
+        
+        <h2>2. 自定义样式组件演示</h2>
+        <div id="custom-demo" style="margin-bottom: 30px;">
+            <!-- 自定义组件将通过JavaScript动态创建 -->
+        </div>
+        
+        <h2>3. 响应式样式演示</h2>
+        <div id="responsive-demo" style="margin-bottom: 30px;">
+            <!-- 响应式组件将通过JavaScript动态创建 -->
+        </div>
+        
+        <h2>4. 动态样式修改演示</h2>
+        <div id="dynamic-demo" style="margin-bottom: 30px;">
+            <!-- 动态样式组件将通过JavaScript动态创建 -->
+        </div>
+    </div>
+
+    <script>
+        // 等待页面加载完成
+        document.addEventListener('DOMContentLoaded', function() {
+            // 1. 按钮组件演示
+            const buttonDemo = document.getElementById('button-demo');
+            
+            // 创建不同类型的按钮
+            const buttons = [
+                { text: '主要按钮', type: 'primary', size: 'L' },
+                { text: '次要按钮', type: 'secondary', size: 'M' },
+                { text: '成功按钮', type: 'success', size: 'M' },
+                { text: '警告按钮', type: 'warning', size: 'M' },
+                { text: '错误按钮', type: 'error', size: 'M' },
+                { text: '小按钮', type: 'primary', size: 'S' },
+                { text: '带图标', type: 'primary', size: 'M', icon: 'ph-house' },
+                { text: '加载中', type: 'primary', size: 'M', loading: true },
+                { text: '禁用', type: 'secondary', size: 'M', disabled: true }
+            ];
+            
+            buttons.forEach(buttonConfig => {
+                const button = window.buttonInstance.create(buttonConfig);
+                buttonDemo.appendChild(button);
+            });
+            
+            // 2. 自定义样式组件演示
+            const customDemo = document.getElementById('custom-demo');
+            
+            // 定义自定义组件样式
+            const customStyles = {
+                '.custom-card': {
+                    'background-color': 'var(--color-background)',
+                    'border': '1px solid var(--color-border)',
+                    'border-radius': '8px',
+                    'padding': '20px',
+                    'margin': '10px 0',
+                    'box-shadow': '0 2px 4px rgba(0, 0, 0, 0.1)',
+                    'transition': 'all 0.2s ease'
+                },
+                '.custom-card:hover': {
+                    'box-shadow': '0 4px 8px rgba(0, 0, 0, 0.15)',
+                    'transform': 'translateY(-2px)'
+                },
+                '.custom-card .title': {
+                    'font-size': '18px',
+                    'font-weight': '600',
+                    'color': 'var(--color-text-primary)',
+                    'margin-bottom': '10px'
+                },
+                '.custom-card .content': {
+                    'color': 'var(--color-text-secondary)',
+                    'line-height': '1.6'
+                }
+            };
+            
+            window.styleManager.defineStyles('CustomCard', customStyles);
+            
+            // 创建自定义卡片
+            const card = window.styleManager.createStyledElement('div', 'CustomCard', '.custom-card', {
+                innerHTML: `
+                    <div class="title">自定义样式卡片</div>
+                    <div class="content">这是使用StyleManager创建的自定义样式组件，样式定义在JavaScript中。</div>
+                `
+            });
+            customDemo.appendChild(card);
+            
+            // 3. 响应式样式演示
+            const responsiveDemo = document.getElementById('responsive-demo');
+            
+            const responsiveStyles = {
+                '.responsive-box': {
+                    'background-color': 'var(--color-primary)',
+                    'color': 'var(--color-primary-foreground)',
+                    'padding': '20px',
+                    'border-radius': '8px',
+                    'text-align': 'center',
+                    'font-weight': '600'
+                },
+                '@media (max-width: 768px)': {
+                    '.responsive-box': {
+                        'padding': '10px',
+                        'font-size': '14px'
+                    }
+                },
+                '@media (min-width: 1200px)': {
+                    '.responsive-box': {
+                        'padding': '30px',
+                        'font-size': '18px'
+                    }
+                }
+            };
+            
+            window.styleManager.defineStyles('ResponsiveBox', responsiveStyles);
+            
+            const responsiveBox = window.styleManager.createStyledElement('div', 'ResponsiveBox', '.responsive-box', {
+                textContent: '响应式样式演示 - 调整浏览器窗口大小查看效果'
+            });
+            responsiveDemo.appendChild(responsiveBox);
+            
+            // 4. 动态样式修改演示
+            const dynamicDemo = document.getElementById('dynamic-demo');
+            
+            const dynamicStyles = {
+                '.dynamic-element': {
+                    'background-color': 'var(--color-secondary)',
+                    'color': 'var(--color-secondary-foreground)',
+                    'padding': '15px',
+                    'border-radius': '6px',
+                    'cursor': 'pointer',
+                    'transition': 'all 0.3s ease',
+                    'user-select': 'none'
+                },
+                '.dynamic-element.clicked': {
+                    'background-color': 'var(--color-success)',
+                    'color': 'var(--color-success-foreground)',
+                    'transform': 'scale(1.05)'
+                }
+            };
+            
+            window.styleManager.defineStyles('DynamicElement', dynamicStyles);
+            
+            const dynamicElement = window.styleManager.createStyledElement('div', 'DynamicElement', '.dynamic-element', {
+                textContent: '点击我查看动态样式效果'
+            });
+            
+            let clickCount = 0;
+            dynamicElement.addEventListener('click', function() {
+                clickCount++;
+                if (clickCount % 2 === 1) {
+                    this.classList.add('clicked');
+                    this.textContent = `已点击 ${clickCount} 次 - 样式已改变`;
+                } else {
+                    this.classList.remove('clicked');
+                    this.textContent = `已点击 ${clickCount} 次 - 样式已恢复`;
+                }
+            });
+            
+            dynamicDemo.appendChild(dynamicElement);
+            
+            // 添加说明文字
+            const info = document.createElement('div');
+            info.style.cssText = 'margin-top: 20px; padding: 15px; background-color: var(--color-muted); border-radius: 6px; color: var(--color-text-secondary);';
+            info.innerHTML = `
+                <h3>演示说明：</h3>
+                <ul>
+                    <li><strong>按钮组件</strong>：展示了使用StyleManager管理的Button组件的各种状态和样式</li>
+                    <li><strong>自定义样式</strong>：演示了如何定义和使用自定义样式组件</li>
+                    <li><strong>响应式样式</strong>：展示了媒体查询在JavaScript中的使用</li>
+                    <li><strong>动态样式</strong>：演示了运行时样式修改的能力</li>
+                </ul>
+                <p>所有样式都定义在JavaScript中，通过StyleManager进行统一管理。</p>
+            `;
+            document.body.appendChild(info);
+        });
+    </script>
+</body>
+</html>

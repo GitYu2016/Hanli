@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AttachmentCard 组件样式测试</title>
+    <link rel="stylesheet" href="icons-sprite.css">
+    <link rel="stylesheet" href="theme/light/colors.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-medium);
+            background-color: var(--color-card-background);
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--color-text-primary);
+        }
+        
+        .test-description {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            margin-bottom: 20px;
+        }
+        
+        .test-controls {
+            margin-bottom: 20px;
+        }
+        
+        .test-btn {
+            padding: 8px 16px;
+            margin-right: 12px;
+            margin-bottom: 8px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-small);
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .test-btn:hover {
+            background-color: var(--color-hover);
+        }
+        
+        .test-btn.primary {
+            background-color: var(--color-primary);
+            color: var(--color-primary-foreground);
+            border-color: var(--color-primary);
+        }
+        
+        .test-btn.primary:hover {
+            background-color: var(--color-primary-hover);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>AttachmentCard 组件样式测试</h1>
+        
+        <div class="test-section">
+            <div class="test-title">附件列表样式测试</div>
+            <div class="test-description">测试附件列表的显示样式，包括加载状态、空状态、错误状态和正常列表显示。</div>
+            <div class="test-controls">
+                <button class="test-btn primary" onclick="testAttachmentList()">测试附件列表</button>
+                <button class="test-btn" onclick="testLoadingState()">测试加载状态</button>
+                <button class="test-btn" onclick="testEmptyState()">测试空状态</button>
+                <button class="test-btn" onclick="testErrorState()">测试错误状态</button>
+            </div>
+            <div id="attachment-container"></div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">JSON 模态框样式测试</div>
+            <div class="test-description">测试 JSON 查看模态框的样式和功能。</div>
+            <div class="test-controls">
+                <button class="test-btn primary" onclick="testJsonModal()">测试 JSON 模态框</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">右键菜单样式测试</div>
+            <div class="test-description">测试右键菜单的样式和功能。</div>
+            <div class="test-controls">
+                <button class="test-btn primary" onclick="testContextMenu()">测试右键菜单</button>
+            </div>
+            <div id="context-menu-test" style="padding: 20px; border: 1px dashed var(--color-border); border-radius: var(--radius-small); text-align: center; color: var(--color-text-secondary);">
+                右键点击此区域测试右键菜单
+            </div>
+        </div>
+    </div>
+
+    <script src="components/Detail/AttachmentCard.js"></script>
+    <script>
+        // 模拟附件数据
+        const mockAttachments = [
+            {
+                name: 'product-spec.json',
+                type: 'JSON',
+                size: 2048,
+                modified: new Date('2024-01-15T10:30:00'),
+                path: '/path/to/product-spec.json'
+            },
+            {
+                name: 'user-manual.pdf',
+                type: 'PDF',
+                size: 1024000,
+                modified: new Date('2024-01-14T15:45:00'),
+                path: '/path/to/user-manual.pdf'
+            },
+            {
+                name: 'installation-guide.pdf',
+                type: 'PDF',
+                size: 512000,
+                modified: new Date('2024-01-13T09:20:00'),
+                path: '/path/to/installation-guide.pdf'
+            }
+        ];
+
+        // 初始化 AttachmentCard 实例
+        const attachmentCard = new AttachmentCard();
+
+        // 测试附件列表
+        function testAttachmentList() {
+            const container = document.getElementById('attachment-container');
+            container.innerHTML = '<div class="attachments-card"><div class="attachments-list"></div></div>';
+            
+            // 模拟渲染附件列表
+            const attachmentsList = container.querySelector('.attachments-list');
+            let html = '';
+            
+            mockAttachments.forEach(attachment => {
+                const sizeText = formatFileSize(attachment.size);
+                const modifiedText = formatDate(attachment.modified);
+                const iconClass = attachment.name.endsWith('.json') ? 'ph-file-json' : 'ph-file-pdf';
+                
+                html += `
+                    <div class="attachment-item" 
+                         oncontextmenu="showTestContextMenu(event, '${attachment.name}', '${attachment.path}')"
+                         data-file-name="${attachment.name}"
+                         data-file-path="${attachment.path}">
+                        <div class="attachment-icon">
+                            <i class="ph ${iconClass}"></i>
+                        </div>
+                        <div class="attachment-info">
+                            <div class="attachment-name">${attachment.name}</div>
+                            <div class="attachment-meta">
+                                <span class="attachment-type">${attachment.type}</span>
+                                <span class="attachment-separator">•</span>
+                                <span class="attachment-size">${sizeText}</span>
+                                <span class="attachment-separator">•</span>
+                                <span class="attachment-date">${modifiedText}</span>
+                            </div>
+                        </div>
+                        <div class="attachment-actions">
+                            ${attachment.name.endsWith('.json') ? `
+                            <button class="attachment-btn" onclick="testViewJson('${attachment.name}')" title="查看">
+                                <i class="ph ph-eye"></i>
+                            </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            attachmentsList.innerHTML = html;
+        }
+
+        // 测试加载状态
+        function testLoadingState() {
+            const container = document.getElementById('attachment-container');
+            container.innerHTML = '<div class="loading-attachments">正在加载附件...</div>';
+        }
+
+        // 测试空状态
+        function testEmptyState() {
+            const container = document.getElementById('attachment-container');
+            container.innerHTML = '<div class="no-attachments">暂无附件</div>';
+        }
+
+        // 测试错误状态
+        function testErrorState() {
+            const container = document.getElementById('attachment-container');
+            container.innerHTML = '<div class="error-attachments">加载附件失败</div>';
+        }
+
+        // 测试 JSON 模态框
+        function testJsonModal() {
+            const mockJson = {
+                "product": {
+                    "name": "测试产品",
+                    "price": 299.99,
+                    "description": "这是一个测试产品的详细描述",
+                    "specifications": {
+                        "weight": "500g",
+                        "dimensions": "100x50x30mm",
+                        "material": "铝合金"
+                    }
+                }
+            };
+            
+            attachmentCard.showJsonModal('test-product.json', JSON.stringify(mockJson));
+        }
+
+        // 测试右键菜单
+        function testContextMenu() {
+            const testArea = document.getElementById('context-menu-test');
+            testArea.oncontextmenu = function(event) {
+                event.preventDefault();
+                showTestContextMenu(event, 'test-file.json', '/path/to/test-file.json');
+            };
+        }
+
+        // 显示测试右键菜单
+        function showTestContextMenu(event, fileName, filePath) {
+            // 移除现有的右键菜单
+            const existingMenu = document.getElementById('test-context-menu');
+            if (existingMenu) {
+                existingMenu.remove();
+            }
+            
+            // 创建右键菜单
+            const contextMenu = document.createElement('div');
+            contextMenu.className = 'context-menu';
+            contextMenu.id = 'test-context-menu';
+            
+            contextMenu.innerHTML = `
+                <div class="context-menu-item" onclick="testShowInFinder('${fileName}', '${filePath}')">
+                    <span>在 Finder 中显示</span>
+                </div>
+                <div class="context-menu-item" onclick="testSaveAs('${fileName}', '${filePath}')">
+                    <span>另存为</span>
+                </div>
+            `;
+            
+            // 设置菜单位置
+            contextMenu.style.position = 'fixed';
+            contextMenu.style.left = event.clientX + 'px';
+            contextMenu.style.top = event.clientY + 'px';
+            contextMenu.style.zIndex = '10000';
+            
+            // 添加到页面
+            document.body.appendChild(contextMenu);
+            
+            // 点击其他地方隐藏菜单
+            setTimeout(() => {
+                document.addEventListener('click', function hideMenu() {
+                    const menu = document.getElementById('test-context-menu');
+                    if (menu) {
+                        menu.remove();
+                    }
+                    document.removeEventListener('click', hideMenu);
+                }, { once: true });
+            }, 0);
+        }
+
+        // 测试查看 JSON
+        function testViewJson(fileName) {
+            console.log('查看 JSON 文件:', fileName);
+            testJsonModal();
+        }
+
+        // 测试在 Finder 中显示
+        function testShowInFinder(fileName, filePath) {
+            console.log('在 Finder 中显示:', fileName, filePath);
+            alert(`模拟在 Finder 中显示文件: ${fileName}`);
+        }
+
+        // 测试另存为
+        function testSaveAs(fileName, filePath) {
+            console.log('另存为文件:', fileName, filePath);
+            alert(`模拟另存为文件: ${fileName}`);
+        }
+
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        // 格式化日期
+        function formatDate(date) {
+            const d = new Date(date);
+            return d.toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // 页面加载完成后自动测试附件列表
+        document.addEventListener('DOMContentLoaded', function() {
+            testAttachmentList();
+        });
+    </script>
+</body>
+</html>

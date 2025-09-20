@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试采集系统</title>
+    <link rel="stylesheet" href="../renderer/globals.css">
+    <link rel="stylesheet" href="../renderer/theme/light/colors.css">
+    <link rel="stylesheet" href="../renderer/icons-sprite.css">
+    <script src="../renderer/config.js"></script>
+    <!-- Collection组件已移除 -->
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+        }
+        
+        .header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .test-section h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+        }
+        
+        .test-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .test-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s ease;
+        }
+        
+        .test-button:hover {
+            background: #5a6fd8;
+        }
+        
+        .test-button.secondary {
+            background: #6c757d;
+        }
+        
+        .test-button.secondary:hover {
+            background: #5a6268;
+        }
+        
+        .test-results {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .log-success {
+            color: #28a745;
+        }
+        
+        .log-error {
+            color: #dc3545;
+        }
+        
+        .log-info {
+            color: #17a2b8;
+        }
+        
+        .log-warning {
+            color: #ffc107;
+        }
+        
+        .collection-demo {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .demo-tasks {
+            display: grid;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        
+        .demo-task {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .demo-task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .demo-task-title {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .demo-task-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-collecting {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-completed {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .demo-task-url {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .demo-task-url:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>采集系统测试</h1>
+            <p>测试CollectionManager和monitoring.json更新功能</p>
+        </div>
+        
+        <div class="content">
+            <!-- 基础功能测试 -->
+            <div class="test-section">
+                <h3>基础功能测试</h3>
+                <div class="test-buttons">
+                    <button class="test-button" onclick="testCollectionManager()">测试CollectionManager初始化</button>
+                    <button class="test-button" onclick="testTaskManagement()">测试任务管理</button>
+                    <button class="test-button" onclick="testAPIEndpoints()">测试API端点</button>
+                    <button class="test-button secondary" onclick="clearResults()">清空结果</button>
+                </div>
+                <div class="test-results" id="test-results"></div>
+            </div>
+            
+            <!-- 采集功能演示 -->
+            <div class="test-section">
+                <h3>采集功能演示</h3>
+                <p>模拟采集任务，测试monitoring.json数据更新</p>
+                
+                <div class="collection-demo">
+                    <div class="demo-tasks" id="demo-tasks">
+                        <!-- 演示任务将在这里动态生成 -->
+                    </div>
+                    
+                    <div class="test-buttons">
+                        <button class="test-button" onclick="startDemoCollection()">开始演示采集</button>
+                        <button class="test-button secondary" onclick="pauseDemoCollection()">暂停采集</button>
+                        <button class="test-button secondary" onclick="stopDemoCollection()">停止采集</button>
+                        <button class="test-button secondary" onclick="resetDemoCollection()">重置演示</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 测试数据
+        const testTasks = [
+            {
+                id: 0,
+                goodsId: '123456789012',
+                title: '测试商品1',
+                url: 'https://example.com/product1',
+                status: 'pending',
+                progress: '等待中...'
+            },
+            {
+                id: 1,
+                goodsId: '123456789013',
+                title: '测试商品2',
+                url: 'https://example.com/product2',
+                status: 'pending',
+                progress: '等待中...'
+            },
+            {
+                id: 2,
+                goodsId: '123456789014',
+                title: '测试商品3',
+                url: 'https://example.com/product3',
+                status: 'pending',
+                progress: '等待中...'
+            }
+        ];
+        
+        // 记录测试结果
+        function logResult(type, message) {
+            const resultsDiv = document.getElementById('test-results');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+            
+            const logElement = document.createElement('div');
+            logElement.className = `log-${type}`;
+            logElement.textContent = logEntry;
+            
+            resultsDiv.appendChild(logElement);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        // 清空结果
+        function clearResults() {
+            document.getElementById('test-results').innerHTML = '';
+        }
+        
+        // 测试CollectionManager初始化
+        function testCollectionManager() {
+            logResult('info', '开始测试CollectionManager初始化...');
+            
+            try {
+                if (window.collectionManager) {
+                    logResult('success', 'CollectionManager实例存在');
+                    
+                    // 测试设置任务
+                    window.collectionManager.setTasks(testTasks);
+                    logResult('success', '任务设置成功: ' + testTasks.length + ' 个任务');
+                    
+                    // 测试状态获取
+                    const state = window.collectionManager.collectionState;
+                    logResult('info', '当前状态: 总任务数=' + state.totalTasks + ', 已完成=' + state.completedTasks);
+                    
+                    logResult('success', 'CollectionManager初始化测试通过');
+                } else {
+                    logResult('error', 'CollectionManager实例不存在');
+                }
+            } catch (error) {
+                logResult('error', 'CollectionManager初始化测试失败: ' + error.message);
+            }
+        }
+        
+        // 测试任务管理
+        function testTaskManagement() {
+            logResult('info', '开始测试任务管理功能...');
+            
+            try {
+                if (!window.collectionManager) {
+                    logResult('error', 'CollectionManager未初始化');
+                    return;
+                }
+                
+                // 设置测试任务
+                window.collectionManager.setTasks(testTasks);
+                
+                // 测试任务状态更新
+                window.collectionManager.updateTaskStatus(0, 'collecting', '采集中...');
+                logResult('success', '任务状态更新测试通过');
+                
+                // 测试进度更新
+                window.collectionManager.updateProgress();
+                window.collectionManager.updateStats();
+                logResult('success', '进度更新测试通过');
+                
+                logResult('success', '任务管理功能测试通过');
+            } catch (error) {
+                logResult('error', '任务管理功能测试失败: ' + error.message);
+            }
+        }
+        
+        // 测试API端点
+        async function testAPIEndpoints() {
+            logResult('info', '开始测试API端点...');
+            
+            try {
+                // 测试获取monitoring.json
+                const response = await fetch('http://localhost:3001/api/monitor/get-monitoring-data?goodsId=123456789012');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    logResult('success', '获取monitoring.json测试通过: ' + JSON.stringify(data));
+                } else if (response.status === 404) {
+                    logResult('info', 'monitoring.json文件不存在（正常情况）');
+                } else {
+                    logResult('error', '获取monitoring.json失败: ' + response.status);
+                }
+                
+                // 测试更新monitoring.json
+                const testData = [{
+                    timestamp: new Date().toISOString(),
+                    goodsData: { price: 100, title: '测试商品' },
+                    storeData: { name: '测试店铺', rating: 4.5 }
+                }];
+                
+                const updateResponse = await fetch('http://localhost:3001/api/monitor/update-monitoring-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        goodsId: '123456789012',
+                        monitoringData: testData
+                    })
+                });
+                
+                if (updateResponse.ok) {
+                    logResult('success', '更新monitoring.json测试通过');
+                } else {
+                    logResult('error', '更新monitoring.json失败: ' + updateResponse.status);
+                }
+                
+            } catch (error) {
+                logResult('error', 'API端点测试失败: ' + error.message);
+            }
+        }
+        
+        // 生成演示任务
+        function generateDemoTasks() {
+            const demoTasksDiv = document.getElementById('demo-tasks');
+            demoTasksDiv.innerHTML = '';
+            
+            testTasks.forEach((task, index) => {
+                const taskDiv = document.createElement('div');
+                taskDiv.className = 'demo-task';
+                taskDiv.id = 'demo-task-' + index;
+                taskDiv.innerHTML = `
+                    <div class="demo-task-header">
+                        <div class="demo-task-title">${task.title}</div>
+                        <div class="demo-task-status status-${task.status}" id="demo-status-${index}">${getStatusText(task.status)}</div>
+                    </div>
+                    <a href="${task.url}" class="demo-task-url" target="_blank">${task.url}</a>
+                    <div style="margin-top: 8px; font-size: 12px; color: #666;" id="demo-progress-${index}">${task.progress}</div>
+                `;
+                demoTasksDiv.appendChild(taskDiv);
+            });
+        }
+        
+        // 获取状态文本
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': '待开始',
+                'collecting': '采集中',
+                'completed': '已完成',
+                'failed': '失败'
+            };
+            return statusMap[status] || '未知';
+        }
+        
+        // 更新演示任务状态
+        function updateDemoTaskStatus(index, status, progress) {
+            const statusElement = document.getElementById('demo-status-' + index);
+            const progressElement = document.getElementById('demo-progress-' + index);
+            
+            if (statusElement) {
+                statusElement.textContent = getStatusText(status);
+                statusElement.className = 'demo-task-status status-' + status;
+            }
+            
+            if (progressElement) {
+                progressElement.textContent = progress;
+            }
+        }
+        
+        // 开始演示采集
+        async function startDemoCollection() {
+            logResult('info', '开始演示采集...');
+            
+            try {
+                if (!window.collectionManager) {
+                    logResult('error', 'CollectionManager未初始化');
+                    return;
+                }
+                
+                // 设置任务
+                window.collectionManager.setTasks(testTasks);
+                
+                // 模拟采集过程
+                for (let i = 0; i < testTasks.length; i++) {
+                    const task = testTasks[i];
+                    
+                    // 更新状态为采集中
+                    task.status = 'collecting';
+                    updateDemoTaskStatus(i, 'collecting', '采集中...');
+                    logResult('info', `开始采集任务 ${i + 1}: ${task.title}`);
+                    
+                    // 模拟采集时间
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                    // 模拟采集结果
+                    const success = Math.random() > 0.2; // 80%成功率
+                    
+                    if (success) {
+                        task.status = 'completed';
+                        updateDemoTaskStatus(i, 'completed', '已完成');
+                        logResult('success', `任务 ${i + 1} 采集成功`);
+                        
+                        // 模拟更新monitoring.json
+                        await simulateMonitoringUpdate(task);
+                    } else {
+                        task.status = 'failed';
+                        updateDemoTaskStatus(i, 'failed', '采集失败');
+                        logResult('error', `任务 ${i + 1} 采集失败`);
+                    }
+                }
+                
+                logResult('success', '演示采集完成');
+            } catch (error) {
+                logResult('error', '演示采集失败: ' + error.message);
+            }
+        }
+        
+        // 模拟monitoring.json更新
+        async function simulateMonitoringUpdate(task) {
+            try {
+                const testData = [{
+                    timestamp: new Date().toISOString(),
+                    goodsData: {
+                        price: Math.floor(Math.random() * 1000) + 100,
+                        title: task.title,
+                        rating: (Math.random() * 2 + 3).toFixed(1)
+                    },
+                    storeData: {
+                        name: '测试店铺',
+                        rating: (Math.random() * 2 + 3).toFixed(1),
+                        sales: Math.floor(Math.random() * 1000)
+                    }
+                }];
+                
+                const response = await fetch('http://localhost:3001/api/monitor/update-monitoring-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        goodsId: task.goodsId,
+                        monitoringData: testData
+                    })
+                });
+                
+                if (response.ok) {
+                    logResult('success', `monitoring.json已更新: ${task.goodsId}`);
+                } else {
+                    logResult('error', `monitoring.json更新失败: ${task.goodsId}`);
+                }
+            } catch (error) {
+                logResult('error', `monitoring.json更新异常: ${error.message}`);
+            }
+        }
+        
+        // 暂停演示采集
+        function pauseDemoCollection() {
+            logResult('info', '暂停演示采集');
+            // 这里可以添加暂停逻辑
+        }
+        
+        // 停止演示采集
+        function stopDemoCollection() {
+            logResult('info', '停止演示采集');
+            // 这里可以添加停止逻辑
+        }
+        
+        // 重置演示采集
+        function resetDemoCollection() {
+            logResult('info', '重置演示采集');
+            
+            // 重置任务状态
+            testTasks.forEach((task, index) => {
+                task.status = 'pending';
+                task.progress = '等待中...';
+                updateDemoTaskStatus(index, 'pending', '等待中...');
+            });
+            
+            logResult('success', '演示采集已重置');
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            logResult('info', '测试页面初始化完成');
+            generateDemoTasks();
+        });
+    </script>
+</body>
+</html>

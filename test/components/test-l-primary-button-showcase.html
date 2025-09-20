@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LPrimaryButton 展示页面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+
+        .showcase-container {
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            max-width: 800px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            margin-bottom: 30px;
+        }
+
+        .theme-switcher {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .theme-btn {
+            padding: 12px 24px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .theme-btn.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .showcase-section {
+            width: 100%;
+            max-width: 1000px;
+            margin-bottom: 60px;
+            padding: 40px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-title {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .button-demo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .button-demo:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .demo-label {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .demo-button {
+            margin-bottom: 10px;
+        }
+
+        .demo-description {
+            font-size: 0.8rem;
+            opacity: 0.6;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .feature-item {
+            padding: 20px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 4px solid;
+        }
+
+        .feature-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .feature-desc {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .code-example {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .interactive-demo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 30px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .control-btn {
+            padding: 8px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            color: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .status-display {
+            padding: 10px 20px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        /* 主题样式 */
+        .theme-dark {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #ffffff;
+        }
+
+        .theme-light {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+            color: #1e293b;
+        }
+
+        .theme-light .showcase-section {
+            background: rgba(255, 255, 255, 0.7);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .theme-light .button-demo {
+            background: rgba(255, 255, 255, 0.5);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .theme-light .button-demo:hover {
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .theme-light .feature-item {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .theme-light .code-example {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.1);
+            color: #1e293b;
+        }
+
+        .theme-light .interactive-demo {
+            background: rgba(255, 255, 255, 0.5);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .theme-light .control-btn {
+            border-color: rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .theme-light .control-btn:hover {
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .theme-light .status-display {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .showcase-section {
+                padding: 20px;
+                margin-bottom: 40px;
+            }
+
+            .button-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .theme-switcher {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        /* 动画效果 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .showcase-section {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .button-demo {
+            animation: fadeInUp 0.6s ease-out;
+        }
+    </style>
+</head>
+<body class="theme-dark">
+    <div class="showcase-container">
+        <!-- 页面标题 -->
+        <div class="header">
+            <h1>LPrimaryButton</h1>
+            <p>主要按钮组件 - 支持深色/浅色主题自动适配</p>
+            
+            <!-- 主题切换器 -->
+            <div class="theme-switcher">
+                <button class="theme-btn active" id="light-theme">☀️ 浅色主题</button>
+                <button class="theme-btn" id="dark-theme">🌙 深色主题</button>
+            </div>
+        </div>
+
+        <!-- 基础展示 -->
+        <div class="showcase-section">
+            <h2 class="section-title">基础展示</h2>
+            <div class="button-grid">
+                <div class="button-demo">
+                    <div class="demo-label">基础按钮</div>
+                    <div class="demo-button" id="basic-btn-container"></div>
+                    <div class="demo-description">最简单的按钮形式</div>
+                </div>
+
+                <div class="button-demo">
+                    <div class="demo-label">带图标按钮</div>
+                    <div class="demo-button" id="icon-btn-container"></div>
+                    <div class="demo-description">包含图标的按钮</div>
+                </div>
+
+                <div class="button-demo">
+                    <div class="demo-label">禁用状态</div>
+                    <div class="demo-button" id="disabled-btn-container"></div>
+                    <div class="demo-description">不可交互的按钮</div>
+                </div>
+
+                <div class="button-demo">
+                    <div class="demo-label">加载状态</div>
+                    <div class="demo-button" id="loading-btn-container"></div>
+                    <div class="demo-description">显示加载中的按钮</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 交互演示 -->
+        <div class="showcase-section">
+            <h2 class="section-title">交互演示</h2>
+            <div class="interactive-demo">
+                <div class="demo-label">动态控制按钮状态</div>
+                <div class="demo-button" id="interactive-btn-container"></div>
+                <div class="control-buttons">
+                    <button class="control-btn" onclick="changeButtonText()">更改文本</button>
+                    <button class="control-btn" onclick="toggleDisabled()">切换禁用</button>
+                    <button class="control-btn" onclick="toggleLoading()">切换加载</button>
+                    <button class="control-btn" onclick="toggleIcon()">切换图标</button>
+                </div>
+                <div class="status-display" id="status-display">
+                    状态：正常 | 点击次数：0
+                </div>
+            </div>
+        </div>
+
+        <!-- 按钮组展示 -->
+        <div class="showcase-section">
+            <h2 class="section-title">按钮组</h2>
+            <div class="button-grid">
+                <div class="button-demo">
+                    <div class="demo-label">操作按钮组</div>
+                    <div class="demo-button" id="action-group-container"></div>
+                    <div class="demo-description">常见的操作按钮组合</div>
+                </div>
+
+                <div class="button-demo">
+                    <div class="demo-label">导航按钮组</div>
+                    <div class="demo-button" id="nav-group-container"></div>
+                    <div class="demo-description">导航相关的按钮组合</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 使用说明 -->
+        <div class="showcase-section">
+            <h2 class="section-title">使用说明</h2>
+            
+            <h3 style="margin-bottom: 15px;">基础用法</h3>
+            <div class="code-example">
+// 创建基础按钮
+const button = lPrimaryButtonInstance.create({
+    text: '点击我',
+    onClick: () => console.log('按钮被点击了')
+});
+            </div>
+
+            <h3 style="margin-bottom: 15px; margin-top: 30px;">带图标按钮</h3>
+            <div class="code-example">
+// 创建带图标按钮
+const iconButton = lPrimaryButtonInstance.create({
+    text: '保存',
+    icon: 'ph-floppy-disk',
+    onClick: () => console.log('保存按钮被点击了')
+});
+            </div>
+
+            <h3 style="margin-bottom: 15px; margin-top: 30px;">按钮组</h3>
+            <div class="code-example">
+// 创建按钮组
+const buttonGroup = lPrimaryButtonInstance.createGroup([
+    { text: '取消', onClick: () => console.log('取消') },
+    { text: '确定', onClick: () => console.log('确定') }
+]);
+            </div>
+
+            <h3 style="margin-bottom: 15px; margin-top: 30px;">主题特性</h3>
+            <div class="feature-list">
+                <div class="feature-item" style="border-left-color: #10b981;">
+                    <div class="feature-title">🎨 自动主题适配</div>
+                    <div class="feature-desc">深色主题白色背景，浅色主题黑色背景，文字颜色自动调整</div>
+                </div>
+                <div class="feature-item" style="border-left-color: #3b82f6;">
+                    <div class="feature-title">✨ 流畅动画</div>
+                    <div class="feature-desc">悬浮、点击等交互都有平滑的过渡动画效果</div>
+                </div>
+                <div class="feature-item" style="border-left-color: #f59e0b;">
+                    <div class="feature-title">🔧 灵活配置</div>
+                    <div class="feature-desc">支持图标、禁用、加载等多种状态配置</div>
+                </div>
+                <div class="feature-item" style="border-left-color: #ef4444;">
+                    <div class="feature-title">📱 响应式设计</div>
+                    <div class="feature-desc">适配不同屏幕尺寸，提供一致的用户体验</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入必要的依赖 -->
+    <script src="../../../hanli-app/renderer/components/Common/StyleManager.js"></script>
+    <script src="../../../hanli-app/renderer/components/Common/LPrimaryButton.js"></script>
+
+    <script>
+        // 全局变量
+        let clickCount = 0;
+        let currentTexts = ['动态按钮', '已更新', '再次更新', '文本变化', '动态按钮'];
+        let currentTextIndex = 0;
+        let hasIcon = false;
+
+        // 等待组件加载完成
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查组件是否加载成功
+            if (typeof window.lPrimaryButtonInstance === 'undefined') {
+                console.error('LPrimaryButton 组件未加载成功');
+                return;
+            }
+
+            // 创建展示按钮
+            createShowcaseButtons();
+            
+            // 绑定主题切换事件
+            bindThemeEvents();
+        });
+
+        /**
+         * 创建展示按钮
+         */
+        function createShowcaseButtons() {
+            // 基础按钮
+            const basicBtn = window.lPrimaryButtonInstance.create({
+                text: '基础按钮',
+                onClick: () => showToast('基础按钮被点击了！')
+            });
+            document.getElementById('basic-btn-container').appendChild(basicBtn);
+
+            // 带图标按钮
+            const iconBtn = window.lPrimaryButtonInstance.create({
+                text: '保存文档',
+                icon: 'ph-floppy-disk',
+                onClick: () => showToast('保存按钮被点击了！')
+            });
+            document.getElementById('icon-btn-container').appendChild(iconBtn);
+
+            // 禁用按钮
+            const disabledBtn = window.lPrimaryButtonInstance.create({
+                text: '禁用按钮',
+                disabled: true,
+                onClick: () => showToast('这个按钮不应该被点击')
+            });
+            document.getElementById('disabled-btn-container').appendChild(disabledBtn);
+
+            // 加载按钮
+            const loadingBtn = window.lPrimaryButtonInstance.create({
+                text: '加载中...',
+                loading: true,
+                onClick: () => showToast('加载按钮被点击了')
+            });
+            document.getElementById('loading-btn-container').appendChild(loadingBtn);
+
+            // 交互按钮
+            window.interactiveBtn = window.lPrimaryButtonInstance.create({
+                text: '动态按钮',
+                onClick: () => {
+                    clickCount++;
+                    updateStatusDisplay();
+                    showToast(`按钮被点击了 ${clickCount} 次！`);
+                }
+            });
+            document.getElementById('interactive-btn-container').appendChild(window.interactiveBtn);
+
+            // 操作按钮组
+            const actionGroup = window.lPrimaryButtonInstance.createGroup([
+                { 
+                    text: '取消', 
+                    onClick: () => showToast('取消操作')
+                },
+                { 
+                    text: '确定', 
+                    onClick: () => showToast('确定操作')
+                },
+                { 
+                    text: '保存', 
+                    icon: 'ph-floppy-disk',
+                    onClick: () => showToast('保存操作')
+                }
+            ]);
+            document.getElementById('action-group-container').appendChild(actionGroup);
+
+            // 导航按钮组
+            const navGroup = window.lPrimaryButtonInstance.createGroup([
+                { 
+                    text: '上一页', 
+                    icon: 'ph-arrow-left',
+                    onClick: () => showToast('上一页')
+                },
+                { 
+                    text: '下一页', 
+                    icon: 'ph-arrow-right',
+                    onClick: () => showToast('下一页')
+                }
+            ]);
+            document.getElementById('nav-group-container').appendChild(navGroup);
+        }
+
+        /**
+         * 绑定主题切换事件
+         */
+        function bindThemeEvents() {
+            const lightThemeBtn = document.getElementById('light-theme');
+            const darkThemeBtn = document.getElementById('dark-theme');
+            const body = document.body;
+
+            lightThemeBtn.addEventListener('click', () => {
+                body.className = 'theme-light';
+                lightThemeBtn.classList.add('active');
+                darkThemeBtn.classList.remove('active');
+            });
+
+            darkThemeBtn.addEventListener('click', () => {
+                body.className = 'theme-dark';
+                darkThemeBtn.classList.add('active');
+                lightThemeBtn.classList.remove('active');
+            });
+        }
+
+        /**
+         * 更改按钮文本
+         */
+        function changeButtonText() {
+            if (window.interactiveBtn) {
+                currentTextIndex = (currentTextIndex + 1) % currentTexts.length;
+                window.lPrimaryButtonInstance.update(window.interactiveBtn, {
+                    text: currentTexts[currentTextIndex]
+                });
+                updateStatusDisplay();
+            }
+        }
+
+        /**
+         * 切换禁用状态
+         */
+        function toggleDisabled() {
+            if (window.interactiveBtn) {
+                const isDisabled = window.interactiveBtn.classList.contains('l-primary-btn-disabled');
+                window.lPrimaryButtonInstance.update(window.interactiveBtn, {
+                    disabled: !isDisabled
+                });
+                updateStatusDisplay();
+            }
+        }
+
+        /**
+         * 切换加载状态
+         */
+        function toggleLoading() {
+            if (window.interactiveBtn) {
+                const isLoading = window.interactiveBtn.classList.contains('l-primary-btn-loading');
+                window.lPrimaryButtonInstance.update(window.interactiveBtn, {
+                    loading: !isLoading
+                });
+                updateStatusDisplay();
+            }
+        }
+
+        /**
+         * 切换图标
+         */
+        function toggleIcon() {
+            if (window.interactiveBtn) {
+                hasIcon = !hasIcon;
+                window.lPrimaryButtonInstance.update(window.interactiveBtn, {
+                    icon: hasIcon ? 'ph-heart' : null
+                });
+                updateStatusDisplay();
+            }
+        }
+
+        /**
+         * 更新状态显示
+         */
+        function updateStatusDisplay() {
+            if (window.interactiveBtn) {
+                const isDisabled = window.interactiveBtn.classList.contains('l-primary-btn-disabled');
+                const isLoading = window.interactiveBtn.classList.contains('l-primary-btn-loading');
+                
+                let status = '正常';
+                if (isDisabled) status = '禁用';
+                else if (isLoading) status = '加载中';
+                
+                const statusDisplay = document.getElementById('status-display');
+                statusDisplay.innerHTML = `状态：${status} | 点击次数：${clickCount}`;
+            }
+        }
+
+        /**
+         * 显示提示信息
+         */
+        function showToast(message) {
+            // 创建简单的提示框
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 6px;
+                font-size: 14px;
+                z-index: 1000;
+                animation: fadeInUp 0.3s ease-out;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            // 3秒后自动移除
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

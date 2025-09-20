@@ -5,7 +5,7 @@ class CollectionManager {
     }
 
     // 执行完整的采集流程
-    async executeCollection(goodsInfoData, monitoringData, mediaData, shouldOpenApp = false) {
+    async executeCollection(goodsInfoData, monitoringData, mediaData, shouldOpenApp = false, rawData = null) {
         if (this.isCollecting) {
             console.warn('采集正在进行中，请等待完成');
             return;
@@ -17,7 +17,7 @@ class CollectionManager {
             console.log('开始执行完整采集流程...');
             
             // 1. 创建文件夹并发送JSON数据
-            await this.createFolderAndSaveJson(goodsInfoData, monitoringData, mediaData);
+            await this.createFolderAndSaveJson(goodsInfoData, monitoringData, mediaData, rawData);
             
             // 2. 根据参数决定是否唤起App
             if (shouldOpenApp) {
@@ -45,7 +45,7 @@ class CollectionManager {
     }
 
     // 执行带进度跟踪的采集流程
-    async executeCollectionWithProgress(goodsInfoData, monitoringData, mediaData, shouldOpenApp = false) {
+    async executeCollectionWithProgress(goodsInfoData, monitoringData, mediaData, shouldOpenApp = false, rawData = null) {
         if (this.isCollecting) {
             console.warn('采集正在进行中，请等待完成');
             return;
@@ -57,7 +57,7 @@ class CollectionManager {
             console.log('开始执行带进度跟踪的采集流程...');
             
             // 1. 创建文件夹并发送JSON数据
-            await this.createFolderAndSaveJson(goodsInfoData, monitoringData, mediaData);
+            await this.createFolderAndSaveJson(goodsInfoData, monitoringData, mediaData, rawData);
             
             // 更新进度：JSON文件已保存
             if (window.collectionProgressDialog) {
@@ -92,27 +92,38 @@ class CollectionManager {
     // 带进度跟踪的媒体文件下载
     async downloadMediaFilesWithProgress(goodsId, mediaData) {
         try {
-            console.log('开始带进度跟踪的媒体文件下载...');
+            console.log('=== 开始媒体文件下载流程 ===');
+            console.log('商品ID:', goodsId);
+            console.log('📄 media-temp.json 中的媒体文件数量:', mediaData.media.length);
             
             // 第一步：筛选符合尺寸要求的图片（最小800x800px）
+            console.log('🔍 第一步：筛选符合尺寸要求的图片（最小800x800px）');
             const sizeFilteredMedia = mediaData.media.filter(item => {
                 if (item.type === 'image') {
                     const isLargeEnough = item.width >= 800 && item.height >= 800;
-                    console.log(`图片尺寸筛选: ${item.url} - ${item.width}x${item.height} - 符合要求: ${isLargeEnough}`);
+                    console.log(`  📷 图片尺寸筛选: ${item.url} - ${item.width}x${item.height} - 符合要求: ${isLargeEnough}`);
                     return isLargeEnough;
                 }
                 // 视频不进行尺寸筛选
+                console.log(`  🎥 视频文件: ${item.url} - 跳过尺寸筛选`);
                 return true;
             });
             
-            console.log(`尺寸筛选前媒体数量: ${mediaData.media.length}, 尺寸筛选后: ${sizeFilteredMedia.length}`);
+            console.log(`📊 尺寸筛选结果: ${mediaData.media.length} → ${sizeFilteredMedia.length} 个文件`);
             
-            // 第二步：检查本地已存在的媒体文件，避免重复下载
-            const finalFilteredMedia = await this.filterExistingMedia(goodsId, sizeFilteredMedia);
+            // 第二步：比较media-temp.json和media.json，获取新增的媒体文件
+            console.log('🔍 第二步：比较media-temp.json和media.json，获取新增的媒体文件');
+            const finalFilteredMedia = await this.getNewMediaFromComparison(goodsId, sizeFilteredMedia);
             
-            console.log(`本地去重前媒体数量: ${sizeFilteredMedia.length}, 本地去重后: ${finalFilteredMedia.length}`);
+            console.log(`📊 本地去重结果: ${sizeFilteredMedia.length} → ${finalFilteredMedia.length} 个文件`);
+            
+            if (finalFilteredMedia.length === 0) {
+                console.log('ℹ️ 没有新的媒体文件需要下载');
+                return;
+            }
             
             // 发送下载请求到App
+            console.log('📤 发送媒体文件下载请求到hanli-app...');
             const downloadData = {
                 goodsId: goodsId,
                 mediaList: finalFilteredMedia
@@ -129,42 +140,81 @@ class CollectionManager {
             if (response.ok) {
                 const result = await response.json();
                 if (result.success) {
-                    console.log('媒体文件下载完成:', result.downloadedFiles);
+                    console.log('✅ 媒体文件下载完成！');
+                    console.log('📁 下载的文件列表:');
+                    result.downloadedFiles.forEach((file, index) => {
+                        console.log(`  ${index + 1}. ${file}`);
+                    });
+                    
+                    // 合并新下载的媒体信息到media.json
+                    console.log('🔄 合并媒体信息到media.json...');
+                    await this.mergeDownloadedMedia(goodsId, result.downloadedFiles);
                     
                     // 更新进度：所有媒体文件下载完成
                     if (window.collectionProgressDialog) {
                         window.collectionProgressDialog.updateProgress(finalFilteredMedia.length + 1); // +1 for JSON
                     }
                     
+                    console.log('📊 媒体文件下载统计:');
+                    console.log(`  📄 media-temp.json: ${mediaData.media.length} 个文件`);
+                    console.log(`  📄 media.json: 新增 ${result.downloadedFiles.length} 个文件`);
+                    console.log(`  ✅ 下载完成: ${result.downloadedFiles.length} 个文件`);
+                    
                     this.showDownloadCompleteNotification(result.downloadedFiles.length);
                 } else {
-                    console.error('媒体文件下载失败:', result.error);
+                    console.error('❌ 媒体文件下载失败:', result.error);
                     this.showToast('媒体文件下载失败: ' + result.error, 'error');
                 }
             } else {
                 const errorText = await response.text();
-                console.error('媒体文件下载请求失败，状态码:', response.status, '错误信息:', errorText);
+                console.error('❌ 媒体文件下载请求失败，状态码:', response.status, '错误信息:', errorText);
                 this.showToast(`媒体文件下载请求失败: ${response.status} - ${errorText}`, 'error');
             }
         } catch (error) {
-            console.error('带进度跟踪的媒体文件下载失败:', error);
+            console.error('❌ 带进度跟踪的媒体文件下载失败:', error);
             this.showToast('媒体文件下载失败', 'error');
         }
     }
 
     // 创建文件夹并保存JSON数据
-    async createFolderAndSaveJson(goodsInfoData, monitoringData, mediaData) {
+    async createFolderAndSaveJson(goodsInfoData, monitoringData, mediaData, rawData = null) {
         try {
-            console.log('开始创建文件夹并保存JSON数据...');
+            // 根据传入的参数判断操作类型
+            const isFirstSave = goodsInfoData && monitoringData && rawData;
+            const isMediaUpdate = !goodsInfoData && !monitoringData && !rawData && mediaData;
             
-            // 发送JSON文件到App
+            if (isFirstSave) {
+                console.log('=== 开始创建文件夹并保存JSON数据 ===');
+            } else if (isMediaUpdate) {
+                console.log('=== 更新media-temp.json ===');
+            } else {
+                console.log('=== 保存JSON数据 ===');
+            }
+            
+            const goodsId = goodsInfoData?.goodsId || mediaData?.goodsId;
+            const collectTime = goodsInfoData?.collectTime || new Date().toISOString();
+            
+            console.log('商品ID:', goodsId);
+            console.log('采集时间:', collectTime);
+            
+            // 准备JSON数据
             const jsonData = {
-                goodsId: goodsInfoData.goodsId,
-                collectTime: goodsInfoData.collectTime,
-                goodsInfo: JSON.stringify(goodsInfoData, null, 2),
-                monitoring: JSON.stringify(monitoringData, null, 2),
-                mediaData: JSON.stringify(mediaData, null, 2)
+                goodsId: goodsId,
+                collectTime: collectTime,
+                goodsInfo: goodsInfoData ? JSON.stringify(goodsInfoData, null, 2) : null,
+                monitoring: monitoringData ? JSON.stringify(monitoringData, null, 2) : null,
+                mediaData: mediaData ? JSON.stringify(mediaData, null, 2) : null,
+                rawData: rawData ? JSON.stringify(rawData, null, 2) : null,
+                useTempFile: true // 标记使用临时文件
             };
+            
+            // 打印各个文件的数据大小
+            console.log('📄 rawData.json 数据大小:', rawData ? JSON.stringify(rawData).length : 0, '字符');
+            console.log('📄 product.json (goodsInfo) 数据大小:', goodsInfoData ? JSON.stringify(goodsInfoData).length : 0, '字符');
+            console.log('📄 monitoring.json 数据大小:', monitoringData ? JSON.stringify(monitoringData).length : 0, '字符');
+            console.log('📄 media-temp.json 数据大小:', mediaData ? JSON.stringify(mediaData).length : 0, '字符');
+            
+            console.log('正在发送JSON数据到hanli-app...');
             
             const response = await fetch('http://localhost:3001/api/save-json-files', {
                 method: 'POST',
@@ -177,9 +227,26 @@ class CollectionManager {
             if (response.ok) {
                 const result = await response.json();
                 if (result.success) {
-                    console.log('JSON数据已成功保存到hanli-app的data文件夹');
-                    console.log('保存的文件:', result.files);
-                    this.showToast('JSON数据已保存！', 'success');
+                    console.log('✅ JSON数据已成功保存到hanli-app的data文件夹');
+                    console.log('📁 保存的文件列表:');
+                    
+                    // 详细打印每个保存的文件
+                    if (result.files) {
+                        result.files.forEach(file => {
+                            console.log(`  📄 ${file}`);
+                        });
+                    }
+                    
+                    // 打印各个JSON文件的保存状态
+                    console.log('📊 文件保存状态:');
+                    if (rawData) console.log('  ✅ rawData.json - 原始数据已保存');
+                    if (goodsInfoData) console.log('  ✅ product.json (goodsInfo) - 商品信息已保存');
+                    if (monitoringData) console.log('  ✅ monitoring.json - 监控数据已保存');
+                    if (mediaData) console.log('  ✅ media-temp.json - 媒体数据已保存');
+                    
+                    // 显示Toast提示
+                    this.showToast('JSON文件保存完成！', 'success');
+                    
                 } else {
                     throw new Error('保存JSON数据失败: ' + result.error);
                 }
@@ -188,7 +255,8 @@ class CollectionManager {
                 throw new Error(`无法连接到hanli-app，状态码: ${response.status}。错误信息: ${errorText}。请确保Hanli应用已启动`);
             }
         } catch (error) {
-            console.error('创建文件夹并保存JSON失败:', error);
+            console.error('❌ 创建文件夹并保存JSON失败:', error);
+            this.showToast('JSON文件保存失败: ' + error.message, 'error');
             throw error;
         }
     }
@@ -342,7 +410,6 @@ class CollectionManager {
     // 显示下载完成通知
     showDownloadCompleteNotification(fileCount) {
         console.log(`媒体文件下载完成，共下载 ${fileCount} 个文件`);
-        this.showToast(`媒体文件下载完成！共下载 ${fileCount} 个文件`, 'success');
     }
 
     // 显示App打开失败弹窗
@@ -497,6 +564,108 @@ class CollectionManager {
             console.error('检查本地媒体文件时出错:', error);
             // 出错时返回原始列表，继续下载
             return mediaList;
+        }
+    }
+
+    // 通过比较media-temp.json和media.json获取新增的媒体文件
+    async getNewMediaFromComparison(goodsId, mediaList) {
+        try {
+            console.log(`开始比较商品 ${goodsId} 的媒体文件...`);
+            
+            // 调用App API比较媒体文件
+            const response = await fetch('http://localhost:3001/api/compare-media-files', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    goodsId: goodsId
+                })
+            });
+            
+            if (!response.ok) {
+                console.warn('比较媒体文件失败，将下载所有媒体文件');
+                return mediaList;
+            }
+            
+            const result = await response.json();
+            if (!result.success) {
+                console.warn('比较媒体文件失败:', result.error);
+                return mediaList;
+            }
+            
+            const newUrls = new Set(result.newUrls || []);
+            console.log(`新增的媒体文件数量: ${newUrls.size}`);
+            console.log('新增的URLs:', Array.from(newUrls));
+            
+            // 筛选出新增的媒体文件
+            const filteredMedia = mediaList.filter(item => {
+                const isNew = newUrls.has(item.url);
+                if (!isNew) {
+                    console.log(`跳过已存在的媒体文件: ${item.url}`);
+                }
+                return isNew;
+            });
+            
+            const skippedCount = mediaList.length - filteredMedia.length;
+            if (skippedCount > 0) {
+                this.showToast(`跳过 ${skippedCount} 个已存在的媒体文件`, 'info');
+            }
+            
+            return filteredMedia;
+            
+        } catch (error) {
+            console.error('比较媒体文件时出错:', error);
+            return mediaList;
+        }
+    }
+
+    // 合并新下载的媒体信息到media.json
+    async mergeDownloadedMedia(goodsId, downloadedFiles) {
+        try {
+            console.log('=== 开始合并媒体信息到media.json ===');
+            console.log('商品ID:', goodsId);
+            console.log('📁 待合并的下载文件数量:', downloadedFiles.length);
+            console.log('📄 下载文件列表:');
+            downloadedFiles.forEach((file, index) => {
+                console.log(`  ${index + 1}. ${file}`);
+            });
+            
+            // 调用App API合并媒体文件
+            console.log('📤 发送合并请求到hanli-app...');
+            const response = await fetch('http://localhost:3001/api/merge-media-files', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    goodsId: goodsId,
+                    downloadedMedia: downloadedFiles
+                })
+            });
+            
+            if (!response.ok) {
+                console.warn('❌ 合并媒体文件失败，状态码:', response.status);
+                return;
+            }
+            
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ 媒体文件合并完成！');
+                console.log('📊 合并统计:');
+                console.log(`  📄 media.json: 新增 ${result.mergedCount} 个文件`);
+                console.log(`  📄 media.json: 总计 ${result.totalCount} 个文件`);
+                console.log('  ✅ 合并完成: 所有媒体信息已更新到media.json');
+                
+                this.showToast(`媒体文件合并完成: 新增 ${result.mergedCount} 个`, 'success');
+            } else {
+                console.error('❌ 合并媒体文件失败:', result.error);
+                this.showToast('合并媒体文件失败: ' + result.error, 'error');
+            }
+            
+        } catch (error) {
+            console.error('❌ 合并媒体文件时出错:', error);
+            this.showToast('合并媒体文件失败', 'error');
         }
     }
 

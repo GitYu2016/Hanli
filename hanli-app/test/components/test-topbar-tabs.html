@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TopBarTabs 组件测试</title>
+    <link rel="stylesheet" href="globals.css">
+    <link rel="stylesheet" href="theme/light/colors.css" id="theme-colors">
+    <link rel="stylesheet" href="icons-sprite.css">
+    <script src="config.js"></script>
+    <script src="components/Common/StyleManager.js"></script>
+    <script src="components/Common/TopBarTabs.js"></script>
+</head>
+<body>
+    <div style="padding: 20px;">
+        <h1>TopBarTabs 组件测试</h1>
+        
+        <div style="margin: 20px 0;">
+            <h2>基本功能测试</h2>
+            <div id="top-bar-tabs" style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;"></div>
+            <button onclick="addTestTab()">添加测试Tab</button>
+            <button onclick="switchToFirstTab()">切换到第一个Tab</button>
+            <button onclick="closeFirstTab()">关闭第一个Tab</button>
+        </div>
+
+        <div style="margin: 20px 0;">
+            <h2>自定义样式测试</h2>
+            <div id="custom-tabs" style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;"></div>
+            <button onclick="addCustomTab()">添加自定义样式Tab</button>
+        </div>
+
+        <div style="margin: 20px 0;">
+            <h2>事件回调测试</h2>
+            <div id="event-logs" style="background: #f5f5f5; padding: 10px; height: 200px; overflow-y: auto; border: 1px solid #ccc;"></div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟TabManager
+        class TestTabManager {
+            constructor() {
+                this.tabs = [];
+                this.activeTabId = null;
+                this.tabIdCounter = 0;
+            }
+
+            generateTabId() {
+                return `tab_${++this.tabIdCounter}`;
+            }
+
+            addTab(pageData) {
+                const tabId = this.generateTabId();
+                const tab = {
+                    id: tabId,
+                    pageType: pageData.type,
+                    title: pageData.title,
+                    pageData: pageData,
+                    isActive: false,
+                    closable: pageData.closable !== false
+                };
+                
+                this.tabs.push(tab);
+                this.setActiveTab(tabId);
+                return tabId;
+            }
+
+            setActiveTab(tabId) {
+                this.tabs.forEach(tab => tab.isActive = false);
+                const targetTab = this.tabs.find(tab => tab.id === tabId);
+                if (targetTab) {
+                    targetTab.isActive = true;
+                    this.activeTabId = tabId;
+                }
+            }
+
+            closeTab(tabId) {
+                const tabIndex = this.tabs.findIndex(tab => tab.id === tabId);
+                if (tabIndex === -1) return;
+
+                const isActiveTab = this.tabs[tabIndex].isActive;
+                this.tabs.splice(tabIndex, 1);
+
+                if (isActiveTab && this.tabs.length > 0) {
+                    let newActiveIndex = tabIndex - 1;
+                    if (newActiveIndex < 0) {
+                        newActiveIndex = 0;
+                    }
+                    this.setActiveTab(this.tabs[newActiveIndex].id);
+                } else if (this.tabs.length === 0) {
+                    this.activeTabId = null;
+                }
+
+                return isActiveTab;
+            }
+
+            onTabSwitch(tab) {
+                const event = new CustomEvent('tabSwitch', {
+                    detail: { tab }
+                });
+                document.dispatchEvent(event);
+            }
+        }
+
+        // 初始化测试
+        let tabManager;
+        let topBarTabs;
+        let customTabs;
+
+        function logEvent(message) {
+            const logs = document.getElementById('event-logs');
+            const time = new Date().toLocaleTimeString();
+            logs.innerHTML += `<div>[${time}] ${message}</div>`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        function initTest() {
+            // 初始化TabManager
+            tabManager = new TestTabManager();
+
+            // 初始化基本TopBarTabs
+            topBarTabs = new TopBarTabs({
+                containerId: 'top-bar-tabs'
+            });
+            topBarTabs.setTabManager(tabManager);
+            topBarTabs.setTabSwitchCallback((tab) => {
+                logEvent(`Tab切换: ${tab.title} (${tab.id})`);
+            });
+            topBarTabs.setTabCloseCallback((tabId, isActive) => {
+                logEvent(`Tab关闭: ${tabId}, 是否活动Tab: ${isActive}`);
+            });
+            topBarTabs.setTabAddCallback((tab) => {
+                logEvent(`Tab添加: ${tab.title} (${tab.id})`);
+            });
+
+            // 初始化自定义样式TopBarTabs
+            customTabs = new TopBarTabs({
+                containerId: 'custom-tabs',
+                customStyles: {
+                    '.top-bar-tab': {
+                        'background-color': '#e3f2fd',
+                        'border': '2px solid #2196f3',
+                        'border-radius': '12px'
+                    },
+                    '.top-bar-tab.active': {
+                        'background-color': '#2196f3',
+                        'color': 'white'
+                    }
+                }
+            });
+            customTabs.setTabManager(tabManager);
+
+            logEvent('TopBarTabs组件初始化完成');
+        }
+
+        function addTestTab() {
+            const tabTypes = ['home', 'productDetail', 'goodsList'];
+            const tabTitles = ['首页', '产品详情', '商品列表'];
+            const randomIndex = Math.floor(Math.random() * tabTypes.length);
+            
+            const tabId = tabManager.addTab({
+                type: tabTypes[randomIndex],
+                title: `${tabTitles[randomIndex]} ${tabManager.tabs.length + 1}`,
+                closable: true
+            });
+            
+            topBarTabs.renderTabs();
+            logEvent(`添加了测试Tab: ${tabTitles[randomIndex]} ${tabManager.tabs.length}`);
+        }
+
+        function addCustomTab() {
+            const tabId = tabManager.addTab({
+                type: 'home',
+                title: `自定义Tab ${tabManager.tabs.length + 1}`,
+                closable: true
+            });
+            
+            customTabs.renderTabs();
+            logEvent(`添加了自定义样式Tab: 自定义Tab ${tabManager.tabs.length}`);
+        }
+
+        function switchToFirstTab() {
+            if (tabManager.tabs.length > 0) {
+                topBarTabs.switchTab(tabManager.tabs[0].id);
+            } else {
+                logEvent('没有Tab可以切换');
+            }
+        }
+
+        function closeFirstTab() {
+            if (tabManager.tabs.length > 0) {
+                topBarTabs.closeTab(tabManager.tabs[0].id);
+            } else {
+                logEvent('没有Tab可以关闭');
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initTest);
+    </script>
+</body>
+</html>

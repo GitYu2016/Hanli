@@ -120,9 +120,11 @@ function startFileWatcher() {
                     const productContent = await fsPromises.readFile(productJsonPath, 'utf8');
                     const productInfo = JSON.parse(productContent);
                     
-                    await addActivity('product_added', `添加了产品: ${productInfo.title || '未知产品'}`, {
+                    // 获取产品标题，优先级：goodsCat3 > goodsTitleEn > goodsTitle > 未知产品
+                    const productTitle = productInfo.goodsCat3 || productInfo.goodsTitleEn || productInfo.goodsTitle || '未知产品';
+                    await addActivity('product_added', `添加了产品: ${productTitle}`, {
                         goodsId: dirName,
-                        productTitle: productInfo.title
+                        productTitle: productTitle
                     });
                 } else {
                     await addActivity('folder_added', `添加了文件夹: ${dirName}`, {
@@ -158,9 +160,11 @@ function startFileWatcher() {
                 const productContent = await fsPromises.readFile(filePath, 'utf8');
                 const productInfo = JSON.parse(productContent);
                 
-                await addActivity('product_updated', `更新了产品: ${productInfo.title || '未知产品'}`, {
+                // 获取产品标题，优先级：goodsCat3 > goodsTitleEn > goodsTitle > 未知产品
+                const productTitle = productInfo.goodsCat3 || productInfo.goodsTitleEn || productInfo.goodsTitle || '未知产品';
+                await addActivity('product_updated', `更新了产品: ${productTitle}`, {
                     goodsId: dirName,
-                    productTitle: productInfo.title
+                    productTitle: productTitle
                 });
             } catch (error) {
                 console.error('处理产品更新失败:', error);
@@ -238,9 +242,6 @@ async function loadProductData(productDir) {
         console.log(`[图片检测] 找到图片文件数: ${imageFiles.length}`);
         if (imageFiles.length > 0) {
             console.log(`[图片检测] 图片文件列表:`, imageFiles);
-        }
-        
-        if (imageFiles.length > 0) {
             productData.images = imageFiles.map(file => {
                 // 尝试从media.json中找到对应的图片信息
                 let imageInfo = {
@@ -322,9 +323,20 @@ async function saveJsonFiles(goodsId, jsonData) {
     
     // 保存媒体数据JSON
     if (jsonData.mediaData) {
-        const mediaPath = path.join(productDir, 'media.json');
+        const mediaFileName = jsonData.useTempFile ? 'media-temp.json' : 'media.json';
+        const mediaPath = path.join(productDir, mediaFileName);
         await fsPromises.writeFile(mediaPath, jsonData.mediaData, 'utf8');
         files.push(mediaPath);
+    }
+    
+    // 保存原始JSON数据（按照rawdata_goodsId_时间命名）
+    if (jsonData.rawData && jsonData.collectTime) {
+        // 生成文件名：rawdata_goodsId_时间.json
+        const rawDataFileName = `rawdata_${goodsId}_${jsonData.collectTime}.json`;
+        const rawDataPath = path.join(productDir, rawDataFileName);
+        await fsPromises.writeFile(rawDataPath, jsonData.rawData, 'utf8');
+        files.push(rawDataPath);
+        console.log(`原始JSON数据已保存: ${rawDataFileName}`);
     }
     
     return files;
@@ -459,6 +471,185 @@ async function checkExistingMediaFiles(goodsId, mediaUrls) {
     }
 }
 
+// 比较media-temp.json和media.json，找出新增的媒体文件
+async function compareMediaFilesAndGetNewUrls(goodsId) {
+    try {
+        const productDir = path.join(dataDir, 'goods-library', goodsId);
+        const mediaTempPath = path.join(productDir, 'media-temp.json');
+        const mediaJsonPath = path.join(productDir, 'media.json');
+        
+        // 如果商品目录不存在，返回空数组
+        if (!fs.existsSync(productDir)) {
+            console.log(`商品目录不存在: ${productDir}`);
+            return { newUrls: [], newMediaList: [] };
+        }
+        
+        // 如果media-temp.json文件不存在，返回空数组
+        if (!fs.existsSync(mediaTempPath)) {
+            console.log(`media-temp.json文件不存在: ${mediaTempPath}`);
+            return { newUrls: [], newMediaList: [] };
+        }
+        
+        // 读取media-temp.json文件
+        const mediaTempContent = await fsPromises.readFile(mediaTempPath, 'utf8');
+        let tempMediaData;
+        
+        try {
+            tempMediaData = JSON.parse(mediaTempContent);
+        } catch (parseError) {
+            console.error('解析media-temp.json失败:', parseError);
+            return { newUrls: [], newMediaList: [] };
+        }
+        
+        // 如果media.json文件不存在，所有temp中的媒体都是新的
+        if (!fs.existsSync(mediaJsonPath)) {
+            console.log(`media.json文件不存在，所有媒体都是新的`);
+            const newMediaList = tempMediaData.media || [];
+            const newUrls = newMediaList.map(media => media.url).filter(url => url);
+            return { newUrls, newMediaList };
+        }
+        
+        // 读取media.json文件
+        const mediaJsonContent = await fsPromises.readFile(mediaJsonPath, 'utf8');
+        let existingMediaData;
+        
+        try {
+            existingMediaData = JSON.parse(mediaJsonContent);
+        } catch (parseError) {
+            console.error('解析media.json失败:', parseError);
+            return { newUrls: [], newMediaList: [] };
+        }
+        
+        // 获取已存在的URL集合
+        const existingUrls = new Set();
+        if (existingMediaData && existingMediaData.media && Array.isArray(existingMediaData.media)) {
+            existingMediaData.media.forEach(media => {
+                if (media.url) {
+                    existingUrls.add(media.url);
+                }
+            });
+        }
+        
+        // 找出新增的媒体文件
+        const newMediaList = [];
+        const newUrls = [];
+        
+        if (tempMediaData && tempMediaData.media && Array.isArray(tempMediaData.media)) {
+            tempMediaData.media.forEach(media => {
+                if (media.url && !existingUrls.has(media.url)) {
+                    newMediaList.push(media);
+                    newUrls.push(media.url);
+                }
+            });
+        }
+        
+        console.log(`商品 ${goodsId} 比较结果: 新增 ${newUrls.length} 个媒体文件`);
+        return { newUrls, newMediaList };
+        
+    } catch (error) {
+        console.error('比较媒体文件时出错:', error);
+        return { newUrls: [], newMediaList: [] };
+    }
+}
+
+// 合并新下载的媒体信息到media.json
+async function mergeMediaFiles(goodsId, downloadedMedia) {
+    try {
+        const productDir = path.join(dataDir, 'goods-library', goodsId);
+        const mediaTempPath = path.join(productDir, 'media-temp.json');
+        const mediaJsonPath = path.join(productDir, 'media.json');
+        
+        // 如果商品目录不存在，返回错误
+        if (!fs.existsSync(productDir)) {
+            throw new Error(`商品目录不存在: ${productDir}`);
+        }
+        
+        // 如果media-temp.json文件不存在，返回错误
+        if (!fs.existsSync(mediaTempPath)) {
+            throw new Error(`media-temp.json文件不存在: ${mediaTempPath}`);
+        }
+        
+        // 读取media-temp.json文件
+        const mediaTempContent = await fsPromises.readFile(mediaTempPath, 'utf8');
+        let tempMediaData;
+        
+        try {
+            tempMediaData = JSON.parse(mediaTempContent);
+        } catch (parseError) {
+            throw new Error('解析media-temp.json失败: ' + parseError.message);
+        }
+        
+        // 更新下载的媒体文件路径信息
+        if (downloadedMedia && Array.isArray(downloadedMedia)) {
+            const downloadedPaths = new Map();
+            downloadedMedia.forEach(media => {
+                if (media.url && media.path) {
+                    downloadedPaths.set(media.url, media.path);
+                }
+            });
+            
+            // 更新temp数据中的路径信息
+            if (tempMediaData.media && Array.isArray(tempMediaData.media)) {
+                tempMediaData.media.forEach(media => {
+                    if (media.url && downloadedPaths.has(media.url)) {
+                        media.path = downloadedPaths.get(media.url);
+                    }
+                });
+            }
+        }
+        
+        // 如果media.json文件不存在，直接重命名temp文件
+        if (!fs.existsSync(mediaJsonPath)) {
+            await fsPromises.rename(mediaTempPath, mediaJsonPath);
+            console.log(`商品 ${goodsId} 媒体文件合并完成: 重命名temp文件`);
+            return { mergedCount: tempMediaData.media ? tempMediaData.media.length : 0, totalCount: tempMediaData.media ? tempMediaData.media.length : 0 };
+        }
+        
+        // 读取现有的media.json文件
+        const mediaJsonContent = await fsPromises.readFile(mediaJsonPath, 'utf8');
+        let existingMediaData;
+        
+        try {
+            existingMediaData = JSON.parse(mediaJsonContent);
+        } catch (parseError) {
+            throw new Error('解析media.json失败: ' + parseError.message);
+        }
+        
+        // 合并媒体数据
+        const existingUrls = new Set();
+        if (existingMediaData.media && Array.isArray(existingMediaData.media)) {
+            existingMediaData.media.forEach(media => {
+                if (media.url) {
+                    existingUrls.add(media.url);
+                }
+            });
+        }
+        
+        let mergedCount = 0;
+        if (tempMediaData.media && Array.isArray(tempMediaData.media)) {
+            tempMediaData.media.forEach(media => {
+                if (media.url && !existingUrls.has(media.url)) {
+                    existingMediaData.media.push(media);
+                    mergedCount++;
+                }
+            });
+        }
+        
+        // 保存合并后的media.json
+        await fsPromises.writeFile(mediaJsonPath, JSON.stringify(existingMediaData, null, 2), 'utf8');
+        
+        // 删除临时文件
+        await fsPromises.unlink(mediaTempPath);
+        
+        console.log(`商品 ${goodsId} 媒体文件合并完成: 新增 ${mergedCount} 个媒体文件`);
+        return { mergedCount, totalCount: existingMediaData.media ? existingMediaData.media.length : 0 };
+        
+    } catch (error) {
+        console.error('合并媒体文件时出错:', error);
+        throw error;
+    }
+}
+
 // API路由
 
 // 健康检查
@@ -569,7 +760,7 @@ app.get('/api/products/today-collect', async (req, res) => {
 // 保存JSON文件
 app.post('/api/save-json-files', async (req, res) => {
     try {
-        const { goodsId, goodsInfo, monitoring, mediaData, targetPath } = req.body;
+        const { goodsId, goodsInfo, monitoring, mediaData, rawData, collectTime, targetPath, useTempFile } = req.body;
         
         if (!goodsId) {
             return res.status(400).json({ 
@@ -581,7 +772,10 @@ app.post('/api/save-json-files', async (req, res) => {
         const jsonData = {
             goodsInfo,
             monitoring,
-            mediaData
+            mediaData,
+            rawData,
+            collectTime,
+            useTempFile: useTempFile || false
         };
         
         const files = await saveJsonFiles(goodsId, jsonData);
@@ -654,6 +848,67 @@ app.post('/api/check-existing-media', async (req, res) => {
         
     } catch (error) {
         console.error('检查本地媒体文件失败:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// 比较media-temp.json和media.json，获取新增的媒体文件
+app.post('/api/compare-media-files', async (req, res) => {
+    try {
+        const { goodsId } = req.body;
+        
+        if (!goodsId) {
+            return res.status(400).json({ 
+                success: false, 
+                error: '商品ID不能为空' 
+            });
+        }
+        
+        const { newUrls, newMediaList } = await compareMediaFilesAndGetNewUrls(goodsId);
+        
+        res.json({
+            success: true,
+            message: '媒体文件比较完成',
+            newUrls: newUrls,
+            newMediaList: newMediaList,
+            newCount: newUrls.length
+        });
+        
+    } catch (error) {
+        console.error('比较媒体文件失败:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// 合并新下载的媒体信息到media.json
+app.post('/api/merge-media-files', async (req, res) => {
+    try {
+        const { goodsId, downloadedMedia } = req.body;
+        
+        if (!goodsId) {
+            return res.status(400).json({ 
+                success: false, 
+                error: '商品ID不能为空' 
+            });
+        }
+        
+        const result = await mergeMediaFiles(goodsId, downloadedMedia);
+        
+        res.json({
+            success: true,
+            message: '媒体文件合并完成',
+            mergedCount: result.mergedCount,
+            totalCount: result.totalCount
+        });
+        
+    } catch (error) {
+        console.error('合并媒体文件失败:', error);
         res.status(500).json({
             success: false,
             error: error.message
@@ -739,7 +994,16 @@ app.get('/api/products', async (req, res) => {
         
         // 检查goods-library目录是否存在
         if (!fs.existsSync(goodsLibraryDir)) {
-            return res.json({ success: true, products: [] });
+            return res.json({ 
+                success: true, 
+                products: [],
+                pagination: {
+                    totalItems: 0,
+                    totalPages: 0,
+                    currentPage: 1,
+                    itemsPerPage: 100
+                }
+            });
         }
         
         const entries = await fsPromises.readdir(goodsLibraryDir, { withFileTypes: true });
@@ -764,9 +1028,46 @@ app.get('/api/products', async (req, res) => {
             }
         }
         
+        // 获取分页参数
+        const page = parseInt(req.query.page) || 1;
+        const itemsPerPage = parseInt(req.query.itemsPerPage) || 100;
+        const sortField = req.query.sortField || 'collectTime';
+        const sortOrder = req.query.sortOrder || 'desc';
+        const totalItems = products.length;
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+        
+        // 排序产品
+        products.sort((a, b) => {
+            let aVal = getSortValue(a, sortField);
+            let bVal = getSortValue(b, sortField);
+            
+            if (typeof aVal === 'string') {
+                aVal = aVal.toLowerCase();
+                bVal = bVal.toLowerCase();
+            }
+            
+            if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+        
+        // 如果请求分页数据，则进行分页处理
+        let paginatedProducts = products;
+        if (req.query.page || req.query.itemsPerPage) {
+            const startIndex = (page - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            paginatedProducts = products.slice(startIndex, endIndex);
+        }
+        
         res.json({
             success: true,
-            products: products
+            products: paginatedProducts,
+            pagination: {
+                totalItems: totalItems,
+                totalPages: totalPages,
+                currentPage: page,
+                itemsPerPage: itemsPerPage
+            }
         });
         
     } catch (error) {
@@ -929,6 +1230,36 @@ function extractPrice(priceStr) {
     if (!priceStr) return 0;
     const match = priceStr.match(/[\d.]+/);
     return match ? parseFloat(match[0]) : 0;
+}
+
+// 获取排序值
+function getSortValue(product, field) {
+    switch (field) {
+        case 'goodsTitle':
+            return product.goodsCat3 || product.goodsTitleEn || product.goodsTitle || '';
+        case 'goodsCat2':
+            return product.goodsCat2 || '';
+        case 'totalSales':
+            return getTotalSalesValue(product);
+        case 'collectTime':
+            return new Date(product.collectTime || 0);
+        default:
+            return '';
+    }
+}
+
+// 获取总销量数值（用于排序）
+function getTotalSalesValue(product) {
+    if (product.monitoringData && product.monitoringData.length > 0) {
+        const latestData = product.monitoringData[product.monitoringData.length - 1];
+        if (latestData.goodsData && latestData.goodsData.goodsSold) {
+            // 提取数字部分，去掉"件"等文字
+            const salesText = latestData.goodsData.goodsSold;
+            const match = salesText.match(/(\d+)/);
+            return match ? parseInt(match[1]) : 0;
+        }
+    }
+    return 0;
 }
 
 // 获取产品附件列表
@@ -1576,6 +1907,62 @@ app.get('/api/monitor/get-products-list', async (req, res) => {
     } catch (error) {
         console.error('获取商品清单失败:', error);
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// 获取所有分类
+app.get('/api/categories', async (req, res) => {
+    try {
+        const goodsLibraryDir = path.join(dataDir, 'goods-library');
+        
+        if (!fs.existsSync(goodsLibraryDir)) {
+            return res.json({ 
+                success: true, 
+                categories: [],
+                message: '没有找到产品数据'
+            });
+        }
+        
+        const categorySet = new Set();
+        const entries = await fsPromises.readdir(goodsLibraryDir, { withFileTypes: true });
+        
+        for (const entry of entries) {
+            if (entry.isDirectory()) {
+                const productDir = path.join(goodsLibraryDir, entry.name);
+                const productJsonPath = path.join(productDir, 'product.json');
+                
+                try {
+                    if (fs.existsSync(productJsonPath)) {
+                        const productData = await fsPromises.readFile(productJsonPath, 'utf8');
+                        const product = JSON.parse(productData);
+                        
+                        // 提取一级分类
+                        if (product.goodsCat1) {
+                            categorySet.add(product.goodsCat1);
+                        }
+                    }
+                } catch (error) {
+                    console.warn(`读取产品数据失败: ${entry.name}`, error.message);
+                }
+            }
+        }
+        
+        const categories = Array.from(categorySet).sort();
+        
+        res.json({
+            success: true,
+            categories: categories,
+            count: categories.length,
+            message: `成功获取 ${categories.length} 个分类`
+        });
+        
+    } catch (error) {
+        console.error('获取分类失败:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: '获取分类失败',
+            message: error.message
+        });
     }
 });
 

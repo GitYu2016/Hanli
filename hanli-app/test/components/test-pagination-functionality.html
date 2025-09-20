@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>翻页功能测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .test-result {
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .test-result.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-result.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .test-result.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .api-test {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .api-response {
+            background-color: #f1f3f4;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>产品库翻页功能测试</h1>
+        
+        <div class="test-section">
+            <div class="test-title">1. API分页测试</div>
+            <p>测试服务器端API是否正确支持分页参数</p>
+            <button onclick="testApiPagination()">测试API分页</button>
+            <div id="api-test-result" class="test-result" style="display: none;"></div>
+            <div id="api-response" class="api-response" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">2. 分页组件测试</div>
+            <p>测试Pagination组件是否正确初始化和渲染</p>
+            <button onclick="testPaginationComponent()">测试分页组件</button>
+            <div id="pagination-test-result" class="test-result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">3. 产品库组件集成测试</div>
+            <p>测试产品库组件是否正确集成翻页功能</p>
+            <button onclick="testProductLibraryIntegration()">测试产品库集成</button>
+            <div id="integration-test-result" class="test-result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">4. 完整功能测试</div>
+            <p>测试完整的翻页流程</p>
+            <button onclick="testFullPaginationFlow()">测试完整流程</button>
+            <div id="full-test-result" class="test-result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // 测试API分页功能
+        async function testApiPagination() {
+            const resultDiv = document.getElementById('api-test-result');
+            const responseDiv = document.getElementById('api-response');
+            
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'test-result info';
+            resultDiv.textContent = '正在测试API分页功能...';
+            
+            try {
+                // 测试第一页
+                const response1 = await fetch('http://localhost:3001/api/products?page=1&itemsPerPage=10');
+                const data1 = await response1.json();
+                
+                // 测试第二页
+                const response2 = await fetch('http://localhost:3001/api/products?page=2&itemsPerPage=10');
+                const data2 = await response2.json();
+                
+                if (data1.success && data2.success) {
+                    resultDiv.className = 'test-result success';
+                    resultDiv.textContent = `✅ API分页测试通过！第一页: ${data1.products.length}条，第二页: ${data2.products.length}条，总数: ${data1.pagination.totalItems}`;
+                    
+                    responseDiv.style.display = 'block';
+                    responseDiv.textContent = `第一页响应:\n${JSON.stringify(data1, null, 2)}\n\n第二页响应:\n${JSON.stringify(data2, null, 2)}`;
+                } else {
+                    resultDiv.className = 'test-result error';
+                    resultDiv.textContent = '❌ API分页测试失败：响应数据格式不正确';
+                }
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.textContent = `❌ API分页测试失败：${error.message}`;
+            }
+        }
+
+        // 测试分页组件
+        function testPaginationComponent() {
+            const resultDiv = document.getElementById('pagination-test-result');
+            
+            resultDiv.style.display = 'block';
+            
+            try {
+                // 检查Pagination类是否存在
+                if (typeof Pagination === 'undefined') {
+                    resultDiv.className = 'test-result error';
+                    resultDiv.textContent = '❌ Pagination组件未加载';
+                    return;
+                }
+                
+                // 创建测试容器
+                const testContainer = document.createElement('div');
+                testContainer.id = 'test-pagination-container';
+                testContainer.style.position = 'relative';
+                testContainer.style.height = '100px';
+                testContainer.style.border = '1px solid #ccc';
+                testContainer.style.marginTop = '10px';
+                document.body.appendChild(testContainer);
+                
+                // 创建分页组件实例
+                const pagination = new Pagination('test-pagination-container');
+                
+                // 更新分页数据
+                pagination.updatePagination({
+                    totalItems: 250,
+                    currentPage: 1,
+                    itemsPerPage: 100
+                });
+                
+                resultDiv.className = 'test-result success';
+                resultDiv.textContent = '✅ 分页组件测试通过！组件创建和初始化成功';
+                
+                // 清理测试容器
+                setTimeout(() => {
+                    document.body.removeChild(testContainer);
+                }, 3000);
+                
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.textContent = `❌ 分页组件测试失败：${error.message}`;
+            }
+        }
+
+        // 测试产品库组件集成
+        function testProductLibraryIntegration() {
+            const resultDiv = document.getElementById('integration-test-result');
+            
+            resultDiv.style.display = 'block';
+            
+            try {
+                // 检查必要的组件是否存在
+                if (typeof productLibraryComponentInstance === 'undefined') {
+                    resultDiv.className = 'test-result error';
+                    resultDiv.textContent = '❌ ProductLibraryComponent未加载';
+                    return;
+                }
+                
+                if (typeof window.mainAppInstance === 'undefined') {
+                    resultDiv.className = 'test-result error';
+                    resultDiv.textContent = '❌ MainApp实例未加载';
+                    return;
+                }
+                
+                if (!window.mainAppInstance.pageContainer) {
+                    resultDiv.className = 'test-result error';
+                    resultDiv.textContent = '❌ PageContainer未初始化';
+                    return;
+                }
+                
+                // 检查分页组件是否存在
+                if (!window.mainAppInstance.pageContainer.pagination) {
+                    resultDiv.className = 'test-result error';
+                    resultDiv.textContent = '❌ 分页组件未初始化';
+                    return;
+                }
+                
+                resultDiv.className = 'test-result success';
+                resultDiv.textContent = '✅ 产品库组件集成测试通过！所有必要组件都已正确加载';
+                
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.textContent = `❌ 产品库组件集成测试失败：${error.message}`;
+            }
+        }
+
+        // 测试完整翻页流程
+        async function testFullPaginationFlow() {
+            const resultDiv = document.getElementById('full-test-result');
+            
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'test-result info';
+            resultDiv.textContent = '正在测试完整翻页流程...';
+            
+            try {
+                // 检查服务器是否运行
+                const healthCheck = await fetch('http://localhost:3001/api/products?page=1&itemsPerPage=5');
+                if (!healthCheck.ok) {
+                    throw new Error('服务器未运行或API不可用');
+                }
+                
+                const data = await healthCheck.json();
+                if (!data.success) {
+                    throw new Error('API响应失败');
+                }
+                
+                const totalItems = data.pagination.totalItems;
+                const totalPages = data.pagination.totalPages;
+                
+                if (totalPages > 1) {
+                    // 测试翻页到第二页
+                    const page2Response = await fetch('http://localhost:3001/api/products?page=2&itemsPerPage=5');
+                    const page2Data = await page2Response.json();
+                    
+                    if (page2Data.success && page2Data.pagination.currentPage === 2) {
+                        resultDiv.className = 'test-result success';
+                        resultDiv.textContent = `✅ 完整翻页流程测试通过！总共${totalItems}条数据，${totalPages}页，第二页加载成功`;
+                    } else {
+                        resultDiv.className = 'test-result error';
+                        resultDiv.textContent = '❌ 第二页加载失败';
+                    }
+                } else {
+                    resultDiv.className = 'test-result info';
+                    resultDiv.textContent = `ℹ️ 数据量较少（${totalItems}条），无需分页测试`;
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.textContent = `❌ 完整翻页流程测试失败：${error.message}`;
+            }
+        }
+
+        // 页面加载完成后显示测试说明
+        window.addEventListener('load', function() {
+            console.log('翻页功能测试页面已加载');
+            console.log('请确保应用正在运行（http://localhost:3001）');
+        });
+    </script>
+</body>
+</html>

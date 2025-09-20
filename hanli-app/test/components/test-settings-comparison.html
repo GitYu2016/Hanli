@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置页面布局对比</title>
+    
+    <!-- 引入主题样式 -->
+    <link rel="stylesheet" href="../../renderer/theme/light/colors.css" id="theme-colors">
+    <link rel="stylesheet" href="../../renderer/globals.css">
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-body-bg-default);
+            color: var(--color-primary);
+        }
+        
+        .comparison-container {
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .comparison-header {
+            padding: 20px 24px;
+            background: var(--color-background-normal);
+            border-bottom: 1px solid var(--color-border-normal);
+            text-align: center;
+        }
+        
+        .comparison-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        
+        .comparison-description {
+            font-size: 14px;
+            color: var(--color-secondary);
+            margin: 0;
+        }
+        
+        .comparison-content {
+            flex: 1;
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .layout-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .layout-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin: 0;
+            padding: 12px 16px;
+            background: var(--color-background-normal);
+            border-radius: 6px;
+            border: 1px solid var(--color-border-normal);
+        }
+        
+        .layout-preview {
+            flex: 1;
+            border: 2px solid var(--color-border-normal);
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--color-background-normal);
+            position: relative;
+        }
+        
+        /* 旧布局样式 */
+        .old-layout {
+            padding: 20px;
+        }
+        
+        .old-layout .modal-content {
+            background: var(--color-modal-background);
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .old-layout .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--color-border-normal);
+        }
+        
+        .old-layout .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .old-layout .settings-section {
+            margin-bottom: 32px;
+        }
+        
+        .old-layout .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 16px 0;
+            color: var(--color-primary);
+        }
+        
+        .old-layout .setting-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--color-border-normal);
+        }
+        
+        .old-layout .setting-item:last-child {
+            border-bottom: none;
+        }
+        
+        .old-layout .setting-label {
+            font-size: 14px;
+            color: var(--color-primary);
+        }
+        
+        .old-layout .setting-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .old-layout .setting-select {
+            padding: 6px 10px;
+            border: 1px solid var(--color-border-normal);
+            border-radius: 4px;
+            background: var(--color-background-normal);
+            color: var(--color-primary);
+            font-size: 14px;
+        }
+        
+        .old-layout .modal-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid var(--color-border-normal);
+        }
+        
+        .old-layout .btn {
+            padding: 8px 16px;
+            border: 1px solid var(--color-border-normal);
+            border-radius: 4px;
+            background: var(--color-background-normal);
+            color: var(--color-primary);
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .old-layout .btn-primary {
+            background: var(--color-info);
+            color: white;
+            border-color: var(--color-info);
+        }
+        
+        /* 新布局样式 */
+        .new-layout {
+            height: 600px;
+            display: flex;
+        }
+        
+        .new-layout .settings-container {
+            flex: 1;
+            display: flex;
+        }
+        
+        .new-layout .settings-sidebar {
+            width: 200px;
+            background: var(--color-background-normal);
+            border-right: 1px solid var(--color-border-normal);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .new-layout .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--color-border-normal);
+        }
+        
+        .new-layout .sidebar-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin: 0;
+        }
+        
+        .new-layout .sidebar-nav {
+            flex: 1;
+            padding: 8px 0;
+        }
+        
+        .new-layout .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--color-secondary);
+            border-left: 3px solid transparent;
+        }
+        
+        .new-layout .nav-item:hover {
+            background: var(--color-background-focused);
+            color: var(--color-primary);
+        }
+        
+        .new-layout .nav-item.active {
+            background: var(--color-background-focused);
+            color: var(--color-focused);
+            border-left-color: var(--color-info);
+        }
+        
+        .new-layout .nav-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            background: var(--color-secondary);
+            border-radius: 2px;
+        }
+        
+        .new-layout .nav-item.active .nav-icon {
+            background: var(--color-focused);
+        }
+        
+        .new-layout .nav-label {
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .new-layout .settings-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .new-layout .content-header {
+            margin-bottom: 24px;
+        }
+        
+        .new-layout .content-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin: 0 0 6px 0;
+        }
+        
+        .new-layout .content-description {
+            font-size: 13px;
+            color: var(--color-secondary);
+            margin: 0;
+        }
+        
+        .new-layout .content-body {
+            flex: 1;
+            margin-bottom: 24px;
+        }
+        
+        .new-layout .settings-section {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        
+        .new-layout .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .new-layout .group-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin: 0;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--color-border-normal);
+        }
+        
+        .new-layout .setting-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+        }
+        
+        .new-layout .setting-label {
+            min-width: 80px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-primary);
+            margin: 0;
+            padding-top: 6px;
+        }
+        
+        .new-layout .setting-control {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .new-layout .setting-select {
+            padding: 6px 10px;
+            border: 1px solid var(--color-border-normal);
+            border-radius: 4px;
+            background: var(--color-background-normal);
+            color: var(--color-primary);
+            font-size: 13px;
+        }
+        
+        .new-layout .content-footer {
+            padding-top: 16px;
+            border-top: 1px solid var(--color-border-normal);
+        }
+        
+        .new-layout .footer-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        
+        .new-layout .btn {
+            padding: 6px 12px;
+            border: 1px solid var(--color-border-normal);
+            border-radius: 4px;
+            background: var(--color-background-normal);
+            color: var(--color-primary);
+            font-size: 13px;
+            cursor: pointer;
+        }
+        
+        .new-layout .btn-primary {
+            background: var(--color-info);
+            color: white;
+            border-color: var(--color-info);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .comparison-content {
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .layout-preview {
+                height: 400px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .comparison-content {
+                padding: 16px;
+            }
+            
+            .new-layout {
+                height: 500px;
+            }
+            
+            .new-layout .settings-sidebar {
+                width: 100%;
+                height: auto;
+            }
+            
+            .new-layout .settings-container {
+                flex-direction: column;
+            }
+            
+            .new-layout .sidebar-nav {
+                display: flex;
+                overflow-x: auto;
+                padding: 0 12px;
+            }
+            
+            .new-layout .nav-item {
+                flex-shrink: 0;
+                white-space: nowrap;
+                border-left: none;
+                border-bottom: 2px solid transparent;
+            }
+            
+            .new-layout .nav-item.active {
+                border-left: none;
+                border-bottom-color: var(--color-info);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="comparison-container">
+        <div class="comparison-header">
+            <h1 class="comparison-title">系统设置页面布局对比</h1>
+            <p class="comparison-description">展示新旧布局设计的差异和改进</p>
+        </div>
+        
+        <div class="comparison-content">
+            <!-- 旧布局 -->
+            <div class="layout-section">
+                <h2 class="layout-title">旧布局 - 弹窗式</h2>
+                <div class="layout-preview">
+                    <div class="old-layout">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h3 class="modal-title">系统设置</h3>
+                                <button class="btn">×</button>
+                            </div>
+                            
+                            <div class="settings-section">
+                                <h4 class="section-title">外观设置</h4>
+                                <div class="setting-item">
+                                    <label class="setting-label">主题设置</label>
+                                    <div class="setting-control">
+                                        <select class="setting-select">
+                                            <option value="light">浅色主题</option>
+                                            <option value="dark">深色主题</option>
+                                            <option value="auto">跟随系统</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="setting-item">
+                                    <label class="setting-label">背景色设置</label>
+                                    <div class="setting-control">
+                                        <select class="setting-select">
+                                            <option value="default">默认</option>
+                                            <option value="blue">海洋蓝</option>
+                                            <option value="green">森林绿</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="settings-section">
+                                <h4 class="section-title">功能设置</h4>
+                                <div class="setting-item">
+                                    <label class="setting-label">自动刷新产品数据</label>
+                                    <div class="setting-control">
+                                        <input type="checkbox" checked>
+                                        <span>在首页时每5秒自动刷新</span>
+                                    </div>
+                                </div>
+                                <div class="setting-item">
+                                    <label class="setting-label">显示采集时间</label>
+                                    <div class="setting-control">
+                                        <input type="checkbox" checked>
+                                        <span>在产品列表中显示采集时间</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="modal-footer">
+                                <button class="btn">取消</button>
+                                <button class="btn btn-primary">保存设置</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 新布局 -->
+            <div class="layout-section">
+                <h2 class="layout-title">新布局 - 左侧菜单导航</h2>
+                <div class="layout-preview">
+                    <div class="new-layout">
+                        <div class="settings-container">
+                            <!-- 左侧菜单 -->
+                            <div class="settings-sidebar">
+                                <div class="sidebar-header">
+                                    <h3 class="sidebar-title">系统设置</h3>
+                                </div>
+                                
+                                <nav class="sidebar-nav">
+                                    <div class="nav-item active" data-section="general">
+                                        <div class="nav-icon"></div>
+                                        <span class="nav-label">通用设置</span>
+                                    </div>
+                                    
+                                    <div class="nav-item" data-section="function">
+                                        <div class="nav-icon"></div>
+                                        <span class="nav-label">功能设置</span>
+                                    </div>
+                                    
+                                    <div class="nav-item" data-section="shortcuts">
+                                        <div class="nav-icon"></div>
+                                        <span class="nav-label">快捷键</span>
+                                    </div>
+                                </nav>
+                            </div>
+                            
+                            <!-- 右侧内容区域 -->
+                            <div class="settings-content">
+                                <div class="content-header">
+                                    <h4 class="content-title">通用设置</h4>
+                                    <p class="content-description">设置应用的外观偏好</p>
+                                </div>
+                                
+                                <div class="content-body">
+                                    <div class="settings-section">
+                                        <div class="setting-group">
+                                            <h5 class="group-title">外观设置</h5>
+                                            
+                                            <div class="setting-item">
+                                                <label class="setting-label">主题设置</label>
+                                                <div class="setting-control">
+                                                    <select class="setting-select">
+                                                        <option value="light">浅色主题</option>
+                                                        <option value="dark">深色主题</option>
+                                                        <option value="auto">跟随系统</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="setting-item">
+                                                <label class="setting-label">背景色设置</label>
+                                                <div class="setting-control">
+                                                    <select class="setting-select">
+                                                        <option value="default">默认</option>
+                                                        <option value="blue">海洋蓝</option>
+                                                        <option value="green">森林绿</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                    </div>
+                                </div>
+                                
+                                <div class="content-footer">
+                                    <div class="footer-actions">
+                                        <button class="btn">取消</button>
+                                        <button class="btn btn-primary">保存设置</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 新布局菜单切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const navItems = document.querySelectorAll('.new-layout .nav-item');
+            const contentTitle = document.querySelector('.new-layout .content-title');
+            const contentDescription = document.querySelector('.new-layout .content-description');
+            
+            const sectionData = {
+                general: {
+                    title: '通用设置',
+                    description: '设置应用的外观偏好'
+                },
+                function: {
+                    title: '功能设置',
+                    description: '配置应用功能和数据管理选项'
+                },
+                shortcuts: {
+                    title: '快捷键',
+                    description: '查看和管理应用快捷键'
+                }
+            };
+            
+            navItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    // 移除所有active类
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    
+                    // 添加active类到当前项
+                    item.classList.add('active');
+                    
+                    // 更新内容标题和描述
+                    const section = item.dataset.section;
+                    const data = sectionData[section];
+                    if (data && contentTitle && contentDescription) {
+                        contentTitle.textContent = data.title;
+                        contentDescription.textContent = data.description;
+                    }
+                    
+                    console.log('切换到区域:', section);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
